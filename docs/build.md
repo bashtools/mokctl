@@ -906,7 +906,7 @@ You may have noticed that this is a bit of a hack. Running `kubelet` with the `-
 
 ## What's Next
 
-* [Packaging](docs/package.md).
+* [Packaging](/docs/package.md).
   
   Now we know what's involved we'll try to make it easier to create masters and nodes so we can build, delete, test, build, delete, ...
   

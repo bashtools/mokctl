@@ -13,6 +13,10 @@ To get the most out of the labs you should have a good overall understanding of 
 
 Send a Pull Request to add to this list.
 
+## Status
+
+In progress...
+
 ## Let's get started
 
 1. [Single Node](docs/build.md)
@@ -27,9 +31,13 @@ Send a Pull Request to add to this list.
    
    Build a bigger cluster using our package.
 
-4. [Upgrade]()
+4. [Upgrade](/docs/upgrade.md)
    
    We can install any version of kubernetes. Let's try installing an older cluster and upgrading it. Not much hand-holding here though.
+
+5. [Add-ons](/docs/addons.md)
+   
+   Trying popluar kubernetes add-ons.
 
 ## License
 

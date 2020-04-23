@@ -29,8 +29,6 @@ RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do \
     && sed -i 's/\(conmon = .*\)/#\1/' /etc/crio/crio.conf \
     && rm -f /etc/cni/net.d/100-crio-bridge.conf \
     && rm -f /etc/cni/net.d/200-loopback.conf \
-    && mkdir -p /opt/cni/ \
-    && ln -s /usr/libexec/cni /opt/cni/bin \
     && systemctl enable crio \
     && systemctl enable kubelet \
     && curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz \
@@ -38,7 +36,6 @@ RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do \
     && rm -f crictl-$CRICTL_VERSION-linux-amd64.tar.gz
 COPY k8s.conf /etc/sysctl.d/k8s.conf
 COPY 100-crio-bridge.conf /etc/cni/net.d/100-crio-bridge.conf
-#COPY --from=cniplugins /opt/cni/bin/ /opt/cni/bin/
 COPY entrypoint /usr/local/bin
 VOLUME [ "/sys/fs/cgroup" ]
 STOPSIGNAL SIGRTMIN+3

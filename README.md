@@ -2,9 +2,9 @@
 
 ## Summary
 
-My Own Kind - Build a conformant kubernetes cluster in containers, on Linux, using docker only, by hand, from scratch, for learning.
+My Own [Kind](https://kind.sigs.k8s.io/) - Build a conformant kubernetes cluster in containers, on Linux, using docker only, by hand, from scratch, for learning.
 
-If you follow the instructions in this repository you will end up building your own Kind. I'm pretty sure it won't be easy though - there's so much that can go wrong!
+If you follow the instructions in this repository you will end up building your own [Kind](https://kind.sigs.k8s.io/). I'm pretty sure it won't be easy though - there's so much that can go wrong!
 
 To get the most out of the labs you should have a good overall understanding of kubernetes. Some good resources are:
 

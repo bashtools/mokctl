@@ -22,10 +22,10 @@
   - [Remove the taint](#remove-the-taint)
   - [Test the Single Node Cluster with Sonobuoy](#test-the-single-node-cluster-with-sonobuoy)
   - [Add a 2nd node for fun](#add-a-2nd-node-for-fun)
-    - [Step 1: Start a new 'node' and exec in:](#step-1-start-a-new-node-and-exec-in)
-    - [Step 2: Copy the next commands and paste as one big command.](#step-2-copy-the-next-commands-and-paste-as-one-big-command)
-    - [Step 3: Get required information from the Master node.](#step-3-get-required-information-from-the-master-node)
-    - [Step 4: Join the node to the cluster.](#step-4-join-the-node-to-the-cluster)
+    - [Step 1: Start a new 'node' and exec in](#step-1-start-a-new-node-and-exec-in)
+    - [Step 2: Copy the next commands and paste as one big command](#step-2-copy-the-next-commands-and-paste-as-one-big-command)
+    - [Step 3: Get required information from the Master node](#step-3-get-required-information-from-the-master-node)
+    - [Step 4: Join the node to the cluster](#step-4-join-the-node-to-the-cluster)
   - [Re-run the Sonobuoy Conformance Test](#re-run-the-sonobuoy-conformance-test)
 - [What's Next](#whats-next)
 
@@ -716,7 +716,7 @@ id=$(docker run \
   --name node-1 \
   --hostname node-1 \
   --detach \
-  local/mok-centos-8)
+  local/mok-centos-7)
 
 docker exec -ti $id bash
 ```
@@ -896,7 +896,7 @@ systemctl restart kubelet
 }
 ```
 
-After a few minutes the node will appear in the MASTER window, where `watch` is running.
+After a few minutes the node will appear in the MASTER window, where `watch` is running. Also notice that flannel is automatically installed on the new node.
 
 You may have noticed that this is a bit of a hack. Running `kubelet` with the `--failswapon` flag is deprecated, but the phases aren't granular enough to be able to change the kubelet configuration file. I can't find the 'right way' to do this so I have hacked it. <mark>TODO!</mark>
 
@@ -911,7 +911,3 @@ You may have noticed that this is a bit of a hack. Running `kubelet` with the `-
   Now we know what's involved we'll try to make it easier to create masters and nodes so we can build, delete, test, build, delete, ...
   
   We'll also try to make it easy to install different versions of kubernetes so we can practice upgrades or test different versions.
-
----
-
-Tags: cri-o, kubernetes

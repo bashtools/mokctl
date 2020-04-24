@@ -133,7 +133,6 @@ parse_options() {
                      exit $ERROR
                    }
                    COMMAND="$1"
-                   #next_state
                  ;;
             SUBCOMMAND) check_subcommand_token $1
                    [[ $? -eq $ERROR ]] && {
@@ -143,7 +142,6 @@ parse_options() {
                      exit $ERROR
                    }
                    SUBCOMMAND="$1"
-                   #next_state
                  ;;
             OPTION) check_option_token $1
                    [[ $? -eq $ERROR ]] && {
@@ -152,7 +150,6 @@ parse_options() {
                      echo
                      exit $ERROR
                    }
-                   #next_state
                  ;;
             OPTION2) check_option2_token $1
                    [[ $? -eq $ERROR ]] && {
@@ -161,7 +158,6 @@ parse_options() {
                      echo
                      exit $ERROR
                    }
-                   #next_state
                  ;;
             OPTION3) check_option3_token $1
                    [[ $? -eq $ERROR ]] && {
@@ -170,7 +166,6 @@ parse_options() {
                      echo
                      exit $ERROR
                    }
-                   #next_state
                  ;;
             END) usage
                  echo -n "ERROR No more options expected, '$1' is unexpected"

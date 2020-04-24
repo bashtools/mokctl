@@ -1,7 +1,9 @@
 # My Own Kind - Build
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
+
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Create a Container Image](#create-a-container-image)
@@ -896,7 +898,7 @@ systemctl restart kubelet
 
 After a few minutes the node will appear in the MASTER window, where `watch` is running. Also notice that flannel is automatically installed on the new node.
 
-You may have noticed that this is a bit of a hack. Running `kubelet` with the `--failswapon` flag is deprecated, but the phases aren't granular enough to be able to change the kubelet configuration file. I can't find the 'right way' to do this so I have hacked it. <mark>TODO!</mark>
+You may have noticed that this is a bit of a hack. Running `kubelet` with the `--failswapon` flag is deprecated, but the phases aren't granular enough to be able to change the kubelet configuration file. I can't find the 'right way' to do this so I have hacked it. <mark>TODO! Ask on GitHub</mark>
 
 ### Re-run the Sonobuoy Conformance Test
 

@@ -26,7 +26,7 @@
 
 In [the previous section](/docs/build.md) we successfully built a Kind-like kubernetes single node cluster. We added a node to the cluster to see if it fixed the failing Sonobuoy test, which it did.
 
-To build our own cluster we don't want to type all of those commands again so in this section we will package it up for easier installation. Later we will create a command line program that will do it all for us, but because we know how it works, we can customise it to our own needs if we want to.
+To build our own cluster we don't want to type all of those commands again so in this section we will package it up for easier installation. Later we will create a command line program that will do it all for us.
 
 ## Problems
 
@@ -36,7 +36,7 @@ When the RPMs were installed with `yum`, the containernetwork-plugins rpm was au
 
 The plugin directory is referenced by the file `/etc/crio/crio.conf` and it already has the correct location, `/usr/libexec/cni`. It's interesting to note that nothing else uses these CNI plugins, only the container runtime does, which in our case is cri-o. Kubernetes will set up docker to use CNI if docker is used instead of cri-o.
 
-This excellent blog post, [Understanding CNI (Container Networking Interface) Das Blinken Lichten](https://www.dasblinkenlichten.com/understanding-cni-container-networking-interface/), helped me to understand CNI better. It's also explained well in ‘Kubernetes in Action’, section 11.4 Interpod Networking.
+This excellent blog post, [Understanding CNI (Container Networking Interface) Das Blinken Lichten](https://www.dasblinkenlichten.com/understanding-cni-container-networking-interface/), helped me to understand CNI better. It‘s also explained well in ‘Kubernetes in Action’, section 11.4 Interpod Networking.
 
 **Action**
 
@@ -44,17 +44,17 @@ Remove all code that downloads CNI plugins manually to fix this problem.
 
 ### Keeping the same IP addresses
 
-If, when we have a full cluster, we stop the cluster components, the re-start them, there is a distinct possibility that the master node (or load balancer) will get a different IP address.If this happens then the worker nodes will not be able to contact the master node. In fact, none of the nodes like coming up with different IP addresses to the one's they had previoiusly.
+If, when we have a full cluster, we stop the cluster components, then re-start them, there is a distinct possibility that the master node (or load balancer) will get a different IP address. If this happens then the worker nodes will not be able to contact the master node. In fact, none of the nodes work properly if they re-start with different IP addresses.
 
-The same problem exists with Kind. The use-case for kind is that when finished with the cluster it should be deleted using `kind`, not stopped using `docker`.
+The same problem exists with Kind. Kind does not mention this use case and their [Cluster Lifecycle](https://kind.sigs.k8s.io/docs/design/initial/#cluster-lifecycle) suggests that the user is expected to delete the cluster using the `kinddelete cluster` command, rather than stop it using `docker stop`.
 
 **Action**
 
-A quick [duckduckgo](https://duckduckgo.com) search came up with: [Assign static IP to Docker container - Stack Overflow](https://stackoverflow.com/questions/27937185/assign-static-ip-to-docker-container). This might be a simple option.
+A quick [duckduckgo](https://duckduckgo.com) search came up with: [Assign static IP to Docker container - Stack Overflow](https://stackoverflow.com/questions/27937185/assign-static-ip-to-docker-container). This might be a simple solution.
 
 ### Errors in Logs
 
-Errors show up in the logs - use `journalctl -xef` to see them. In particular it shows that the kubelets can see all containers - not just the containers local to itself, and they think that there's a problem. This might use precious cpu but does not seem to cause any other problems.
+Errors show up in the logs - use `journalctl -xef` to see them. In particular it shows that the kubelets can see all containers running on the host, even those in the other containers. The kubelet gets confused because it can't find the container files the kernel says it has. This might use precious cpu but does not seem to cause any other problems.
 
 **Action**
 
@@ -155,7 +155,7 @@ Those commands can all be added to the Dockerfile because they are not specific 
 
 Take a look at [my-own-kind/mok-centos-7](/mok-centos-7) now to see how the above commands have been added to the Dockerfile, and how the [Here Documents](https://stackoverflow.com/questions/2953081/how-can-i-write-a-heredoc-to-a-file-in-bash-script) have been saved as files and added as COPY commands in the [Dockerfile](/mok-centos-7/Dockerfile).
 
-It all looks quite simple and much cleaner. It took a couple of hours to get it looking that simple - at first it still looked messy, and there were many change-code/test -build iterations but it does no more and no less than before (except for downloading CNI binaries of course!).
+It all looks quite simple and much cleaner. It took a couple of hours to get it looking that simple - at first it still looked messy, and there were many change-code/test-build iterations but it does no more and no less than before (except it doesn't download CNI binaries).
 
 At the top of the Dockerfile we have:
 
@@ -213,9 +213,7 @@ To start a new cluster with two nodes, master-1 and node-1, with the new Dockerf
 
 #### Set up master-1
 
-Taken from [Build - [Install the kubernetes components with kubeadm](https://github.com/mclarkson/my-own-kind/blob/master/docs/build.md#install-the-kubernetes-components-with-kubeadm)](/docs/build.md#install-the-kubernetes-components-with-kubeadm).
-
-Exec in:
+As before, exec in:
 
 ```bash
 docker exec -ti master-1 bash
@@ -267,7 +265,7 @@ kubeadm join 172.17.0.2:6443 --token b0k447.ry24d2oudzb7ryk7 \
 
 ```
 
-Run the top 3 lines from the output, without `sudo`, like so:
+Run the top 3 code lines from the output, without `sudo`, like so:
 
 ```bash
 mkdir -p $HOME/.kube
@@ -309,7 +307,7 @@ kubeadm join 172.17.0.2:6443 --token b0k447.ry24d2oudzb7ryk7 \
 
 ```
 
-There was no need to do the phased kubeadm join since it isn't granular enough anyway, so just the hack will do.
+There was no need to do the phased kubeadm join that we did last time since it isn't granular enough anyway, so just the hack will do.
 
 ### Result
 
@@ -723,7 +721,7 @@ fi
 
 ```
 
-This is a state machine implementation for Bash. I thought I would put the work in right now to code a simple state machine just in case I end up having to do a lot more with it. It's surprising how long scripts hang around, and indeed, kubernetes was initially a large set of shell scripts!
+This is a state machine implementation for Bash. I thought I would put the work in right now to code a state machine (which isn't pretty) just in case I end up having to do a lot more with it. It's surprising how long scripts hang around, and indeed, kubernetes was initially a large set of shell scripts!
 
 The code currently just makes sure that the correct sub-command and options are supplied for each command.
 

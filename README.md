@@ -74,4 +74,4 @@ I wanted something quite particular to my own needs/wants:
   
   I managed to do most of kubernetes-the-hard-way using VirtualBox, but I could not play with it properly due to memory and CPU contstraints, but I did get to create a whole bunch of x509 certificates and keys. It's also important to understand how to install kubernetes the Kubeadm way, as this is how a production cluster should be set up and Kubeadm produces [a verifiably kubernetes conformant cluster](https://www.cncf.io/certification/software-conformance/) out-of-the-box.
 
-So, basically, I want to create **my own Kind**. Then package it and make it easy to install any version of kubernetes making me feel more confident because I know how it works!
+So, basically, I want to create **my own Kind**. Then package it and make it easy to install any version of kubernetes and feel more confident because I know how it works!

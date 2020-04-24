@@ -327,7 +327,7 @@ Looking at the above this is what we'll need for, ummm, `mokctl`:
    
    * `mokctl delete cluster NAME`
 
-Let's code that now:
+The CLI interface needs to behave like other kubernetes tools, which makes things a little more tricky. Let's code that now:
 
 ```bash
 #!/usr/bin/env bash
@@ -465,7 +465,6 @@ parse_options() {
                      exit $ERROR
                    }
                    COMMAND="$1"
-                   #next_state
                  ;;
             SUBCOMMAND) check_subcommand_token $1
                    [[ $? -eq $ERROR ]] && {
@@ -475,7 +474,6 @@ parse_options() {
                      exit $ERROR
                    }
                    SUBCOMMAND="$1"
-                   #next_state
                  ;;
             OPTION) check_option_token $1
                    [[ $? -eq $ERROR ]] && {
@@ -484,7 +482,6 @@ parse_options() {
                      echo
                      exit $ERROR
                    }
-                   #next_state
                  ;;
             OPTION2) check_option2_token $1
                    [[ $? -eq $ERROR ]] && {
@@ -493,7 +490,6 @@ parse_options() {
                      echo
                      exit $ERROR
                    }
-                   #next_state
                  ;;
             OPTION3) check_option3_token $1
                    [[ $? -eq $ERROR ]] && {
@@ -502,7 +498,6 @@ parse_options() {
                      echo
                      exit $ERROR
                    }
-                   #next_state
                  ;;
             END) usage
                  echo -n "ERROR No more options expected, '$1' is unexpected"
@@ -743,14 +738,207 @@ fi
 
 ```
 
-This is a state machine implementation for Bash. I thought I would put the work in right now to code a state machine (which isn't pretty) just in case I end up having to do a lot more with it. It's surprising how long scripts hang around, and indeed, kubernetes was initially a large set of shell scripts!
+The command line parser, in the Bash code above, uses a state machine, which will allow us to add new functionality in a scalable way. I thought I would put the work in right now to code a state machine just in case we end up needing to add more commands. It's surprising how long scripts intended for limited use hang around so it's good to start off well, and indeed, kubernetes was initially a large set of shell scripts!
 
-The code currently just makes sure that the correct sub-command and options are supplied for each command.
+The code currently makes sure that the correct sub-command and options are supplied for each command.
 
 The work that we need doing will go into the two functions: `do_create_cluster()`, and `do_delete_cluster()`.
 
-Let's code them now, and no surprises this time:
+Let's code them now, and no surprises this time
+
+### Adding the ‘do_’ functions
+
+While writing the code I found I needed:
+
+1. A way to build images.
+   
+   So I added a script, `embed-dockerfile.sh`, that bundles the whole `mok-centos-7` docker build directory as a compressed tar file, which is converted to base64 and written into the `mokctl` script between two comments.
+
+```bash
+a=$(tar cvz mok-centos-7 | base64 | sed 's/$/ \\/')
+sed -r '/mok-centos-7-tarball-start/, /mok-centos-7-tarball-end/ c \
+  #mok-centos-7-tarball-start \
+cat <<'EnD' | base64 -d | tar xzv -C $TMPDIR \
+'"$(echo "$a")"' \
+EnD \
+  #mok-centos-7-tarball-end' mokctl/mokctl >mokctl.deploy
+```
+
+2. An extension to the CLI interface.
+   
+   Now we also need to add to our CLI interface:
+   
+   `mokctl build image`
+   
+   `mokctl get clusters` 
+
+2. An easy way to recreate `mokctl` when files change.
+   
+   Using [Make](https://ftp.gnu.org/old-gnu/Manuals/make-3.79.1/html_node/make_toc.html) and creating a `Makefile` is perfect for this. Type `make` and it will run the `embed-dockerfile.sh` script, and save the new `mokctl` as `mokctl.deploy`. Running `make` will only rebuild `mokctl.deploy` if a file changes in either of the directories: `mokctl/` and/or `mok-centos-7/`.
+   
+   The `make` utility can also install `mokctl` in `/usr/local/bin`. To do that type `sudo make install`.
+
+```bash
+.PHONY: all install
+
+all: mokctl.deploy
+
+mokctl.deploy: mokctl/mokctl mok-centos-7
+    bash mokctl/embed-dockerfile.sh
+
+install:
+    chmod +x mokctl.deploy
+    install mokctl.deploy /usr/local/bin/mokctl
+```
+
+## Add tests
+
+We need to have some sort of tests to verify our code. This is especially important to enable others to contribute to a project. If there are no tests then it's hard to verify if a Pull Request breaks the code.
+
+Let's add some tests using [GitHub - sstephenson/bats: Bash Automated Testing System](https://github.com/sstephenson/bats).
+
+### Install Bats
+
+Fedora:
+
+`dnf install bats`
+
+### Write a test
+
+```bash
+#!/usr/bin/env bats
+
+@test "Testing 'make'" {
+  run make
+  [ $status -eq 0 ]
+}
+
+@test "Was mokctl.deploy created and is it executable" {
+  [ -x mokctl.deploy ]
+}
+
+@test "Checking for build directory made by create_docker_build_dir()" {
+  local dir
+  source mokctl.deploy
+  create_docker_build_dir
+  dir="$TMPDIR/mok-centos-7"
+  [[ -e "$dir/Dockerfile" &&
+     -e "$dir/100-crio-bridge.conf" &&
+     -e "$dir/entrypoint" &&
+     -e "$dir/k8s.conf" &&
+     -e "$dir/kubernetes.repo" &&
+     -e "$dir/README.md" ]] 
+}
+
+@test "Checking cleanup() deletes TMPDIR" {
+  source mokctl.deploy
+  create_docker_build_dir
+  cleanup
+  [[ ! -e $TMPDIR ]]
+}
+
+# ---- parser checks ----
+
+@test "No args should fail" {
+  run ./mokctl.deploy
+  [[ ${lines[0]} == "Usage: mokctl"* ]]
+}
+
+@test "One arg should fail" {
+  run ./mokctl.deploy arg1
+  [[ ${lines[0]} == "Usage: mokctl"* ]]
+}
+
+@test "Not enough options: 'mokctl create cluster'" {
+  run ./mokctl.deploy create cluster
+  [[ ${lines[0]} == "Usage: mokctl"* ]]
+}
+
+@test "Not enough options: 'mokctl create cluster name'" {
+  run ./mokctl.deploy create cluster name
+  [[ ${lines[0]} == "Usage: mokctl"* ]]
+}
+
+@test "Not enough options: 'mokctl create cluster name 1'" {
+  run ./mokctl.deploy create cluster name 1
+  [[ ${lines[0]} == "Usage: mokctl"* ]]
+}
+
+@test "Zero masters fail: 'mokctl create cluster name 0 0'" {
+  run ./mokctl.deploy create cluster name 0 0
+  [[ ${lines[0]} == "Usage: mokctl"* ]]
+}
+
+# vim:ft=bash:sw=2:et:ts=2:
 
 ```
 
+Then I spent a long time trying to get [Unit Tests](https://en.wikipedia.org/wiki/Unit_testing) working but Bats isn't designed for that. It seems to be for [Black Box](https://en.wikipedia.org/wiki/Black-box_testing) testing only.
+
+### Install shUnit2
+
+So for Unit Tests I used: [GitHub - kward/shunit2: shUnit2 is a xUnit based unit test framework for Bourne based shell scripts.](https://github.com/kward/shunit2)
+
+On Fedora it's installed with: `dnf install shunit2`, but once installed you copy a single file from `/usr/share/shunit2/shunit2` and add it to the project. Nice!
+
+I got the unit tests working in no time with shUnit2 and I will probably get rid of Bats entirely. I have only done one test so far as Bats tired me out! Here's the test:
+
+```bash
+#! /bin/sh
+# file: examples/math_test.sh
+
+testCreateValidClusterCommand() {
+  parse_options create cluster mycluster 1 0
+  assertTrue \
+      "Valid command: 'mokctl create cluster name 1 0'" \
+  "[[ $CREATE_CLUSTER_NAME == "mycluster" &&
+     $CREATE_CLUSTER_NUM_MASTERS == "1" &&
+     $CREATE_CLUSTER_NUM_WORKERS == "0" ]]"
+}
+
+oneTimeSetUp() {
+  # Load include to test.
+  . ./mokctl.deploy
+}
+
+# Load and run shUnit2.
+. tests/shunit2
+
 ```
+
+And, it's integrated in the Makefile, so we have:
+
+* `make` - to build the `mokctl` command.
+
+* `make install` - to install into `/usr/local/bin`.
+
+* `make test` - to test the code.
+
+and here's what the Makefile looks like now:
+
+```bash
+.PHONY: all install clean test unittest
+
+all: mokctl.deploy
+
+mokctl.deploy: mokctl mok-centos-7
+	bash mokctl/embed-dockerfile.sh
+	chmod +x mokctl.deploy
+
+install:
+	install mokctl.deploy /usr/local/bin/mokctl
+
+clean:
+	rm -f mokctl.deploy
+
+test: clean mokctl.deploy unittest
+	./tests/test_mokctl.sh
+
+unittest: mokctl.deploy
+	./tests/unit-tests.sh
+
+# vim:noet:ts=2:sw=2
+
+```
+
+You can see how the project fills up

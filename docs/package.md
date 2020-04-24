@@ -153,7 +153,7 @@ EOF
 
 Those commands can all be added to the Dockerfile because they are not specific to any master or worker node.
 
-Take a look at [my-own-kind/mok-centos-7](/mok-centos-7) now to see how the above commands have been added to the Dockerfile, and how the [Here Documents](https://en.wikipedia.org/wiki/Here_document) have been saved as files and added as COPY commands in the [Dockerfile](/mok-centos-7/Dockerfile).
+Take a look at [my-own-kind/mok-centos-7](/mok-centos-7) now to see how the above commands have been added to the Dockerfile, and how the [Here Documents](https://stackoverflow.com/questions/2953081/how-can-i-write-a-heredoc-to-a-file-in-bash-script) have been saved as files and added as COPY commands in the [Dockerfile](/mok-centos-7/Dockerfile).
 
 It all looks quite simple and much cleaner. It took a couple of hours to get it looking that simple - at first it still looked messy, and there were many change-code/test -build iterations but it does no more and no less than before (except for downloading CNI binaries of course!).
 

@@ -71,9 +71,7 @@ I wanted something quite particular to my own needs/wants:
   CRI-O is a **C**ontainer **R**untime **I**nterface that is **O**CI Compliant. This follows Unix philosophy well, where a program is supposed to do one thing, and do that one thing well. All the things that docker does do have been broken out into individual parts and cri-o is one part created specifically for kubernetes. It starts and manages containers. It doesn't build images, or set up volumes, or networking.`kind` uses containerd but cri-o is used here instead.
 
 * To use [kubeadm](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm/).
+  
+  I managed to do most of kubernetes-the-hard-way using VirtualBox, but I could not play with it properly due to memory and CPU contstraints, but I did get to create a whole bunch of x509 certificates and keys. It's also important to understand how to install kubernetes the Kubeadm way, as this is how a production cluster should be set up and Kubeadm produces [a verifiably kubernetes conformant cluster](https://www.cncf.io/certification/software-conformance/) out-of-the-box.
 
-* Ah, so this is not the Hard Way! I managed to do most of kubernetes-the-hard-way, using VirtualBox, which I recommend, but I could not play properly due to memory and CPU contstraints. It's important to install kubernetes the Kubeadm way too, as this is how a production cluster should be set up. After doing this the techniques can be used to build production ready clusters on AWS, GCP, Bare Metal, or on Developers laptops. The whole process will be understood from the ground up allowing great tools to be made. More importantly, this set up will be [a verified kubernetes conformant cluster](https://www.cncf.io/certification/software-conformance/).
-
-So, basically, I want to create **my own Kind**. Then it will be packaged and made easy to install any version of kubernetes safe in the knowledge that key parts of its inner workings are understood.
-
-I hope you have fun with it!
+So, basically, I want to create **my own Kind**. Then package it and make it easy to install any version of kubernetes making me feel more confident because I know how it works!

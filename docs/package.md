@@ -332,29 +332,30 @@ Let's code that now:
 ```bash
 #!/usr/bin/env bash
 
-# ---------------------------------------------------------------------------
+# ===========================================================================
 # GLOBALS
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# Don't change any globals
 
+# The initial state for the state machine
 STATE="COMMAND"
+
 ERROR=1
 OK=0
 
 COMMAND=
 SUBCOMMAND=
 
-# Creating cluster vars
 CREATE_CLUSTER_NAME=
-NUM_MASTERS=
-NUM_WORKERS=
+CREATE_CLUSTER_NUM_MASTERS=
+CREATE_CLUSTER_NUM_WORKERS=
 
-# Deleting cluster vars
 DELETE_CLUSTER_NAME=
 
-# ---------------------------------------------------------------------------
+# ===========================================================================
 main() {
-# ---------------------------------------------------------------------------
-# It all starts here
+# ===========================================================================
+# Execution begins here
 
   parse_options "$@"
 
@@ -362,11 +363,14 @@ main() {
     create) do_create ;;
     delete) do_delete ;;
   esac
+
+  exit 0
 }
 
 # ---------------------------------------------------------------------------
 do_create() {
 # ---------------------------------------------------------------------------
+# Calls the correct command/subcommand function
 
   case $SUBCOMMAND in
     cluster) do_create_cluster ;;
@@ -376,6 +380,10 @@ do_create() {
 # ---------------------------------------------------------------------------
 do_create_cluster() {
 # ---------------------------------------------------------------------------
+# Creates a mok cluster. All user vars have been parsed and saved.
+# Globals: CREATE_CLUSTER_NAME CREATE_CLUSTER_NUM_MASTERS
+#          CREATE_CLUSTER_NUM_WORKERS
+# No args expected
 
   if [[ -z $CREATE_CLUSTER_NAME ]]; then
     usage
@@ -383,23 +391,28 @@ do_create_cluster() {
     exit $ERROR
   fi
 
-  if [[ -z $NUM_MASTERS ]]; then
+  if [[ -z $CREATE_CLUSTER_NUM_MASTERS || $CREATE_CLUSTER_NUM_MASTERS -le 0 ]]; then
     usage
-    echo "Please provide the number of Masters to create."
+    echo "Please provide the number of Masters to create. Must be 1 or more."
     exit $ERROR
   fi
 
-  if [[ -z $NUM_WORKERS ]]; then
+  if [[ -z $CREATE_CLUSTER_NUM_WORKERS ]]; then
     usage
     echo "Please provide the number of Workers to create."
     exit $ERROR
   fi
 
+  # Create master node(s)
+
+  # Create worker node(s)
 }
 
 # ---------------------------------------------------------------------------
 do_delete() {
 # ---------------------------------------------------------------------------
+# Calls the correct command/subcommand function
+# No args expected
 
   case $SUBCOMMAND in
     cluster) do_delete_cluster ;;
@@ -409,12 +422,252 @@ do_delete() {
 # ---------------------------------------------------------------------------
 do_delete_cluster() {
 # ---------------------------------------------------------------------------
+# Deletes a mok cluster. All user vars have been parsed and saved.
+# Globals: DELETE_CLUSTER_NAME
+# No args expected
 
   if [[ -z $DELETE_CLUSTER_NAME ]]; then
     usage
     echo "Please provide the Cluster NAME to delete."
     exit $ERROR
   fi
+
+  # Delete worker nodes
+
+  # Delete master nodes
+}
+
+# ===========================================================================
+# FUNCTIONS FOR PARSING THE COMMAND LINE BELOW
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+parse_options() {
+# ---------------------------------------------------------------------------
+# Uses a state machine to check all command line arguments
+# Args:
+#   arg1 - The arguments given to mokctl by the user on the command line
+
+  set -- "$@"
+  local ARGN=$#
+  while [ "$ARGN" -ne 0 ]
+  do
+    case $1 in
+      -h) usage
+          exit 0
+      ;;
+      ?*) case "$STATE" in
+            COMMAND) check_command_token $1
+                   [[ $? -eq $ERROR ]] && {
+                     usage
+                     echo "Invalid COMMAND, '$1'."
+                     echo
+                     exit $ERROR
+                   }
+                   COMMAND="$1"
+                   #next_state
+                 ;;
+            SUBCOMMAND) check_subcommand_token $1
+                   [[ $? -eq $ERROR ]] && {
+                     usage
+                     echo "Invalid SUBCOMMAND for $COMMAND, '$1'."
+                     echo
+                     exit $ERROR
+                   }
+                   SUBCOMMAND="$1"
+                   #next_state
+                 ;;
+            OPTION) check_option_token $1
+                   [[ $? -eq $ERROR ]] && {
+                     usage
+                     echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
+                     echo
+                     exit $ERROR
+                   }
+                   #next_state
+                 ;;
+            OPTION2) check_option2_token $1
+                   [[ $? -eq $ERROR ]] && {
+                     usage
+                     echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
+                     echo
+                     exit $ERROR
+                   }
+                   #next_state
+                 ;;
+            OPTION3) check_option3_token $1
+                   [[ $? -eq $ERROR ]] && {
+                     usage
+                     echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
+                     echo
+                     exit $ERROR
+                   }
+                   #next_state
+                 ;;
+            END) usage
+                 echo -n "ERROR No more options expected, '$1' is unexpected"
+                 echo " for '$COMMAND $SUBCOMMAND'"
+                 exit $ERROR
+                 ;;
+            ?*) echo "Internal ERROR. Invalid state '$STATE'"
+                exit $ERROR
+          esac
+      ;;
+    esac
+    shift 1
+    ARGN=$((ARGN-1))
+  done
+
+  [[ -z $COMMAND ]] && {
+    usage
+    echo "No COMMAND supplied"
+    exit $ERROR
+  }
+  [[ -z $SUBCOMMAND ]] && {
+    usage
+    echo "No SUBCOMMAND supplied"
+    exit $ERROR
+  }
+}
+
+# ---------------------------------------------------------------------------
+check_command_token() {
+# ---------------------------------------------------------------------------
+# Check for a valid token in command state
+# Args:
+#   arg1 - token
+
+  case $1 in
+    create) COMMAND=create
+      ;;
+    delete) COMMAND=delete
+      ;;
+    ?*) return $ERROR
+      ;;
+  esac
+  STATE="SUBCOMMAND"
+}
+
+# ---------------------------------------------------------------------------
+check_subcommand_token() {
+# ---------------------------------------------------------------------------
+# Check for a valid token in subcommand state
+# Args:
+#   arg1 - token
+
+  case $COMMAND in
+    create) check_create_subcommand_token $1 ;;
+    delete) check_delete_subcommand_token $1 ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+check_create_subcommand_token() {
+# ---------------------------------------------------------------------------
+# Check for a valid token in subcommand state
+# Args:
+#   arg1 - token
+
+  case $1 in
+    cluster) SUBCOMMAND="cluster"
+      ;;
+    ?*) return $ERROR
+      ;;
+  esac
+
+  STATE="OPTION"
+
+  return $OK
+}
+
+# ---------------------------------------------------------------------------
+check_delete_subcommand_token() {
+# ---------------------------------------------------------------------------
+# Check for a valid token in subcommand state
+# Args:
+#   arg1 - token
+
+  case $1 in
+    cluster) SUBCOMMAND="cluster"
+      ;;
+    ?*) return $ERROR
+      ;;
+  esac
+
+  STATE=OPTION
+}
+
+# ---------------------------------------------------------------------------
+check_option_token() {
+# ---------------------------------------------------------------------------
+# Check for a valid token in option state
+# Args:
+#   arg1 - token
+
+  case $COMMAND in
+    create)
+      case $SUBCOMMAND in
+        cluster) CREATE_CLUSTER_NAME="$1"
+          STATE="OPTION2"
+          ;;
+      esac
+      ;;
+    delete)
+      case $SUBCOMMAND in
+        cluster) DELETE_CLUSTER_NAME="$1"
+          STATE="END"
+          ;;
+      esac
+      ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+check_option2_token() {
+# ---------------------------------------------------------------------------
+# Check for a valid token in option2 state
+# Args:
+#   arg1 - token
+
+  case $COMMAND in
+    create)
+      case $SUBCOMMAND in
+        cluster) CREATE_CLUSTER_NUM_MASTERS="$1"
+          STATE="OPTION3"
+          ;;
+      esac
+      ;;
+    delete)
+      case $SUBCOMMAND in
+        cluster) return $ERROR
+          ;;
+      esac
+      ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+check_option3_token() {
+# ---------------------------------------------------------------------------
+# Check for a valid token in option3 state
+# Args:
+#   arg1 - token
+
+  case $COMMAND in
+    create)
+      case $SUBCOMMAND in
+        cluster) CREATE_CLUSTER_NUM_WORKERS="$1"
+          STATE="END"
+          ;;
+      esac
+      ;;
+    delete)
+      case $SUBCOMMAND in
+        cluster) return $ERROR
+          ;;
+      esac
+      ;;
+  esac
 }
 
 # ---------------------------------------------------------------------------
@@ -480,244 +733,13 @@ usage() {
   echo
 }
 
-# ---------------------------------------------------------------------------
-get_state() {
-# ---------------------------------------------------------------------------
-# Output the current state
-# No args accepted
-
-  echo "$STATE"
-}
-
-# ---------------------------------------------------------------------------
-next_state() {
-# ---------------------------------------------------------------------------
-# Set the next valid state
-# No args accepted
-
-  case $STATE in
-    COMMAND) STATE="SUBCOMMAND" ;;
-    SUBCOMMAND) STATE="OPTION" ;;
-    OPTION) STATE="OPTION" ;;
-  esac
-}
-
-# ---------------------------------------------------------------------------
-check_token_for_command_state() {
-# ---------------------------------------------------------------------------
-# Check for a valid token in start state
-# Args:
-#   arg1 - token
-
-  case $1 in
-    create) COMMAND=create
-      ;;
-    delete) COMMAND=delete
-      ;;
-    ?*) return $ERROR
-      ;;
-  esac
-}
-
-# ---------------------------------------------------------------------------
-check_token_for_subcommand_state() {
-# ---------------------------------------------------------------------------
-# Check for a valid token in start state
-# Args:
-#   arg1 - token
-
-  case $COMMAND in
-    create) return `check_create_subcommand_token $1` ;;
-    delete) return `check_delete_subcommand_token $1` ;;
-  esac
-}
-
-# ---------------------------------------------------------------------------
-check_create_subcommand_token() {
-# ---------------------------------------------------------------------------
-# Check for a valid token in start state
-# Args:
-#   arg1 - token
-
-  case $1 in
-    cluster) SUBCOMMAND=cluster
-      ;;
-    ?*) return $ERROR
-      ;;
-  esac
-
-  return $OK
-}
-
-# ---------------------------------------------------------------------------
-check_delete_subcommand_token() {
-# ---------------------------------------------------------------------------
-# Check for a valid token in start state
-# Args:
-#   arg1 - token
-
-  case $1 in
-    cluster) SUBCOMMAND=cluster
-      ;;
-    ?*) return $ERROR
-      ;;
-  esac
-}
-
-# ---------------------------------------------------------------------------
-check_token_for_option_state() {
-# ---------------------------------------------------------------------------
-# Check for a valid token in start state
-# Args:
-#   arg1 - token
-
-  case $COMMAND in
-    create)
-      case $SUBCOMMAND in
-        cluster) CREATE_CLUSTER_NAME="$1"
-          STATE="OPTION2"
-          ;;
-      esac
-      ;;
-    delete)
-      case $SUBCOMMAND in
-        cluster) DELETE_CLUSTER_NAME="$1"
-          STATE="END"
-          ;;
-      esac
-      ;;
-  esac
-}
-
-# ---------------------------------------------------------------------------
-check_token_for_option2_state() {
-# ---------------------------------------------------------------------------
-# Check for a valid token in start state
-# Args:
-#   arg1 - token
-
-  case $COMMAND in
-    create)
-      case $SUBCOMMAND in
-        cluster) NUM_MASTERS="$1"
-          STATE="OPTION3"
-          ;;
-      esac
-      ;;
-    delete)
-      case $SUBCOMMAND in
-        cluster) return $ERROR
-          ;;
-      esac
-      ;;
-  esac
-}
-
-# ---------------------------------------------------------------------------
-check_token_for_option3_state() {
-# ---------------------------------------------------------------------------
-# Check for a valid token in start state
-# Args:
-#   arg1 - token
-
-  case $COMMAND in
-    create)
-      case $SUBCOMMAND in
-        cluster) NUM_WORKERS="$1"
-          STATE="END"
-          ;;
-      esac
-      ;;
-    delete)
-      case $SUBCOMMAND in
-        cluster) return $ERROR
-          ;;
-      esac
-      ;;
-  esac
-}
-
-# ---------------------------------------------------------------------------
-parse_options() {
-# ---------------------------------------------------------------------------
-
-  set -- "$@"
-  local ARGN=$#
-  while [ "$ARGN" -ne 0 ]
-  do
-    case $1 in
-      -h) usage
-          exit 0
-      ;;
-      ?*) case `get_state` in
-            COMMAND) check_token_for_command_state $1
-                   [[ $? -eq $ERROR ]] && {
-                     usage
-                     echo "Invalid COMMAND, '$1'."
-                     echo
-                     exit $ERROR
-                   }
-                   COMMAND="$1"
-                   next_state
-                 ;;
-            SUBCOMMAND) check_token_for_subcommand_state $1
-                   [[ $? -eq $ERROR ]] && {
-                     usage
-                     echo "Invalid SUBCOMMAND for $COMMAND, '$1'."
-                     echo
-                     exit $ERROR
-                   }
-                   SUBCOMMAND="$1"
-                   next_state
-                 ;;
-            OPTION) check_token_for_option_state $1
-                   [[ $? -eq $ERROR ]] && {
-                     usage
-                     echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
-                     echo
-                     exit $ERROR
-                   }
-                   next_state
-                 ;;
-            OPTION2) check_token_for_option2_state $1
-                   [[ $? -eq $ERROR ]] && {
-                     usage
-                     echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
-                     echo
-                     exit $ERROR
-                   }
-                   next_state
-                 ;;
-            OPTION3) check_token_for_option3_state $1
-                   [[ $? -eq $ERROR ]] && {
-                     usage
-                     echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
-                     echo
-                     exit $ERROR
-                   }
-                   next_state
-                 ;;
-            END) usage
-                 echo -n "ERROR No more options expected, '$1' is unexpected"
-                 echo " for '$COMMAND $SUBCOMMAND'"
-                 exit $ERROR
-                 ;;
-            ?*) echo "Internal ERROR. Invalid state '`get_state`'"
-                exit $ERROR
-          esac
-      ;;
-    esac
-    shift 1
-    ARGN=$((ARGN-1))
-  done
-}
-
 if ([ "$0" = "$BASH_SOURCE" ] || ! [ -n "$BASH_SOURCE" ]);
 then
   main "$@"
 fi
 
 # vim:ft=bash:sw=2:et:ts=2:
+
 
 ```
 

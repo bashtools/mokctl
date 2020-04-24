@@ -17,6 +17,15 @@
     - [Join node-1 to the cluster](#join-node-1-to-the-cluster)
   - [Result](#result)
 - [Scripted cluster creation and deletion](#scripted-cluster-creation-and-deletion)
+  - [Adding the ‘do_’ functions](#adding-the-do_-functions)
+- [Add tests](#add-tests)
+  - [Install Bats](#install-bats)
+  - [Write a test](#write-a-test)
+  - [Install shUnit2](#install-shunit2)
+  - [All done!](#all-done)
+- [Trying it out](#trying-it-out)
+  - [The End to End Experience](#the-end-to-end-experience)
+- [What's Next?](#whats-next)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -772,7 +781,7 @@ EnD \
    
    `mokctl get clusters` 
 
-2. An easy way to recreate `mokctl` when files change.
+3. An easy way to recreate `mokctl` when files change.
    
    Using [Make](https://ftp.gnu.org/old-gnu/Manuals/make-3.79.1/html_node/make_toc.html) and creating a `Makefile` is perfect for this. Type `make` and it will run the `embed-dockerfile.sh` script, and save the new `mokctl` as `mokctl.deploy`. Running `make` will only rebuild `mokctl.deploy` if a file changes in either of the directories: `mokctl/` and/or `mok-centos-7/`.
    
@@ -791,11 +800,13 @@ install:
     install mokctl.deploy /usr/local/bin/mokctl
 ```
 
+Now, as I'm getting ready to finish this off I realised I have written any tests. We really will need some so let's do that first.
+
 ## Add tests
 
 We need to have some sort of tests to verify our code. This is especially important to enable others to contribute to a project. If there are no tests then it's hard to verify if a Pull Request breaks the code.
 
-Let's add some tests using [GitHub - sstephenson/bats: Bash Automated Testing System](https://github.com/sstephenson/bats).
+Let's add some tests using [GitHub - sstephenson/bats: Bash Automated Testing System](https://github.com/sstephenson/bats). It's the first thing DuckDuckGo showed me.
 
 ### Install Bats
 
@@ -873,15 +884,15 @@ Fedora:
 
 ```
 
-Then I spent a long time trying to get [Unit Tests](https://en.wikipedia.org/wiki/Unit_testing) working but Bats isn't designed for that. It seems to be for [Black Box](https://en.wikipedia.org/wiki/Black-box_testing) testing only.
+Then I spent a long time trying to get [Unit Tests](https://en.wikipedia.org/wiki/Unit_testing) working but Bats isn't designed for that. It seems to be for [Black Box](https://en.wikipedia.org/wiki/Black-box_testing) testing only. Let's try something else...
 
 ### Install shUnit2
 
-So for Unit Tests I used: [GitHub - kward/shunit2: shUnit2 is a xUnit based unit test framework for Bourne based shell scripts.](https://github.com/kward/shunit2)
+So for Unit Tests I found: [GitHub - kward/shunit2: shUnit2 is a xUnit based unit test framework for Bourne based shell scripts.](https://github.com/kward/shunit2) Another DuckDuckGo suggestion.
 
 On Fedora it's installed with: `dnf install shunit2`, but once installed you copy a single file from `/usr/share/shunit2/shunit2` and add it to the project. Nice!
 
-I got the unit tests working in no time with shUnit2 and I will probably get rid of Bats entirely. I have only done one test so far as Bats tired me out! Here's the test:
+I got the unit tests working in no time with shUnit2 and I will probably get rid of Bats entirely. I have only done one test so far as Bats tired me out but here's the test:
 
 ```bash
 #! /bin/sh
@@ -922,23 +933,49 @@ and here's what the Makefile looks like now:
 all: mokctl.deploy
 
 mokctl.deploy: mokctl mok-centos-7
-	bash mokctl/embed-dockerfile.sh
-	chmod +x mokctl.deploy
+    bash mokctl/embed-dockerfile.sh
+    chmod +x mokctl.deploy
 
 install:
-	install mokctl.deploy /usr/local/bin/mokctl
+    install mokctl.deploy /usr/local/bin/mokctl
 
 clean:
-	rm -f mokctl.deploy
+    rm -f mokctl.deploy
 
 test: clean mokctl.deploy unittest
-	./tests/test_mokctl.sh
+    ./tests/test_mokctl.sh
 
 unittest: mokctl.deploy
-	./tests/unit-tests.sh
+    ./tests/unit-tests.sh
 
 # vim:noet:ts=2:sw=2
 
 ```
 
-You can see how the project fills up
+I'll finish off the tests so you can contribute if you want to but I won't give any more updates about this. It's all in the github repo, and won't really get any more complex than this.
+
+### All done!
+
+The ‘do_’ functions are completed. Let's see what they look like:
+
+```bash
+
+```
+
+Not too bad, and quite close to the original commands so it shouldn't be too hard to follow how it works.
+
+## Trying it out
+
+We'll do a complete end-to-end test, from cloning this repo, installing the software, creating a cluster then destroying it. Then we've got proper work to do fixing the performance problem - where we should learn a great deal.
+
+### The End to End Experience
+
+```bash
+
+```
+
+That's it!
+
+## What's Next?
+
+blah

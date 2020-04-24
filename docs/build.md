@@ -1,9 +1,7 @@
 # My Own Kind - Build
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
-
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Create a Container Image](#create-a-container-image)
@@ -22,10 +20,10 @@
   - [Remove the taint](#remove-the-taint)
   - [Test the Single Node Cluster with Sonobuoy](#test-the-single-node-cluster-with-sonobuoy)
   - [Add a 2nd node for fun](#add-a-2nd-node-for-fun)
-    - [Step 1: Start a new 'node' and exec in](#step-1-start-a-new-node-and-exec-in)
-    - [Step 2: Copy the next commands and paste as one big command](#step-2-copy-the-next-commands-and-paste-as-one-big-command)
-    - [Step 3: Get required information from the Master node](#step-3-get-required-information-from-the-master-node)
-    - [Step 4: Join the node to the cluster](#step-4-join-the-node-to-the-cluster)
+    - [Step 1: Start a new 'node' and exec in:](#step-1-start-a-new-node-and-exec-in)
+    - [Step 2: Copy the next commands and paste as one big command.](#step-2-copy-the-next-commands-and-paste-as-one-big-command)
+    - [Step 3: Get required information from the Master node.](#step-3-get-required-information-from-the-master-node)
+    - [Step 4: Join the node to the cluster.](#step-4-join-the-node-to-the-cluster)
   - [Re-run the Sonobuoy Conformance Test](#re-run-the-sonobuoy-conformance-test)
 - [What's Next](#whats-next)
 

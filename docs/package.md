@@ -15,6 +15,8 @@
   - [Using the new Dockerfile](#using-the-new-dockerfile)
     - [Set up master-1](#set-up-master-1)
     - [Join node-1 to the cluster](#join-node-1-to-the-cluster)
+  - [Result](#result)
+- [Scripted cluster creation and deletion](#scripted-cluster-creation-and-deletion)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 

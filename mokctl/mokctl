@@ -1,0 +1,388 @@
+#!/usr/bin/env bash
+
+# ---------------------------------------------------------------------------
+# GLOBALS
+# ---------------------------------------------------------------------------
+
+STATE="COMMAND"
+ERROR=1
+OK=0
+
+COMMAND=
+SUBCOMMAND=
+
+# Creating cluster vars
+CREATE_CLUSTER_NAME=
+NUM_MASTERS=
+NUM_WORKERS=
+
+# Deleting cluster vars
+DELETE_CLUSTER_NAME=
+
+# ---------------------------------------------------------------------------
+main() {
+# ---------------------------------------------------------------------------
+# It all starts here
+
+  parse_options "$@"
+
+  case "$COMMAND" in
+    create) do_create ;;
+    delete) do_delete ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+do_create() {
+# ---------------------------------------------------------------------------
+
+  case $SUBCOMMAND in
+    cluster) do_create_cluster ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+do_create_cluster() {
+# ---------------------------------------------------------------------------
+
+  if [[ -z $CREATE_CLUSTER_NAME ]]; then
+    usage
+    echo "Please provide the Cluster NAME to create."
+    exit $ERROR
+  fi
+
+  if [[ -z $NUM_MASTERS ]]; then
+    usage
+    echo "Please provide the number of Masters to create."
+    exit $ERROR
+  fi
+
+  if [[ -z $NUM_WORKERS ]]; then
+    usage
+    echo "Please provide the number of Workers to create."
+    exit $ERROR
+  fi
+
+}
+
+# ---------------------------------------------------------------------------
+do_delete() {
+# ---------------------------------------------------------------------------
+
+  case $SUBCOMMAND in
+    cluster) do_delete_cluster ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+do_delete_cluster() {
+# ---------------------------------------------------------------------------
+
+  if [[ -z $DELETE_CLUSTER_NAME ]]; then
+    usage
+    echo "Please provide the Cluster NAME to delete."
+    exit $ERROR
+  fi
+}
+
+# ---------------------------------------------------------------------------
+usage() {
+# ---------------------------------------------------------------------------
+# Every tool, no matter how small, should have help text!
+
+  echo
+  echo "Usage: mokctl [-h] <COMMAND> <SUBCOMMAND> [SUBCOMMAND_OPTIONS...]"
+  echo
+  echo "Global options:"
+  echo
+  echo "  -h - This help text"
+  echo
+  echo "Where COMMAND can be one of:"
+  echo
+  echo "  create"
+  echo "  delete"
+  echo
+  echo "create SUBCOMMANDs:"
+  echo
+  echo "  cluster - Create a local kubernetes cluster."
+  echo
+  echo "create cluster options:"
+  echo
+  echo " Format:"
+  echo
+  echo "  create cluster NAME NUM_MASTERS NUM_WORKERS"
+  echo
+  echo "  NAME        - The name of the cluster. This will be used as"
+  echo "                the prefix in the name for newly created"
+  echo "                docker containers."
+  echo "  NUM_MASTERS - The number of master containers."
+  echo "  NUM_WORKERS - The number of worker containers."
+  echo
+  echo "delete SUBCOMMANDs:"
+  echo
+  echo "  cluster - Create a local kubernetes cluster."
+  echo
+  echo "delete cluster options:"
+  echo
+  echo " Format:"
+  echo
+  echo "  delete cluster NAME"
+  echo
+  echo "  NAME        - The name of the cluster to delete"
+  echo
+  echo "EXAMPLES"
+  echo
+  echo "Create a single node cluster:"
+  echo "Note that the master node will be made schedulable for pods."
+  echo
+  echo "  mokctl create cluster mycluster 1 0"
+  echo
+  echo "Create a single master and single node cluster:"
+  echo "Note that the master node will NOT be schedulable for pods."
+  echo
+  echo "  mokctl create cluster mycluster 1 1"
+  echo
+  echo "Delete a cluster:"
+  echo
+  echo "  mokctl delete cluster mycluster"
+  echo
+}
+
+# ---------------------------------------------------------------------------
+get_state() {
+# ---------------------------------------------------------------------------
+# Output the current state
+# No args accepted
+
+  echo "$STATE"
+}
+
+# ---------------------------------------------------------------------------
+next_state() {
+# ---------------------------------------------------------------------------
+# Set the next valid state
+# No args accepted
+
+  case $STATE in
+    COMMAND) STATE="SUBCOMMAND" ;;
+    SUBCOMMAND) STATE="OPTION" ;;
+    OPTION) STATE="OPTION" ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+check_token_for_command_state() {
+# ---------------------------------------------------------------------------
+# Check for a valid token in start state
+# Args:
+#   arg1 - token
+
+  case $1 in
+    create) COMMAND=create
+      ;;
+    delete) COMMAND=delete
+      ;;
+    ?*) return $ERROR
+      ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+check_token_for_subcommand_state() {
+# ---------------------------------------------------------------------------
+# Check for a valid token in start state
+# Args:
+#   arg1 - token
+
+  case $COMMAND in
+    create) return `check_create_subcommand_token $1` ;;
+    delete) return `check_delete_subcommand_token $1` ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+check_create_subcommand_token() {
+# ---------------------------------------------------------------------------
+# Check for a valid token in start state
+# Args:
+#   arg1 - token
+
+  case $1 in
+    cluster) SUBCOMMAND=cluster
+      ;;
+    ?*) return $ERROR
+      ;;
+  esac
+
+  return $OK
+}
+
+# ---------------------------------------------------------------------------
+check_delete_subcommand_token() {
+# ---------------------------------------------------------------------------
+# Check for a valid token in start state
+# Args:
+#   arg1 - token
+
+  case $1 in
+    cluster) SUBCOMMAND=cluster
+      ;;
+    ?*) return $ERROR
+      ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+check_token_for_option_state() {
+# ---------------------------------------------------------------------------
+# Check for a valid token in start state
+# Args:
+#   arg1 - token
+
+  case $COMMAND in
+    create)
+      case $SUBCOMMAND in
+        cluster) CREATE_CLUSTER_NAME="$1"
+          STATE="OPTION2"
+          ;;
+      esac
+      ;;
+    delete)
+      case $SUBCOMMAND in
+        cluster) DELETE_CLUSTER_NAME="$1"
+          STATE="END"
+          ;;
+      esac
+      ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+check_token_for_option2_state() {
+# ---------------------------------------------------------------------------
+# Check for a valid token in start state
+# Args:
+#   arg1 - token
+
+  case $COMMAND in
+    create)
+      case $SUBCOMMAND in
+        cluster) NUM_MASTERS="$1"
+          STATE="OPTION3"
+          ;;
+      esac
+      ;;
+    delete)
+      case $SUBCOMMAND in
+        cluster) return $ERROR
+          ;;
+      esac
+      ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+check_token_for_option3_state() {
+# ---------------------------------------------------------------------------
+# Check for a valid token in start state
+# Args:
+#   arg1 - token
+
+  case $COMMAND in
+    create)
+      case $SUBCOMMAND in
+        cluster) NUM_WORKERS="$1"
+          STATE="END"
+          ;;
+      esac
+      ;;
+    delete)
+      case $SUBCOMMAND in
+        cluster) return $ERROR
+          ;;
+      esac
+      ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+parse_options() {
+# ---------------------------------------------------------------------------
+
+  set -- "$@"
+  local ARGN=$#
+  while [ "$ARGN" -ne 0 ]
+  do
+    case $1 in
+      -h) usage
+          exit 0
+      ;;
+      ?*) case `get_state` in
+            COMMAND) check_token_for_command_state $1
+                   [[ $? -eq $ERROR ]] && {
+                     usage
+                     echo "Invalid COMMAND, '$1'."
+                     echo
+                     exit $ERROR
+                   }
+                   COMMAND="$1"
+                   next_state
+                 ;;
+            SUBCOMMAND) check_token_for_subcommand_state $1
+                   [[ $? -eq $ERROR ]] && {
+                     usage
+                     echo "Invalid SUBCOMMAND for $COMMAND, '$1'."
+                     echo
+                     exit $ERROR
+                   }
+                   SUBCOMMAND="$1"
+                   next_state
+                 ;;
+            OPTION) check_token_for_option_state $1
+                   [[ $? -eq $ERROR ]] && {
+                     usage
+                     echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
+                     echo
+                     exit $ERROR
+                   }
+                   next_state
+                 ;;
+            OPTION2) check_token_for_option2_state $1
+                   [[ $? -eq $ERROR ]] && {
+                     usage
+                     echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
+                     echo
+                     exit $ERROR
+                   }
+                   next_state
+                 ;;
+            OPTION3) check_token_for_option3_state $1
+                   [[ $? -eq $ERROR ]] && {
+                     usage
+                     echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
+                     echo
+                     exit $ERROR
+                   }
+                   next_state
+                 ;;
+            END) usage
+                 echo -n "ERROR No more options expected, '$1' is unexpected"
+                 echo " for '$COMMAND $SUBCOMMAND'"
+                 exit $ERROR
+                 ;;
+            ?*) echo "Internal ERROR. Invalid state '`get_state`'"
+                exit $ERROR
+          esac
+      ;;
+    esac
+    shift 1
+    ARGN=$((ARGN-1))
+  done
+}
+
+if ([ "$0" = "$BASH_SOURCE" ] || ! [ -n "$BASH_SOURCE" ]);
+then
+  main "$@"
+fi
+
+# vim:ft=bash:sw=2:et:ts=2:

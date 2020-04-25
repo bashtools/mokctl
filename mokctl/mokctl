@@ -11,6 +11,8 @@ STATE="COMMAND"
 ERROR=1
 OK=0
 
+EXITCODE=0
+
 COMMAND=
 SUBCOMMAND=
 
@@ -29,14 +31,14 @@ main() {
 
   trap cleanup EXIT
 
-  parse_options "$@"
+  parse_options "$@" || return $?
 
   case "$COMMAND" in
-    create) do_create ;;
-    delete) do_delete ;;
+    create) do_create || return $? ;;
+    delete) do_delete || return $? ;;
   esac
 
-  exit 0
+  return $EXITCODE
 }
 
 # ===========================================================================
@@ -49,8 +51,9 @@ do_create() {
 # Calls the correct command/subcommand function
 
   case $SUBCOMMAND in
-    cluster) do_create_cluster_sanity_checks
-             do_create_cluster_mutate ;;
+    cluster) do_create_cluster_sanity_checks || return $?
+             do_create_cluster_mutate || return $?
+             ;;
   esac
 }
 
@@ -65,19 +68,19 @@ do_create_cluster_sanity_checks() {
   if [[ -z $CREATE_CLUSTER_NAME ]]; then
     usage
     echo "Please provide the Cluster NAME to create."
-    exit $ERROR
+    return $ERROR
   fi
 
   if [[ -z $CREATE_CLUSTER_NUM_MASTERS || $CREATE_CLUSTER_NUM_MASTERS -le 0 ]]; then
     usage
     echo "Please provide the number of Masters to create. Must be 1 or more."
-    exit $ERROR
+    return $ERROR
   fi
 
   if [[ -z $CREATE_CLUSTER_NUM_WORKERS ]]; then
     usage
     echo "Please provide the number of Workers to create."
-    exit $ERROR
+    return $ERROR
   fi
 }
 
@@ -107,7 +110,7 @@ do_delete_cluster_sanity_checks() {
   if [[ -z $DELETE_CLUSTER_NAME ]]; then
     usage
     echo "Please provide the Cluster NAME to delete."
-    exit $ERROR
+    return $ERROR
   fi
 
   # Delete worker nodes
@@ -161,7 +164,7 @@ parse_options() {
   do
     case $1 in
       -h) usage
-          exit 0
+          return $OK
       ;;
       ?*) case "$STATE" in
             COMMAND) check_command_token $1
@@ -169,7 +172,7 @@ parse_options() {
                      usage
                      echo "Invalid COMMAND, '$1'."
                      echo
-                     exit $ERROR
+                     return $ERROR
                    }
                    COMMAND="$1"
                  ;;
@@ -178,7 +181,7 @@ parse_options() {
                      usage
                      echo "Invalid SUBCOMMAND for $COMMAND, '$1'."
                      echo
-                     exit $ERROR
+                     return $ERROR
                    }
                    SUBCOMMAND="$1"
                  ;;
@@ -187,7 +190,7 @@ parse_options() {
                      usage
                      echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
                      echo
-                     exit $ERROR
+                     return $ERROR
                    }
                  ;;
             OPTION2) check_option2_token $1
@@ -195,7 +198,7 @@ parse_options() {
                      usage
                      echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
                      echo
-                     exit $ERROR
+                     return $ERROR
                    }
                  ;;
             OPTION3) check_option3_token $1
@@ -203,16 +206,16 @@ parse_options() {
                      usage
                      echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
                      echo
-                     exit $ERROR
+                     return $ERROR
                    }
                  ;;
             END) usage
                  echo -n "ERROR No more options expected, '$1' is unexpected"
                  echo " for '$COMMAND $SUBCOMMAND'"
-                 exit $ERROR
+                 return $ERROR
                  ;;
             ?*) echo "Internal ERROR. Invalid state '$STATE'"
-                exit $ERROR
+                return $ERROR
           esac
       ;;
     esac
@@ -223,13 +226,15 @@ parse_options() {
   [[ -z $COMMAND ]] && {
     usage
     echo "No COMMAND supplied"
-    exit $ERROR
+    return $ERROR
   }
   [[ -z $SUBCOMMAND ]] && {
     usage
     echo "No SUBCOMMAND supplied"
-    exit $ERROR
+    return $ERROR
   }
+
+  return $OK
 }
 
 # ---------------------------------------------------------------------------
@@ -442,6 +447,7 @@ usage() {
 # ---------------------------------------------------------------------------
 cleanup() {
 # ---------------------------------------------------------------------------
+# Called when the script exits.
 
     [[ -e "$TMPDIR" ]] && [[ $TMPDIR == "/var/tmp/"* ]] && {
       echo "Deleting $TMPDIR"

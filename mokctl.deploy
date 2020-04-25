@@ -11,6 +11,8 @@ STATE="COMMAND"
 ERROR=1
 OK=0
 
+EXITCODE=0
+
 COMMAND=
 SUBCOMMAND=
 
@@ -29,14 +31,14 @@ main() {
 
   trap cleanup EXIT
 
-  parse_options "$@"
+  parse_options "$@" || return $?
 
   case "$COMMAND" in
-    create) do_create ;;
-    delete) do_delete ;;
+    create) do_create || return $? ;;
+    delete) do_delete || return $? ;;
   esac
 
-  exit 0
+  return $EXITCODE
 }
 
 # ===========================================================================
@@ -49,8 +51,9 @@ do_create() {
 # Calls the correct command/subcommand function
 
   case $SUBCOMMAND in
-    cluster) do_create_cluster_sanity_checks
-             do_create_cluster_mutate ;;
+    cluster) do_create_cluster_sanity_checks || return $?
+             do_create_cluster_mutate || return $?
+             ;;
   esac
 }
 
@@ -65,19 +68,19 @@ do_create_cluster_sanity_checks() {
   if [[ -z $CREATE_CLUSTER_NAME ]]; then
     usage
     echo "Please provide the Cluster NAME to create."
-    exit $ERROR
+    return $ERROR
   fi
 
   if [[ -z $CREATE_CLUSTER_NUM_MASTERS || $CREATE_CLUSTER_NUM_MASTERS -le 0 ]]; then
     usage
     echo "Please provide the number of Masters to create. Must be 1 or more."
-    exit $ERROR
+    return $ERROR
   fi
 
   if [[ -z $CREATE_CLUSTER_NUM_WORKERS ]]; then
     usage
     echo "Please provide the number of Workers to create."
-    exit $ERROR
+    return $ERROR
   fi
 }
 
@@ -107,7 +110,7 @@ do_delete_cluster_sanity_checks() {
   if [[ -z $DELETE_CLUSTER_NAME ]]; then
     usage
     echo "Please provide the Cluster NAME to delete."
-    exit $ERROR
+    return $ERROR
   fi
 
   # Delete worker nodes
@@ -161,7 +164,7 @@ parse_options() {
   do
     case $1 in
       -h) usage
-          exit 0
+          return $OK
       ;;
       ?*) case "$STATE" in
             COMMAND) check_command_token $1
@@ -169,7 +172,7 @@ parse_options() {
                      usage
                      echo "Invalid COMMAND, '$1'."
                      echo
-                     exit $ERROR
+                     return $ERROR
                    }
                    COMMAND="$1"
                  ;;
@@ -178,7 +181,7 @@ parse_options() {
                      usage
                      echo "Invalid SUBCOMMAND for $COMMAND, '$1'."
                      echo
-                     exit $ERROR
+                     return $ERROR
                    }
                    SUBCOMMAND="$1"
                  ;;
@@ -187,7 +190,7 @@ parse_options() {
                      usage
                      echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
                      echo
-                     exit $ERROR
+                     return $ERROR
                    }
                  ;;
             OPTION2) check_option2_token $1
@@ -195,7 +198,7 @@ parse_options() {
                      usage
                      echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
                      echo
-                     exit $ERROR
+                     return $ERROR
                    }
                  ;;
             OPTION3) check_option3_token $1
@@ -203,16 +206,16 @@ parse_options() {
                      usage
                      echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
                      echo
-                     exit $ERROR
+                     return $ERROR
                    }
                  ;;
             END) usage
                  echo -n "ERROR No more options expected, '$1' is unexpected"
                  echo " for '$COMMAND $SUBCOMMAND'"
-                 exit $ERROR
+                 return $ERROR
                  ;;
             ?*) echo "Internal ERROR. Invalid state '$STATE'"
-                exit $ERROR
+                return $ERROR
           esac
       ;;
     esac
@@ -223,13 +226,15 @@ parse_options() {
   [[ -z $COMMAND ]] && {
     usage
     echo "No COMMAND supplied"
-    exit $ERROR
+    return $ERROR
   }
   [[ -z $SUBCOMMAND ]] && {
     usage
     echo "No SUBCOMMAND supplied"
-    exit $ERROR
+    return $ERROR
   }
+
+  return $OK
 }
 
 # ---------------------------------------------------------------------------
@@ -442,6 +447,7 @@ usage() {
 # ---------------------------------------------------------------------------
 cleanup() {
 # ---------------------------------------------------------------------------
+# Called when the script exits.
 
     [[ -e "$TMPDIR" ]] && [[ $TMPDIR == "/var/tmp/"* ]] && {
       echo "Deleting $TMPDIR"
@@ -473,102 +479,73 @@ create_docker_build_dir() {
 
   #mok-centos-7-tarball-start 
   cat <<EnD | base64 -d | tar xz -C $TMPDIR 
-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
+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
+alWrWtWq9p20/wHAtCoAAFAAAA==
 EnD
   #mok-centos-7-tarball-end
 }

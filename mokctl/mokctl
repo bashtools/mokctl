@@ -175,13 +175,17 @@ do_build_image_mutate() {
 # Globals: None
 # No args expected
 
-  build_container_image >/dev/null
+  local retval=0
+
+  build_container_image >/dev/null || retval=$?
 
   if [[ $? -eq 0 ]]; then
     echo "Image built successfully"
   else
     echo "Image build failed"
   fi
+
+  return $retval
 }
 
 # ---------------------------------------------------------------------------

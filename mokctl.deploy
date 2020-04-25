@@ -11,8 +11,6 @@ STATE="COMMAND"
 ERROR=1
 OK=0
 
-EXITCODE=0
-
 COMMAND=
 SUBCOMMAND=
 
@@ -22,7 +20,7 @@ CREATE_CLUSTER_NUM_WORKERS=
 
 DELETE_CLUSTER_NAME=
 
-TMPDIR=
+DOCKERBUILDTMPDIR=
 
 # ===========================================================================
 main() {
@@ -34,11 +32,36 @@ main() {
   parse_options "$@" || return $?
 
   case "$COMMAND" in
-    create) do_create || return $? ;;
-    delete) do_delete || return $? ;;
+    create) do_create ;;
+    delete) do_delete ;;
+    build)  do_build ;;
   esac
+}
 
-  return $EXITCODE
+# ===========================================================================
+# MOKCTL BUILD
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+do_build() {
+# ---------------------------------------------------------------------------
+# Calls the correct command/subcommand function
+
+  case $SUBCOMMAND in
+    image) do_build_image_sanity_checks || return $?
+           do_build_image_mutate
+           ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+do_build_image_sanity_checks() {
+# ---------------------------------------------------------------------------
+# No sanity checks required.
+# Globals: None
+# No args expected
+
+  :
 }
 
 # ===========================================================================
@@ -52,7 +75,7 @@ do_create() {
 
   case $SUBCOMMAND in
     cluster) do_create_cluster_sanity_checks || return $?
-             do_create_cluster_mutate || return $?
+             do_create_cluster_mutate
              ;;
   esac
 }
@@ -95,8 +118,9 @@ do_delete() {
 # No args expected
 
   case $SUBCOMMAND in
-    cluster) do_delete_cluster_sanity_checks
-             do_delete_cluster_mutate ;;
+    cluster) do_delete_cluster_sanity_checks || return $?
+             do_delete_cluster_mutate
+             ;;
   esac
 }
 
@@ -112,10 +136,6 @@ do_delete_cluster_sanity_checks() {
     echo "Please provide the Cluster NAME to delete."
     return $ERROR
   fi
-
-  # Delete worker nodes
-
-  # Delete master nodes
 }
 
 # ===========================================================================
@@ -145,6 +165,23 @@ do_delete_cluster_mutate() {
   # Create master node(s)
 
   # Create worker node(s)
+}
+
+# ---------------------------------------------------------------------------
+do_build_image_mutate() {
+# ---------------------------------------------------------------------------
+# Mutate functions make system changes.
+# Builds the mok-centos-7 base image used for masters and workers.
+# Globals: None
+# No args expected
+
+  build_container_image >/dev/null
+
+  if [[ $? -eq 0 ]]; then
+    echo "Image built successfully"
+  else
+    echo "Image build failed"
+  fi
 }
 
 # ===========================================================================
@@ -249,6 +286,8 @@ check_command_token() {
       ;;
     delete) COMMAND=delete
       ;;
+    build) COMMAND=build
+      ;;
     ?*) return $ERROR
       ;;
   esac
@@ -265,6 +304,7 @@ check_subcommand_token() {
   case $COMMAND in
     create) check_create_subcommand_token $1 ;;
     delete) check_delete_subcommand_token $1 ;;
+    build) check_build_subcommand_token $1   ;;
   esac
 }
 
@@ -302,6 +342,23 @@ check_delete_subcommand_token() {
   esac
 
   STATE=OPTION
+}
+
+# ---------------------------------------------------------------------------
+check_build_subcommand_token() {
+# ---------------------------------------------------------------------------
+# Check for a valid token in subcommand state
+# Args:
+#   arg1 - token
+
+  case $1 in
+    image) SUBCOMMAND="image"
+      ;;
+    ?*) return $ERROR
+      ;;
+  esac
+
+  STATE=END
 }
 
 # ---------------------------------------------------------------------------
@@ -393,6 +450,7 @@ usage() {
   echo
   echo "  create"
   echo "  delete"
+  echo "  build"
   echo
   echo "create SUBCOMMANDs:"
   echo
@@ -401,9 +459,7 @@ usage() {
   echo "create cluster options:"
   echo
   echo " Format:"
-  echo
   echo "  create cluster NAME NUM_MASTERS NUM_WORKERS"
-  echo
   echo "  NAME        - The name of the cluster. This will be used as"
   echo "                the prefix in the name for newly created"
   echo "                docker containers."
@@ -417,12 +473,23 @@ usage() {
   echo "delete cluster options:"
   echo
   echo " Format:"
-  echo
   echo "  delete cluster NAME"
-  echo
   echo "  NAME        - The name of the cluster to delete"
   echo
+  echo "build SUBCOMMANDs:"
+  echo
+  echo "  image - Creates the mok-centos-7 base image."
+  echo
+  echo "build image options:"
+  echo
+  echo " Format:"
+  echo "  build image"
+  echo
   echo "EXAMPLES"
+  echo
+  echo "Build the image used for masters and workers:"
+  echo
+  echo "  mokctl create image"
   echo
   echo "Create a single node cluster:"
   echo "Note that the master node will be made schedulable for pods."
@@ -449,9 +516,9 @@ cleanup() {
 # ---------------------------------------------------------------------------
 # Called when the script exits.
 
-    [[ -e "$TMPDIR" ]] && [[ $TMPDIR == "/var/tmp/"* ]] && {
-      echo "Deleting $TMPDIR"
-      rm -rf "$TMPDIR"
+    [[ -e "$DOCKERBUILDTMPDIR" ]] && \
+      [[ $DOCKERBUILDTMPDIR == "/var/tmp/"* ]] && {
+      rm -rf "$DOCKERBUILDTMPDIR"
     }
 }
 
@@ -462,7 +529,13 @@ cleanup() {
 # ---------------------------------------------------------------------------
 build_container_image() {
 # ---------------------------------------------------------------------------
-:
+# Creates the docker build directory in $DOCKERBUILDTMPDIR then calls
+# docker build to build the image.
+# No args expected.
+
+  create_docker_build_dir
+
+  docker build -t local/mok-centos-7 "$DOCKERBUILDTMPDIR/mok-centos-7"
 }
 
 # ---------------------------------------------------------------------------
@@ -471,14 +544,14 @@ create_docker_build_dir() {
 # Creates a docker build directory in /var/tmp/tmp.XXXXXXXX
 # No args expected
 
-	TMPDIR=`mktemp -d --tmpdir=/var/tmp`
+	DOCKERBUILDTMPDIR=`mktemp -d --tmpdir=/var/tmp`
 
   # The following comments should not be removed or changed.
   # embed-dockerfile.sh adds a base64 encoded tarball and
   #  unpacking code between them.
 
   #mok-centos-7-tarball-start 
-  cat <<EnD | base64 -d | tar xz -C $TMPDIR 
+  cat <<EnD | base64 -d | tar xz -C $DOCKERBUILDTMPDIR 
 H4sIAAAAAAAAA+1b63LbthLObz4FKntqOzVJyddUiTLH9aXVNJYylp024/jYEAlJGJEES5CWVSfv
 fnYBkiJlOXYybjqZQ7RTmcBisVjstxeQ9cXYdFgQC2nu2s/+mVaHtru7jb+N3e168TdrzxqbO9v1
 XSDb2nxWb2zVdzafke1/SJ5SS2RMI0Ke+Y5Ho7EUwT10D41/p80vnv/4hbQcEQyeeA084J2drXvP

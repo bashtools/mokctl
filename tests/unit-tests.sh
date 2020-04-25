@@ -179,7 +179,7 @@ testZeroMastersShouldFail2() {
 
   # Can't create a cluster with 0 masters and >0 workers
 
-  main create cluster name 0 1
+  main create cluster name 0 1 >/dev/null
   assertTrue \
     "Run with 'create cluster name 0 0' should fail" \
     "[[ $? -ge 1 ]]"

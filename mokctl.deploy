@@ -140,7 +140,7 @@ do_delete_cluster_sanity_checks() {
 
 # ===========================================================================
 #                                MUTATIONS
-#                CODE IN THIS SECTION CHANGE SYSTEM STATE
+#                FUNCTIONS IN THIS SECTION CHANGE SYSTEM STATE
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
@@ -175,13 +175,114 @@ do_build_image_mutate() {
 # Globals: None
 # No args expected
 
-  build_container_image >/dev/null
+  local retval=0
+
+  build_container_image >/dev/null || retval=$?
 
   if [[ $? -eq 0 ]]; then
     echo "Image built successfully"
   else
     echo "Image build failed"
   fi
+
+  return $retval
+}
+
+# ---------------------------------------------------------------------------
+build_container_image() {
+# ---------------------------------------------------------------------------
+# Creates the docker build directory in $DOCKERBUILDTMPDIR then calls
+# docker build to build the image.
+# No args expected.
+
+  create_docker_build_dir
+
+  docker build -t local/mok-centos-7 "$DOCKERBUILDTMPDIR/mok-centos-7"
+}
+
+# ---------------------------------------------------------------------------
+create_docker_build_dir() {
+# ---------------------------------------------------------------------------
+# Creates a docker build directory in /var/tmp/tmp.XXXXXXXX
+# No args expected
+
+  DOCKERBUILDTMPDIR=`mktemp -d --tmpdir=/var/tmp`
+
+  # The following comments should not be removed or changed.
+  # embed-dockerfile.sh adds a base64 encoded tarball and
+  #  unpacking code between them.
+
+  #mok-centos-7-tarball-start 
+  cat <<EnD | base64 -d | tar xz -C $DOCKERBUILDTMPDIR 
+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
+alWrWtWq9p20/wHAtCoAAFAAAA==
+EnD
+  #mok-centos-7-tarball-end
 }
 
 # ===========================================================================
@@ -434,6 +535,10 @@ check_option3_token() {
   esac
 }
 
+# ===========================================================================
+# HELPERS
+# ===========================================================================
+
 # ---------------------------------------------------------------------------
 usage() {
 # ---------------------------------------------------------------------------
@@ -507,10 +612,6 @@ usage() {
   echo
 }
 
-# ===========================================================================
-# HELPERS
-# ===========================================================================
-
 # ---------------------------------------------------------------------------
 cleanup() {
 # ---------------------------------------------------------------------------
@@ -520,107 +621,6 @@ cleanup() {
       [[ $DOCKERBUILDTMPDIR == "/var/tmp/"* ]] && {
       rm -rf "$DOCKERBUILDTMPDIR"
     }
-}
-
-# ===========================================================================
-# IMAGE BUILDER
-# ===========================================================================
-
-# ---------------------------------------------------------------------------
-build_container_image() {
-# ---------------------------------------------------------------------------
-# Creates the docker build directory in $DOCKERBUILDTMPDIR then calls
-# docker build to build the image.
-# No args expected.
-
-  create_docker_build_dir
-
-  docker build -t local/mok-centos-7 "$DOCKERBUILDTMPDIR/mok-centos-7"
-}
-
-# ---------------------------------------------------------------------------
-create_docker_build_dir() {
-# ---------------------------------------------------------------------------
-# Creates a docker build directory in /var/tmp/tmp.XXXXXXXX
-# No args expected
-
-	DOCKERBUILDTMPDIR=`mktemp -d --tmpdir=/var/tmp`
-
-  # The following comments should not be removed or changed.
-  # embed-dockerfile.sh adds a base64 encoded tarball and
-  #  unpacking code between them.
-
-  #mok-centos-7-tarball-start 
-  cat <<EnD | base64 -d | tar xz -C $DOCKERBUILDTMPDIR 
-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
-alWrWtWq9p20/wHAtCoAAFAAAA==
-EnD
-  #mok-centos-7-tarball-end
 }
 
 # Calls main() if we're called from the command line

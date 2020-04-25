@@ -100,7 +100,7 @@ testBuildWouldBeStarted(){
 
   main build image >/dev/null
   assertEquals \
-    "'mokctl build' should call do_build_image_mutate" \
+    "'mokctl build image' should call do_build_image_mutate" \
     "59" "$?"
 }
 

@@ -184,6 +184,34 @@ do_build_image_mutate() {
   fi
 }
 
+# ---------------------------------------------------------------------------
+build_container_image() {
+# ---------------------------------------------------------------------------
+# Creates the docker build directory in $DOCKERBUILDTMPDIR then calls
+# docker build to build the image.
+# No args expected.
+
+  create_docker_build_dir
+
+  docker build -t local/mok-centos-7 "$DOCKERBUILDTMPDIR/mok-centos-7"
+}
+
+# ---------------------------------------------------------------------------
+create_docker_build_dir() {
+# ---------------------------------------------------------------------------
+# Creates a docker build directory in /var/tmp/tmp.XXXXXXXX
+# No args expected
+
+	DOCKERBUILDTMPDIR=`mktemp -d --tmpdir=/var/tmp`
+
+  # The following comments should not be removed or changed.
+  # embed-dockerfile.sh adds a base64 encoded tarball and
+  #  unpacking code between them.
+
+  #mok-centos-7-tarball-start 
+  #mok-centos-7-tarball-end
+}
+
 # ===========================================================================
 # FUNCTIONS FOR PARSING THE COMMAND LINE BELOW
 # ===========================================================================
@@ -520,38 +548,6 @@ cleanup() {
       [[ $DOCKERBUILDTMPDIR == "/var/tmp/"* ]] && {
       rm -rf "$DOCKERBUILDTMPDIR"
     }
-}
-
-# ===========================================================================
-# IMAGE BUILDER
-# ===========================================================================
-
-# ---------------------------------------------------------------------------
-build_container_image() {
-# ---------------------------------------------------------------------------
-# Creates the docker build directory in $DOCKERBUILDTMPDIR then calls
-# docker build to build the image.
-# No args expected.
-
-  create_docker_build_dir
-
-  docker build -t local/mok-centos-7 "$DOCKERBUILDTMPDIR/mok-centos-7"
-}
-
-# ---------------------------------------------------------------------------
-create_docker_build_dir() {
-# ---------------------------------------------------------------------------
-# Creates a docker build directory in /var/tmp/tmp.XXXXXXXX
-# No args expected
-
-	DOCKERBUILDTMPDIR=`mktemp -d --tmpdir=/var/tmp`
-
-  # The following comments should not be removed or changed.
-  # embed-dockerfile.sh adds a base64 encoded tarball and
-  #  unpacking code between them.
-
-  #mok-centos-7-tarball-start 
-  #mok-centos-7-tarball-end
 }
 
 # Calls main() if we're called from the command line

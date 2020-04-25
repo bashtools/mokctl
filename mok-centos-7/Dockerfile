@@ -2,6 +2,7 @@ FROM centos:7
 ARG CRIO_VERSION=1.17
 ARG CRICTL_VERSION=v1.17.0
 ARG K8SBINVER
+# Tell systemd that it's running in a container
 ENV container docker
 COPY kubernetes.repo /etc/yum.repos.d/kubernetes.repo
 RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do \
@@ -38,6 +39,7 @@ COPY k8s.conf /etc/sysctl.d/k8s.conf
 COPY 100-crio-bridge.conf /etc/cni/net.d/100-crio-bridge.conf
 COPY entrypoint /usr/local/bin
 VOLUME [ "/sys/fs/cgroup" ]
+# SystemD's instuction to halt
 STOPSIGNAL SIGRTMIN+3
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
 CMD ["/usr/sbin/init"]

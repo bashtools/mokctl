@@ -1,7 +1,9 @@
 # My Own Kind - Build
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
+
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Create a Container Image](#create-a-container-image)
@@ -196,7 +198,7 @@ EnD
 
 ### Start the Node container
 
-We will start a single node, naming it 'single-node-mok', where this name will be seen in `docker ps`, and saving its container ID in the variable, `id`, to be used in the next section.
+We will start a single node, naming it 'master-1', where this name will be seen in `docker ps`, and saving its container ID in the variable, `id`, to be used in the next section.
 
 If we don't mount the `/lib/modules` then `kubeadm init` will fail. `kubeadm` inspects the kernel configuration in `/lib/modules/config` (take a look - it's a text file) to see what Operating System features are available, and, of course, the container uses the host's kernel, unlike a fully virtualised VM (such as VirtualBox), so that's the kernel that needs inspecting, hence the bind mount.
 
@@ -221,7 +223,7 @@ The container also needs to be 'privileged' since it does many things an applica
 
 ---
 
-*Side note - read it later* : Just in case you don't know, all the [cgroup](https://www.kernel.org/doc/Documentation/cgroup-v1/) and [namespace]([namespaces(7) - Linux manual page](http://man7.org/linux/man-pages/man7/namespaces.7.html)) features that are used to containerise an application are actually features of the Linux kernel - many people think it's `docker` that provides all that loveliness. In contrast, `docker` is a wrapper around these kernel features. Before docker the two leading projects were [libvirt](), which was used to control [KVM](https://www.linux-kvm.org/page/Main_Page) but [libvirt-lxc](http://libvirt.org/drvlxc.html) did the container part, and [lxc](https://linuxcontainers.org/lxc/introduction/), before it moved to [Ubuntu](https://ubuntu.com/). These projects put a great deal of work into the user-space side of these kernel features and were very active contributers to the linux kernel. [OpenVZ](https://openvz.org/) were there before everyone else though with huge patches to the linux kernel that could not be merged. OpenVZ is still more secure than linux kernel containerisation and they also contributed to the linux kernel. OpenVZ is still the most secure and performant way to provide general purpose linux containers to users - for hosting for instance.
+> **Side Note**: Just in case you don't know, all the [cgroup](https://www.kernel.org/doc/Documentation/cgroup-v1/) and [namespace]([namespaces(7) - Linux manual page](http://man7.org/linux/man-pages/man7/namespaces.7.html)) features that are used to containerise an application are actually features of the Linux kernel - many people think it's `docker` that provides all that loveliness. In contrast, `docker` is a wrapper around these kernel features. Before docker the two leading projects were [libvirt](), which was used to control [KVM](https://www.linux-kvm.org/page/Main_Page) but [libvirt-lxc](http://libvirt.org/drvlxc.html) did the container part, and [lxc](https://linuxcontainers.org/lxc/introduction/), before it moved to [Ubuntu](https://ubuntu.com/). These projects put a great deal of work into the user-space side of these kernel features and were very active contributers to the linux kernel. [OpenVZ](https://openvz.org/) were there before everyone else though with huge patches to the linux kernel that could not be merged. OpenVZ is still more secure than linux kernel containerisation and they also contributed to the linux kernel. OpenVZ is still the most secure and performant way to provide general purpose linux containers to users - for hosting for instance.
 
 ---
 

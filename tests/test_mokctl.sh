@@ -9,26 +9,6 @@
   [ -x mokctl.deploy ]
 }
 
-@test "Checking for build directory made by create_docker_build_dir()" {
-  local dir
-  source mokctl.deploy
-  create_docker_build_dir
-  dir="$TMPDIR/mok-centos-7"
-  [[ -e "$dir/Dockerfile" &&
-     -e "$dir/100-crio-bridge.conf" &&
-     -e "$dir/entrypoint" &&
-     -e "$dir/k8s.conf" &&
-     -e "$dir/kubernetes.repo" &&
-     -e "$dir/README.md" ]] 
-}
-
-@test "Checking cleanup() deletes TMPDIR" {
-  source mokctl.deploy
-  create_docker_build_dir
-  cleanup
-  [[ ! -e $TMPDIR ]]
-}
-
 # ---- parser checks ----
 
 @test "No args should fail" {

@@ -1000,6 +1000,33 @@ unittest: mokctl.deploy
 
 I'll finish off the tests so you can contribute if you want to but I won't give any more updates about this. It's all in the github repo, and won't really get any more complex than this.
 
+---
+
+> **Side Note**: About using shUnit2 - to do unit tests, all the functions in the original script (in this case `mokctl`)  need to be copied into the shUnit2 execution space. This means that `exit` can't be called otherwise shUnit2 exits. I went through the code and replaced all my `exit` commands with `return`. Finally, instead of calling `exit` to set the script exit code use `return`. This will set the exit code of the script but won't exit shUnit2. This is a good programming habit anyway, especially when writing libraries, and when using shUnit2 the script is essentially run as a library. A few tips for writing testable shell scripts:
+> 
+> * Use functions for everything.
+>   
+>   They will not be run when using `source`.
+> 
+> * Have as little code as possible running outside of functions.
+>   
+>   Any code outside of functions will be run when using `source`.
+> 
+> * Don't use `exit` anywhere in the shell script.
+>   
+>   Only use `return X`, which is better practice anyway, but not as easy as `exit`. On the final `return X`,  when script execution ends, `X` will be the final exit code of the script.
+> 
+> * Use the following code to ensure `main()` is only called when run from the command line. I put it at the end of the source code, and have `main()` close to the top as that's what drives the whole program and is the first function I would like to see when looking at the code.
+> 
+> ```bash
+> if ([ &quot;$0&quot; = &quot;$BASH_SOURCE&quot; ] || ! [ -n &quot;$BASH_SOURCE&quot; ]);
+> then
+>   main &quot;$@&quot;
+> fi
+> ```
+
+---
+
 ### All done!
 
 The ‘do_’ functions are completed. Let's see what they look like:

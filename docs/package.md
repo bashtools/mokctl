@@ -1016,6 +1016,10 @@ I'll finish off the tests so you can contribute if you want to but I won't give 
 >   
 >   Only use `return X`, which is better practice anyway, but not as easy as `exit`. On the final `return X`,  when script execution ends, `X` will be the final exit code of the script.
 > 
+> * Start testing very early on in the project.
+>   
+>   Writing tests once the code is written is HARD. Already I have had to change the program to make testing work well. Imagine how hard it would be if it was a thousand lines long. [Test Driven Development](https://en.wikipedia.org/wiki/Test-driven_development), TDD, is probably the way to go and I will be using TDD for any more functions I write. TDD also helps to keep functions small and single-purpose.
+> 
 > * Use the following code to ensure `main()` is only called when run from the command line. I put it at the end of the source code, and have `main()` close to the top as that's what drives the whole program and is the first function I would like to see when looking at the code.
 > 
 > ```bash

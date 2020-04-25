@@ -12,7 +12,10 @@ install:
 clean:
 	rm -f mokctl.deploy
 
-test: clean mokctl.deploy unittest
+test: clean mokctl.deploy
 	./tests/unit-tests.sh
+
+buildtest: clean mokctl.deploy
+	./tests/build-tests.sh
 
 # vim:noet:ts=2:sw=2

@@ -6,7 +6,7 @@ My Own [Kind](https://kind.sigs.k8s.io/) - Build a conformant kubernetes cluster
 
 If you follow the instructions in this repository you will end up building your own [Kind](https://kind.sigs.k8s.io/). I'm pretty sure it won't be easy though - there's so much that can go wrong!
 
-To get the most out of the labs you should have a good overall understanding of kubernetes. Some good resources are:
+To get the most out of the "labs", and I use that term loosely, you should have a good overall understanding of kubernetes. Some good resources are:
 
 * [Certified Kubernetes Administrator (CKA) with Practice Exam Tests](https://www.udemy.com/course/certified-kubernetes-administrator-with-practice-tests/)
 * [Kubernetes in Action by Marko Luksa](https://www.goodreads.com/book/show/34013922-kubernetes-in-action)
@@ -15,7 +15,7 @@ Send a Pull Request to add to this list.
 
 ## Status
 
-In progress...
+In progress. Browse, contribute, but don't use!
 
 ## Let's get started
 
@@ -38,6 +38,25 @@ In progress...
 5. [Add-ons](/docs/addons.md)
    
    Trying popluar kubernetes add-ons.
+
+### Try mokctl
+
+Probably the best way would be to:
+
+```bash
+git clone https://github.com/mclarkson/my-own-kind.git
+cd my-own-kind
+sudo make install
+mokctl create cluster mycluster 1 0
+```
+
+Removal
+
+```bash
+sudo make uninstall
+```
+
+Take note of the [Status](#status) above.
 
 ## License
 
@@ -74,4 +93,4 @@ I wanted something quite particular to my own needs/wants:
   
   I managed to do most of kubernetes-the-hard-way using VirtualBox, but I could not play with it properly due to memory and CPU contstraints, but I did get to create a whole bunch of x509 certificates and keys. It's also important to understand how to install kubernetes the Kubeadm way, as this is how a production cluster should be set up and Kubeadm produces [a verifiably kubernetes conformant cluster](https://www.cncf.io/certification/software-conformance/) out-of-the-box.
 
-So, basically, I want to create **my own Kind**. Then package it and make it easy to install any version of kubernetes and feel more confident because I know how it works!
+So, basically, I want to create my own clone of Kind. Then package it and make it easy to install any version of kubernetes and feel more confident as I learn how it all works!

@@ -1010,7 +1010,7 @@ I'll finish off the tests so you can contribute if you want to but I won't give 
 > 
 > * Have as little code as possible running outside of functions.
 >   
->   Any code outside of functions will be run when using `source`.
+>   Any code outside of functions will be run when using `source`. Have globals outside of functions initialsed to zero values. This way, each time the script is 'sourced', it will reset all the variables automatically.
 > 
 > * Don't use `exit` anywhere in the shell script.
 >   
@@ -1023,9 +1023,9 @@ I'll finish off the tests so you can contribute if you want to but I won't give 
 > * Use the following code to ensure `main()` is only called when run from the command line. I put it at the end of the source code, and have `main()` close to the top as that's what drives the whole program and is the first function I would like to see when looking at the code.
 > 
 > ```bash
-> if ([ &quot;$0&quot; = &quot;$BASH_SOURCE&quot; ] || ! [ -n &quot;$BASH_SOURCE&quot; ]);
+> if ([ "$0" = "$BASH_SOURCE" ] || ! [ -n "$BASH_SOURCE" ]);
 > then
->   main &quot;$@&quot;
+>   main "$@"
 > fi
 > ```
 

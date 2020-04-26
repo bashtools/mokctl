@@ -9,6 +9,9 @@ mokctl.deploy: mokctl mok-centos-7
 install:
 	install mokctl.deploy /usr/local/bin/mokctl
 
+uninstall:
+	rm -f /usr/local/bin/mokctl
+
 clean:
 	rm -f mokctl.deploy
 

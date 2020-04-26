@@ -92,8 +92,8 @@ testBuildwithOptionOutput(){
 # ---------------------------------------------------------------------------
 testBuildWouldBeStarted(){
 # ---------------------------------------------------------------------------
-# Override do_build_image_mutate to return an arbitrary no.
-# then check for that number to make sure it would be called.
+# Override do_build_image_mutate to return an arbitrary number
+# then check for that number to make sure it would have been called.
 # build_container_image is tested separately so no need to test here.
 
   build_container_image() { return 59; }

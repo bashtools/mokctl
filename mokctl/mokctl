@@ -693,6 +693,7 @@ usage() {
   echo
   echo "  create"
   echo "  delete"
+  echo "  build"
   echo
   echo "create SUBCOMMANDs:"
   echo

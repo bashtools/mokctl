@@ -8,25 +8,31 @@
 # The initial state for the state machine
 STATE="COMMAND"
 
-ERROR=1
-OK=0
-
+# Parser sets these:
 COMMAND=
 SUBCOMMAND=
-
 CREATE_CLUSTER_NAME=
 declare -i CREATE_CLUSTER_NUM_MASTERS=
 declare -i CREATE_CLUSTER_NUM_WORKERS=
-
 DELETE_CLUSTER_NAME=
 
+# Directory to unpack the build files
 DOCKERBUILDTMPDIR=
 
-RUNWITHPROGRESSOUTPUT=
+# For the spinning progress animation
+RUNWITHPROGRESS_OUTPUT=
 
-LABELKEY="MokCluster"
-
-BASEIMAGENAME="mok-centos-7"
+# Constants
+declare -r LABELKEY="MokCluster"
+declare -r BASEIMAGENAME="mok-centos-7"
+declare -r ERROR=1
+declare -r OK=0
+declare -r SPINNER=('◐' '◓' '◑' '◒')
+declare -r colgreen="\e[0;32;40m"
+declare -r colred="\e[0;31;40m"
+declare -r colreset="\e[0;37;40m"
+declare -r success="$colgreen✓$colreset"
+declare -r failure="$colred✕$colreset"
 
 # ===========================================================================
 main() {
@@ -262,8 +268,8 @@ create_master_nodes() {
     [[ $retval -ne 0 ]] && {
       echo "ERROR: Docker returned an error, shown below"
       echo
-      cat $RUNWITHPROGRESSOUTPUT
-      rm $RUNWITHPROGRESSOUTPUT
+      cat $RUNWITHPROGRESS_OUTPUT
+      rm $RUNWITHPROGRESS_OUTPUT
       echo
       return $ERROR
     }
@@ -299,8 +305,8 @@ create_worker_nodes() {
     [[ $retval -ne 0 ]] && {
       echo "ERROR: Docker returned an error, shown below"
       echo
-      cat $RUNWITHPROGRESSOUTPUT
-      rm $RUNWITHPROGRESSOUTPUT
+      cat $RUNWITHPROGRESS_OUTPUT
+      rm $RUNWITHPROGRESS_OUTPUT
       echo
       return $ERROR
     }
@@ -334,7 +340,7 @@ build_container_image() {
   [[ $retval -ne 0 ]] && {
     echo "ERROR: Docker returned an error, shown below"
     echo
-    cat $RUNWITHPROGRESSOUTPUT
+    cat $RUNWITHPROGRESS_OUTPUT
     echo
     return $ERROR
   }
@@ -622,28 +628,37 @@ run_with_progress() {
 #   argN - remaining args are the program and its arguments
 
   local displaytext=$1
-  local a=('◐' '◓' '◑' '◒')
-  declare -g RUNWITHPROGRESSOUTPUT=`mktemp --tmpdir=/var/tmp`
+  declare -g RUNWITHPROGRESS_OUTPUT=`mktemp --tmpdir=/var/tmp`
 
   shift
-  $@ &>$RUNWITHPROGRESSOUTPUT &
+  # Run the command
+  $@ &>$RUNWITHPROGRESS_OUTPUT &
+  # Turn the cursor off
   tput civis
+
+  # Start the spin animation
   echo -n "$displaytext"
   ( while true; do
     for i in {0..3}; do
-      echo -en "\r  ${a[i]}"
+      echo -en "\r  ${SPINNER[i]}"
       sleep .1
     done
   done ) & 
+
+  sleep 60
+  # Wait for the command to finish
   wait %1
+
   retval=$?
   if [[ $retval -eq 0 ]]; then
-    echo -e "\r  ✓"
+    echo -e "\r  $success"
   else
-    echo -e "\r  ✕"
+    echo -e "\r  $failure"
   fi
 
+  # Kill the spinner
   kill %2
+  # Restore the cursor
   tput cnorm
 
   return $retval
@@ -748,6 +763,9 @@ cleanup() {
 
   # If progress spinner crashed make sure the cursor is shown
   tput cnorm
+
+  # Kill the spinny, and anything else, if they're running
+  for i in `jobs -p`; do kill $i; echo -e "$colred\r  ✕$colreset" ; done
 }
 
 # Calls main() if we're called from the command line

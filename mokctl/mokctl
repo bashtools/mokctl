@@ -205,6 +205,8 @@ do_create_cluster_mutate() {
     return $ERROR
   }
 
+  echo
+
   [[ $CREATE_CLUSTER_NUM_MASTERS -gt 0 ]] && {
     create_master_nodes $CREATE_CLUSTER_NUM_MASTERS || return $?
   }
@@ -212,6 +214,8 @@ do_create_cluster_mutate() {
   [[ $CREATE_CLUSTER_NUM_WORKERS -gt 0 ]] && {
     create_worker_nodes $CREATE_CLUSTER_NUM_WORKERS || return $?
   }
+
+  echo
 
   return $OK
 }
@@ -221,11 +225,17 @@ do_delete_cluster_mutate() {
 # ---------------------------------------------------------------------------
 # Mutate functions make system changes.
 
-  :
+  declare -i numnodes=0
 
-  # Delete master node(s)
+  numnodes=$(get_cluster_size $DELETE_CLUSTER_NAME) || return $?
 
-  # Delete worker node(s)
+  [[ $numnodes -eq 0 ]] && {
+    echo -en "\nERROR: No cluster exists with name, '$DELETE_CLUSTER_NAME'."
+    echo -e " Aborting.\n"
+    return $ERROR
+  }
+
+  delete_cluster_nodes $DELETE_CLUSTER_NAME
 }
 
 # ---------------------------------------------------------------------------
@@ -265,21 +275,30 @@ do_get_clusters_nomutate() {
 
   [[ -n $clustname ]] && clustname="=$clustname"
 
-  output=$(get_mok_cluster_docker_ids "$clustname") || return $?
+  ids=$(get_mok_cluster_docker_ids "$clustname") || return $?
 
-  if [[ -z $output ]]; then
+  if [[ -z $ids ]]; then
     return $OK
   fi
 
-  readarray nodes <<<$output
+  readarray nodes <<<$ids
 
   # Use 'docker inspect' to get the value of the label $LABELKEY
 
+  ( echo "MOK_Cluster Docker_ID Container_Name IP_Address"
   for id in ${nodes[@]}; do
-    output=$(get_info_about_container_using_docker $id) || return $?
-    sed -rn '/Labels/,/}/ {s/[":,]//g; s/^ *'"$LABELKEY"' ([^ ]*).*/\1/p }' \
-      <<<$output
-  done
+    info=$(get_info_about_container_using_docker $id) || return $?
+    clustname=$(sed -rn \
+      '/Labels/,/}/ {s/[":,]//g; s/^ *'"$LABELKEY"' ([^ ]*).*/\1/p }' \
+      <<<$info)
+    containerhostname=$(sed -rn \
+      '/"Config"/,/}/ {s/[":,]//g; s/^ *Hostname ([^ ]*).*/\1/p }' \
+      <<<$info)
+    containerip=$(sed -rn \
+      '/NetworkSettings/,/Networks/ {s/[":,]//g; s/^ *IPAddress ([^ ]*).*/\1/p }' \
+      <<<$info)
+    echo "$clustname $id $containerhostname $containerip"
+  done ) | column -t
 }
 
 # ===========================================================================
@@ -326,7 +345,10 @@ get_cluster_size() {
 
   declare -a nodes
 
-  readarray nodes < <(docker ps -a -f label=$LABELKEY=$1 -q) || return $?
+  output=$(get_cluster_ids $1) || return $?
+
+  # read the nodes array and delete blank lines
+  readarray nodes < <(echo "$output" | sed '/^$/d')
 
   echo "${#nodes[*]}"
 }
@@ -343,16 +365,16 @@ create_master_nodes() {
 
   for i in $(seq 1 $1); do
     run_with_progress \
-      "    Creating base container, '$CREATE_CLUSTER_NAME-master-$i'" \
-      docker run --privileged \
-          -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
-          -v /lib/modules:/lib/modules:ro \
-          --tmpfs /run --tmpfs /tmp \
-          --detach \
-          --name $CREATE_CLUSTER_NAME-master-$i \
-          --hostname $CREATE_CLUSTER_NAME-master-$i \
-          --label $LABELKEY=$CREATE_CLUSTER_NAME \
-          local/$BASEIMAGENAME
+        "    Creating base container, '$CREATE_CLUSTER_NAME-master-$i'" \
+        docker run --privileged \
+            -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+            -v /lib/modules:/lib/modules:ro \
+            --tmpfs /run --tmpfs /tmp \
+            --detach \
+            --name $CREATE_CLUSTER_NAME-master-$i \
+            --hostname $CREATE_CLUSTER_NAME-master-$i \
+            --label $LABELKEY=$CREATE_CLUSTER_NAME \
+            local/$BASEIMAGENAME
 
     retval=$?
     [[ $retval -ne 0 ]] && {
@@ -408,6 +430,45 @@ create_worker_nodes() {
 # ===========================================================================
 # FUNCTIONS BELOW ARE HELPERS FOR do_delete_cluster_mutate()
 # ===========================================================================
+
+# ---------------------------------------------------------------------------
+delete_cluster_nodes() {
+# ---------------------------------------------------------------------------
+# Delete all cluster nodes.
+# Args:
+#   arg1 - Name of the cluster to delete
+
+  ids=$(get_cluster_ids $1) || return $?
+ 
+  echo -e "The following containers will be deleted:\n"
+
+  do_get_clusters_nomutate $1
+
+  echo -en "\nAre you sure you want to delete the cluster? (y/N) >"
+
+  read ans
+
+  [[ "$ans" != "y" ]] && {
+    echo -e "\nCancelling by user request."
+    return $OK
+  }
+
+  echo
+
+  for id in $ids; do
+    run_with_progress \
+      "    Deleting id, '$id' from cluster '$1'." \
+      delete_docker_container $id
+      r=$?
+      [[ $r -ne 0 ]] && {
+        cat "$RUNWITHPROGRESS_OUTPUT"
+        echo -e "\nERROR: Docker failed.\n"
+        return $r
+      }
+  done
+  
+  echo
+}
 
 # ===========================================================================
 # FUNCTIONS BELOW ARE HELPERS FOR do_build_image_mutate()
@@ -481,7 +542,6 @@ parse_options() {
                      echo
                      return $ERROR
                    }
-                   COMMAND="$1"
                  ;;
             SUBCOMMAND) check_subcommand_token $1
                    [[ $? -eq $ERROR ]] && {
@@ -736,10 +796,38 @@ check_option3_token() {
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
+delete_docker_container() {
+# ---------------------------------------------------------------------------
+    docker stop $id || return $?
+    docker rm $id || return $?
+}
+
+# ---------------------------------------------------------------------------
+get_cluster_ids() {
+# ---------------------------------------------------------------------------
+# Get all cluster ids for labelled containers
+# Args:
+#   arg1 - Cluster name
+
+  local value
+
+  [[ -n $1 ]] && value="=$1"
+
+  output=$(docker ps -a -f label=$LABELKEY$value -q) || {
+    echo -e "ERROR: Docker command failed\n" >/dev/stderr
+    return $ERROR
+  }
+
+  echo "$output"
+
+  return $OK
+}
+
+# ---------------------------------------------------------------------------
 run_with_progress() {
 # ---------------------------------------------------------------------------
-# Display a progress spinner, display text, display a tick or cross based
-# on the exit code.
+# Display a progress spinner, display item text, display a tick or cross
+# based on the exit code.
 # Args:
 #   arg1 - the text to display
 #   argN - remaining args are the program and its arguments
@@ -748,7 +836,7 @@ run_with_progress() {
   declare -g RUNWITHPROGRESS_OUTPUT=`mktemp --tmpdir=/var/tmp`
 
   shift
-  # Run the command
+  # Run the command in the background
   $@ &>$RUNWITHPROGRESS_OUTPUT &
   # Turn the cursor off
   tput civis
@@ -786,7 +874,7 @@ sanity_checks(){
 # Check our environment
 # No args expected
 
-  for binary in tput docker grep sed; do
+  for binary in column tput docker grep sed; do
     if ! which $binary >& /dev/null; then
       echo "ERROR: $binary binary not found in path. Aborting."
       return 1
@@ -891,6 +979,10 @@ usage() {
   get_command_help
 
   echo "EXAMPLES"
+  echo
+  echo "Get a list of mok clusters"
+  echo
+  echo "  mokctl get clusters"
   echo
   echo "Build the image used for masters and workers:"
   echo

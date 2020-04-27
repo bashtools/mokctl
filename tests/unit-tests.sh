@@ -513,7 +513,7 @@ testNotEnoughOptionsToDeleteClusterOutput() {
 testNotEnoughOptionsToDeleteClusterName() {
 # ---------------------------------------------------------------------------
 
-  main create delete mycluster >/dev/null
+  main delete mycluster mycluster >/dev/null
   assertTrue \
     "'delete cluster mycluster' should fail" \
     "[[ $? -ge 1 ]]"
@@ -553,8 +553,11 @@ testValidDeleteClusterCommand() {
 setUp() {
 # ---------------------------------------------------------------------------
 # source mokctl.deploy and disable output of usage().
+# 'sed' is used to remove 'declare -r' - readonly variables.
+#   Readonly variables cannot be deleted without using 'gdb'!
 
-  . ./mokctl.deploy
+  sed 's/^declare -r \(.*\)/\1/' mokctl.deploy >mokctl.deploy.noconst
+  . ./mokctl.deploy.noconst
   usage() { :; }
 }
 

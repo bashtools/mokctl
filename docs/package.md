@@ -1002,7 +1002,7 @@ I'll finish off the tests so you can contribute if you want to but I won't give 
 
 ---
 
-> **Side Note**: About using shUnit2 - to do unit tests, all the functions in the original script (in this case `mokctl`)  need to be copied into the shUnit2 execution space. This means that `exit` can't be called otherwise shUnit2 exits. I went through the code and replaced all my `exit` commands with `return`. Finally, instead of calling `exit` to set the script exit code use `return`. This will set the exit code of the script but won't exit shUnit2. This is a good programming habit anyway, especially when writing libraries, and when using shUnit2 the script is essentially run as a library. A few tips for writing testable shell scripts:
+> **Side Note**: About using shUnit2: To do unit tests, all the functions in the original script (in this case `mokctl`)  need to be copied into the shUnit2 execution space. This means that `exit` can't be called otherwise shUnit2 exits. I went through the code and replaced all my `exit` commands with `return`. Finally, instead of calling `exit` to set the script exit code use `return`. This will set the exit code of the script but won't exit shUnit2. This is a good programming habit anyway, especially when writing libraries, and when using shUnit2 the script is essentially run as a library. A few tips for writing testable shell scripts:
 > 
 > * Use functions for everything.
 >   

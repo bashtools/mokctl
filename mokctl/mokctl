@@ -15,12 +15,18 @@ COMMAND=
 SUBCOMMAND=
 
 CREATE_CLUSTER_NAME=
-CREATE_CLUSTER_NUM_MASTERS=
-CREATE_CLUSTER_NUM_WORKERS=
+declare -i CREATE_CLUSTER_NUM_MASTERS=
+declare -i CREATE_CLUSTER_NUM_WORKERS=
 
 DELETE_CLUSTER_NAME=
 
 DOCKERBUILDTMPDIR=
+
+RUNWITHPROGRESSOUTPUT=
+
+LABELKEY="MokCluster"
+
+BASEIMAGENAME="mok-centos-7"
 
 # ===========================================================================
 main() {
@@ -28,6 +34,8 @@ main() {
 # Execution begins here
 
   trap cleanup EXIT
+
+  sanity_checks || return $?
 
   parse_options "$@" || return $?
 
@@ -147,12 +155,31 @@ do_delete_cluster_sanity_checks() {
 do_create_cluster_mutate() {
 # ---------------------------------------------------------------------------
 # Mutate functions make system changes.
+# Global variables: 
+#   CREATE_CLUSTER_NAME        - (string) cluster name
+#   CREATE_CLUSTER_NUM_MASTERS - (int) num masters
+#   CREATE_CLUSTER_NUM_WORKERS - (int) num workers
 
-  :
+  declare -i numnodes=0
 
-  # Create master node(s)
+  numnodes=$(get_cluster_size $CREATE_CLUSTER_NAME) || return $?
 
-  # Create worker node(s)
+  [[ $numnodes -gt 0 ]] && {
+    echo
+    echo "ERROR: Cluster, '$CREATE_CLUSTER_NAME', exists! Aborting."
+    echo
+    return $ERROR
+  }
+
+  [[ $CREATE_CLUSTER_NUM_MASTERS -gt 0 ]] && {
+    create_master_nodes $CREATE_CLUSTER_NUM_MASTERS || return $?
+  }
+
+  [[ $CREATE_CLUSTER_NUM_WORKERS -gt 0 ]] && {
+    create_worker_nodes $CREATE_CLUSTER_NUM_WORKERS || return $?
+  }
+
+  return $OK
 }
 
 # ---------------------------------------------------------------------------
@@ -162,24 +189,25 @@ do_delete_cluster_mutate() {
 
   :
 
-  # Create master node(s)
+  # Delete master node(s)
 
-  # Create worker node(s)
+  # Delete worker node(s)
 }
 
 # ---------------------------------------------------------------------------
 do_build_image_mutate() {
 # ---------------------------------------------------------------------------
 # Mutate functions make system changes.
-# Builds the mok-centos-7 base image used for masters and workers.
+# Builds the $BASEIMAGENAME base image used for masters and workers.
 # Globals: None
 # No args expected
 
   local retval=0
 
-  build_container_image >/dev/null || retval=$?
+  build_container_image
+  retval=$?
 
-  if [[ $? -eq 0 ]]; then
+  if [[ $retval -eq 0 ]]; then
     echo "Image built successfully"
   else
     echo "Image build failed"
@@ -187,6 +215,107 @@ do_build_image_mutate() {
 
   return $retval
 }
+
+# ===========================================================================
+# FUNCTIONS BELOW ARE HELPERS FOR do_create_cluster_mutate()
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+get_cluster_size() {
+# ---------------------------------------------------------------------------
+# Search for an existing cluster using labels. All cluster nodes are
+# labelled with $LABELKEY=$CREATE_CLUSTER_NAME
+# Args:
+#   arg1 - name to search for.
+
+  declare -a nodes
+
+  readarray nodes < <(docker ps -a -f label=$LABELKEY=$1 -q) || return $?
+
+  echo "${#nodes[*]}"
+}
+
+# ---------------------------------------------------------------------------
+create_master_nodes() {
+# ---------------------------------------------------------------------------
+# Create the master nodes
+# Args:
+#   arg1 - number of master nodes to create
+
+  declare -i i=0
+  local retval=0
+
+  for i in $(seq 1 $1); do
+    run_with_progress \
+      "    Creating base container, '$CREATE_CLUSTER_NAME-master-$i'" \
+      docker run --privileged \
+          -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+          -v /lib/modules:/lib/modules:ro \
+          --tmpfs /run --tmpfs /tmp \
+          --detach \
+          --name $CREATE_CLUSTER_NAME-master-$i \
+          --hostname $CREATE_CLUSTER_NAME-master-$i \
+          --label $LABELKEY=$CREATE_CLUSTER_NAME \
+          local/$BASEIMAGENAME
+
+    retval=$?
+    [[ $retval -ne 0 ]] && {
+      echo "ERROR: Docker returned an error, shown below"
+      echo
+      cat $RUNWITHPROGRESSOUTPUT
+      rm $RUNWITHPROGRESSOUTPUT
+      echo
+      return $ERROR
+    }
+  done
+
+  return $retval
+}
+
+# ---------------------------------------------------------------------------
+create_worker_nodes() {
+# ---------------------------------------------------------------------------
+# Create the master nodes
+# Args:
+#   arg1 - number of master nodes to create
+
+  declare -i i=0
+  local retval=0
+
+  for i in $(seq 1 $1); do
+    run_with_progress \
+      "    Creating base container, '$CREATE_CLUSTER_NAME-worker-$i'" \
+      docker run --privileged \
+          -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+          -v /lib/modules:/lib/modules:ro \
+          --tmpfs /run --tmpfs /tmp \
+          --detach \
+          --name $CREATE_CLUSTER_NAME-worker-$i \
+          --hostname $CREATE_CLUSTER_NAME-worker-$i \
+          --label $LABELKEY=$CREATE_CLUSTER_NAME \
+          local/$BASEIMAGENAME
+
+    retval=$?
+    [[ $retval -ne 0 ]] && {
+      echo "ERROR: Docker returned an error, shown below"
+      echo
+      cat $RUNWITHPROGRESSOUTPUT
+      rm $RUNWITHPROGRESSOUTPUT
+      echo
+      return $ERROR
+    }
+  done
+
+  return $retval
+}
+
+# ===========================================================================
+# FUNCTIONS BELOW ARE HELPERS FOR do_delete_cluster_mutate()
+# ===========================================================================
+
+# ===========================================================================
+# FUNCTIONS BELOW ARE HELPERS FOR do_build_image_mutate()
+# ===========================================================================
 
 # ---------------------------------------------------------------------------
 build_container_image() {
@@ -197,7 +326,20 @@ build_container_image() {
 
   create_docker_build_dir
 
-  docker build -t local/mok-centos-7 "$DOCKERBUILDTMPDIR/mok-centos-7"
+  run_with_progress \
+      "    Creating base image, '$BASEIMAGENAME'" \
+      docker build -t "local/$BASEIMAGENAME" "$DOCKERBUILDTMPDIR/$BASEIMAGENAME"
+  
+  retval=$?
+  [[ $retval -ne 0 ]] && {
+    echo "ERROR: Docker returned an error, shown below"
+    echo
+    cat $RUNWITHPROGRESSOUTPUT
+    echo
+    return $ERROR
+  }
+
+  return $retval
 }
 
 # ---------------------------------------------------------------------------
@@ -471,6 +613,57 @@ check_option3_token() {
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
+run_with_progress() {
+# ---------------------------------------------------------------------------
+# Display a progress spinner, display text, display a tick or cross based
+# on the exit code.
+# Args:
+#   arg1 - the text to display
+#   argN - remaining args are the program and its arguments
+
+  local displaytext=$1
+  local a=('◐' '◓' '◑' '◒')
+  declare -g RUNWITHPROGRESSOUTPUT=`mktemp --tmpdir=/var/tmp`
+
+  shift
+  $@ &>$RUNWITHPROGRESSOUTPUT &
+  tput civis
+  echo -n "$displaytext"
+  ( while true; do
+    for i in {0..3}; do
+      echo -en "\r  ${a[i]}"
+      sleep .1
+    done
+  done ) & 
+  wait %1
+  retval=$?
+  if [[ $retval -eq 0 ]]; then
+    echo -e "\r  ✓"
+  else
+    echo -e "\r  ✕"
+  fi
+
+  kill %2
+  tput cnorm
+
+  return $retval
+}
+
+# ---------------------------------------------------------------------------
+sanity_checks(){
+# ---------------------------------------------------------------------------
+# Check our environment
+# No args expected
+
+  for binary in docker grep sed; do
+    if ! which $binary >& /dev/null; then
+      echo "ERROR: $binary binary not found in path. Aborting."
+      return 1
+    fi
+  done
+}
+
+# ---------------------------------------------------------------------------
 usage() {
 # ---------------------------------------------------------------------------
 # Every tool, no matter how small, should have help text!
@@ -514,7 +707,7 @@ usage() {
   echo
   echo "build SUBCOMMANDs:"
   echo
-  echo "  image - Creates the mok-centos-7 base image."
+  echo "  image - Creates the $BASEIMAGENAME base image."
   echo
   echo "build image options:"
   echo
@@ -548,10 +741,13 @@ cleanup() {
 # ---------------------------------------------------------------------------
 # Called when the script exits.
 
-    [[ -e "$DOCKERBUILDTMPDIR" ]] && \
-      [[ $DOCKERBUILDTMPDIR == "/var/tmp/"* ]] && {
-      rm -rf "$DOCKERBUILDTMPDIR"
-    }
+  [[ -e "$DOCKERBUILDTMPDIR" ]] && \
+    [[ $DOCKERBUILDTMPDIR == "/var/tmp/"* ]] && {
+    rm -rf "$DOCKERBUILDTMPDIR"
+  }
+
+  # If progress spinner crashed make sure the cursor is shown
+  tput cnorm
 }
 
 # Calls main() if we're called from the command line

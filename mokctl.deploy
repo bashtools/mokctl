@@ -15,12 +15,18 @@ COMMAND=
 SUBCOMMAND=
 
 CREATE_CLUSTER_NAME=
-CREATE_CLUSTER_NUM_MASTERS=
-CREATE_CLUSTER_NUM_WORKERS=
+declare -i CREATE_CLUSTER_NUM_MASTERS=
+declare -i CREATE_CLUSTER_NUM_WORKERS=
 
 DELETE_CLUSTER_NAME=
 
 DOCKERBUILDTMPDIR=
+
+RUNWITHPROGRESSOUTPUT=
+
+LABELKEY="MokCluster"
+
+BASEIMAGENAME="mok-centos-7"
 
 # ===========================================================================
 main() {
@@ -28,6 +34,8 @@ main() {
 # Execution begins here
 
   trap cleanup EXIT
+
+  sanity_checks || return $?
 
   parse_options "$@" || return $?
 
@@ -147,12 +155,31 @@ do_delete_cluster_sanity_checks() {
 do_create_cluster_mutate() {
 # ---------------------------------------------------------------------------
 # Mutate functions make system changes.
+# Global variables: 
+#   CREATE_CLUSTER_NAME        - (string) cluster name
+#   CREATE_CLUSTER_NUM_MASTERS - (int) num masters
+#   CREATE_CLUSTER_NUM_WORKERS - (int) num workers
 
-  :
+  declare -i numnodes=0
 
-  # Create master node(s)
+  numnodes=$(get_cluster_size $CREATE_CLUSTER_NAME) || return $?
 
-  # Create worker node(s)
+  [[ $numnodes -gt 0 ]] && {
+    echo
+    echo "ERROR: Cluster, '$CREATE_CLUSTER_NAME', exists! Aborting."
+    echo
+    return $ERROR
+  }
+
+  [[ $CREATE_CLUSTER_NUM_MASTERS -gt 0 ]] && {
+    create_master_nodes $CREATE_CLUSTER_NUM_MASTERS || return $?
+  }
+
+  [[ $CREATE_CLUSTER_NUM_WORKERS -gt 0 ]] && {
+    create_worker_nodes $CREATE_CLUSTER_NUM_WORKERS || return $?
+  }
+
+  return $OK
 }
 
 # ---------------------------------------------------------------------------
@@ -162,24 +189,25 @@ do_delete_cluster_mutate() {
 
   :
 
-  # Create master node(s)
+  # Delete master node(s)
 
-  # Create worker node(s)
+  # Delete worker node(s)
 }
 
 # ---------------------------------------------------------------------------
 do_build_image_mutate() {
 # ---------------------------------------------------------------------------
 # Mutate functions make system changes.
-# Builds the mok-centos-7 base image used for masters and workers.
+# Builds the $BASEIMAGENAME base image used for masters and workers.
 # Globals: None
 # No args expected
 
   local retval=0
 
-  build_container_image >/dev/null || retval=$?
+  build_container_image
+  retval=$?
 
-  if [[ $? -eq 0 ]]; then
+  if [[ $retval -eq 0 ]]; then
     echo "Image built successfully"
   else
     echo "Image build failed"
@@ -187,6 +215,107 @@ do_build_image_mutate() {
 
   return $retval
 }
+
+# ===========================================================================
+# FUNCTIONS BELOW ARE HELPERS FOR do_create_cluster_mutate()
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+get_cluster_size() {
+# ---------------------------------------------------------------------------
+# Search for an existing cluster using labels. All cluster nodes are
+# labelled with $LABELKEY=$CREATE_CLUSTER_NAME
+# Args:
+#   arg1 - name to search for.
+
+  declare -a nodes
+
+  readarray nodes < <(docker ps -a -f label=$LABELKEY=$1 -q) || return $?
+
+  echo "${#nodes[*]}"
+}
+
+# ---------------------------------------------------------------------------
+create_master_nodes() {
+# ---------------------------------------------------------------------------
+# Create the master nodes
+# Args:
+#   arg1 - number of master nodes to create
+
+  declare -i i=0
+  local retval=0
+
+  for i in $(seq 1 $1); do
+    run_with_progress \
+      "    Creating base container, '$CREATE_CLUSTER_NAME-master-$i'" \
+      docker run --privileged \
+          -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+          -v /lib/modules:/lib/modules:ro \
+          --tmpfs /run --tmpfs /tmp \
+          --detach \
+          --name $CREATE_CLUSTER_NAME-master-$i \
+          --hostname $CREATE_CLUSTER_NAME-master-$i \
+          --label $LABELKEY=$CREATE_CLUSTER_NAME \
+          local/$BASEIMAGENAME
+
+    retval=$?
+    [[ $retval -ne 0 ]] && {
+      echo "ERROR: Docker returned an error, shown below"
+      echo
+      cat $RUNWITHPROGRESSOUTPUT
+      rm $RUNWITHPROGRESSOUTPUT
+      echo
+      return $ERROR
+    }
+  done
+
+  return $retval
+}
+
+# ---------------------------------------------------------------------------
+create_worker_nodes() {
+# ---------------------------------------------------------------------------
+# Create the master nodes
+# Args:
+#   arg1 - number of master nodes to create
+
+  declare -i i=0
+  local retval=0
+
+  for i in $(seq 1 $1); do
+    run_with_progress \
+      "    Creating base container, '$CREATE_CLUSTER_NAME-worker-$i'" \
+      docker run --privileged \
+          -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+          -v /lib/modules:/lib/modules:ro \
+          --tmpfs /run --tmpfs /tmp \
+          --detach \
+          --name $CREATE_CLUSTER_NAME-worker-$i \
+          --hostname $CREATE_CLUSTER_NAME-worker-$i \
+          --label $LABELKEY=$CREATE_CLUSTER_NAME \
+          local/$BASEIMAGENAME
+
+    retval=$?
+    [[ $retval -ne 0 ]] && {
+      echo "ERROR: Docker returned an error, shown below"
+      echo
+      cat $RUNWITHPROGRESSOUTPUT
+      rm $RUNWITHPROGRESSOUTPUT
+      echo
+      return $ERROR
+    }
+  done
+
+  return $retval
+}
+
+# ===========================================================================
+# FUNCTIONS BELOW ARE HELPERS FOR do_delete_cluster_mutate()
+# ===========================================================================
+
+# ===========================================================================
+# FUNCTIONS BELOW ARE HELPERS FOR do_build_image_mutate()
+# ===========================================================================
 
 # ---------------------------------------------------------------------------
 build_container_image() {
@@ -197,7 +326,20 @@ build_container_image() {
 
   create_docker_build_dir
 
-  docker build -t local/mok-centos-7 "$DOCKERBUILDTMPDIR/mok-centos-7"
+  run_with_progress \
+      "    Creating base image, '$BASEIMAGENAME'" \
+      docker build -t "local/$BASEIMAGENAME" "$DOCKERBUILDTMPDIR/$BASEIMAGENAME"
+  
+  retval=$?
+  [[ $retval -ne 0 ]] && {
+    echo "ERROR: Docker returned an error, shown below"
+    echo
+    cat $RUNWITHPROGRESSOUTPUT
+    echo
+    return $ERROR
+  }
+
+  return $retval
 }
 
 # ---------------------------------------------------------------------------
@@ -214,73 +356,73 @@ create_docker_build_dir() {
 
   #mok-centos-7-tarball-start 
   cat <<EnD | base64 -d | tar xz -C $DOCKERBUILDTMPDIR 
-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
-alWrWtWq9p20/wHAtCoAAFAAAA==
+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
+Fm3RvpH2P+btZ/wAUAAA
 EnD
   #mok-centos-7-tarball-end
 }
@@ -540,6 +682,57 @@ check_option3_token() {
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
+run_with_progress() {
+# ---------------------------------------------------------------------------
+# Display a progress spinner, display text, display a tick or cross based
+# on the exit code.
+# Args:
+#   arg1 - the text to display
+#   argN - remaining args are the program and its arguments
+
+  local displaytext=$1
+  local a=('◐' '◓' '◑' '◒')
+  declare -g RUNWITHPROGRESSOUTPUT=`mktemp --tmpdir=/var/tmp`
+
+  shift
+  $@ &>$RUNWITHPROGRESSOUTPUT &
+  tput civis
+  echo -n "$displaytext"
+  ( while true; do
+    for i in {0..3}; do
+      echo -en "\r  ${a[i]}"
+      sleep .1
+    done
+  done ) & 
+  wait %1
+  retval=$?
+  if [[ $retval -eq 0 ]]; then
+    echo -e "\r  ✓"
+  else
+    echo -e "\r  ✕"
+  fi
+
+  kill %2
+  tput cnorm
+
+  return $retval
+}
+
+# ---------------------------------------------------------------------------
+sanity_checks(){
+# ---------------------------------------------------------------------------
+# Check our environment
+# No args expected
+
+  for binary in docker grep sed; do
+    if ! which $binary >& /dev/null; then
+      echo "ERROR: $binary binary not found in path. Aborting."
+      return 1
+    fi
+  done
+}
+
+# ---------------------------------------------------------------------------
 usage() {
 # ---------------------------------------------------------------------------
 # Every tool, no matter how small, should have help text!
@@ -583,7 +776,7 @@ usage() {
   echo
   echo "build SUBCOMMANDs:"
   echo
-  echo "  image - Creates the mok-centos-7 base image."
+  echo "  image - Creates the $BASEIMAGENAME base image."
   echo
   echo "build image options:"
   echo
@@ -617,10 +810,13 @@ cleanup() {
 # ---------------------------------------------------------------------------
 # Called when the script exits.
 
-    [[ -e "$DOCKERBUILDTMPDIR" ]] && \
-      [[ $DOCKERBUILDTMPDIR == "/var/tmp/"* ]] && {
-      rm -rf "$DOCKERBUILDTMPDIR"
-    }
+  [[ -e "$DOCKERBUILDTMPDIR" ]] && \
+    [[ $DOCKERBUILDTMPDIR == "/var/tmp/"* ]] && {
+    rm -rf "$DOCKERBUILDTMPDIR"
+  }
+
+  # If progress spinner crashed make sure the cursor is shown
+  tput cnorm
 }
 
 # Calls main() if we're called from the command line

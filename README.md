@@ -47,6 +47,7 @@ Probably the best way would be to:
 git clone https://github.com/mclarkson/my-own-kind.git
 cd my-own-kind
 sudo make install
+mokctl build image
 mokctl create cluster mycluster 1 0
 ```
 

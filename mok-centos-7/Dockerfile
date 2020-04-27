@@ -41,5 +41,4 @@ COPY entrypoint /usr/local/bin
 VOLUME [ "/sys/fs/cgroup" ]
 # SystemD's instuction to halt
 STOPSIGNAL SIGRTMIN+3
-ENTRYPOINT ["/usr/local/bin/entrypoint"]
-CMD ["/usr/sbin/init"]
+ENTRYPOINT ["/usr/local/bin/entrypoint", "/usr/sbin/init"]

@@ -367,6 +367,102 @@ testCreateClusterExtraOptionsOutput() {
     "${LINES[0]}"
 }
 
+# ---------------------------------------------------------------------------
+testCreateClusterMutateReturnCode(){
+# ---------------------------------------------------------------------------
+# Override get_cluster_size to return an arbitrary number which would
+# be the 'docker ps' return code
+
+  get_cluster_size() { echo "error"; return 22; }
+
+  do_create_cluster_mutate >/dev/null
+  assertEquals \
+    "docker error code should be passed back to get_cluster_size " \
+    "22" "$?"
+}
+
+# ---------------------------------------------------------------------------
+testGetClusterSizeReturnSize(){
+# ---------------------------------------------------------------------------
+# Override get_cluster_size to return an arbitrary number which would
+# be the 'docker ps' return code
+
+  docker() { echo -e "123\n234\n345\n456"; return 0; }
+
+  numnodes=$(get_cluster_size)
+  assertEquals \
+    "docker num nodes should be passed back to get_cluster_size " \
+    "4" "$numnodes"
+}
+
+# ---------------------------------------------------------------------------
+testCreateClusterMutateFailsOnClusterExistence(){
+# ---------------------------------------------------------------------------
+# Override get_cluster_size to return an arbitrary number which would
+# be the 'docker ps' return code
+
+  create_master_nodes() { :; }
+  create_worker_nodes() { :; }
+  get_cluster_size() { echo "2"; return 0; }
+
+  do_create_cluster_mutate >/dev/null
+  assertEquals \
+    "docker num nodes should be passed back to get_cluster_size " \
+    "1" "$?"
+}
+
+# ---------------------------------------------------------------------------
+testCreateClusterMasterNodesWithSuccess(){
+# ---------------------------------------------------------------------------
+# Override get_cluster_size to return an arbitrary number which would
+# be the 'docker ps' return code
+
+  docker() { sleep 1; return 0; }
+  get_cluster_size() { echo "0"; return 0; }
+
+  main create cluster myclust 1 0 >/dev/null
+  r=$?
+  assertEquals \
+    "'mokctl create cluster myclust 1 0 should succeed" \
+    "0" "$r"
+}
+
+# ---------------------------------------------------------------------------
+testCreateClusterMasterNodesWithFailure(){
+# ---------------------------------------------------------------------------
+# Override get_cluster_size to return an arbitrary number which would
+# be the 'docker ps' return code
+
+  docker() { sleep 1; return 0; }
+
+  # echo "1" below means that a node exists already which means
+  # the cluster can't be created
+  get_cluster_size() { echo "1"; return 0; }
+
+  main create cluster myclust 1 0 >/dev/null
+  r=$?
+  assertEquals \
+    "'mokctl create cluster myclust 1 0 should fail" \
+    "1" "$r"
+}
+
+# ---------------------------------------------------------------------------
+testCreateClusterMasterNodesWithFailure2(){
+# ---------------------------------------------------------------------------
+# Override get_cluster_size to return an arbitrary number which would
+# be the 'docker ps' return code
+
+  # return 1 below means that docker failed
+  docker() { sleep 1; return 1; }
+  get_cluster_size() { echo "0"; return 0; }
+
+  main create cluster myclust 1 0 >/dev/null
+  r=$?
+  assertEquals \
+    "'mokctl create cluster myclust 1 0 should fail" \
+    "1" "$r"
+}
+
 # ===========================================================================
 # mokctl delete tests
 # ===========================================================================
@@ -463,11 +559,18 @@ setUp() {
 }
 
 # ---------------------------------------------------------------------------
+tearDown(){
+# ---------------------------------------------------------------------------
+  rm -rf /var/tmp/mokctl-unit-tests.*
+  cleanup
+}
+
+# ---------------------------------------------------------------------------
 grabMainOutput() {
 # ---------------------------------------------------------------------------
 # Helper function. Sets LINES array to script output.
 
-  local tmpname=`mktemp --tmpdir=/var/tmp`
+  local tmpname=`mktemp --tmpdir=/var/tmp mokctl-unit-tests.XXXXXXXX`
   main "$@" >$tmpname
   readarray -t LINES <$tmpname
 }

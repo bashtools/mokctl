@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # ===========================================================================
-# Build tests
+# Make tests
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
@@ -13,6 +13,10 @@ testMakeCreatesMokctlDeploy(){
     "Check that make creates mokctl.deploy" \
     "[[ -e 'mokctl.deploy' ]]"
 }
+
+# ===========================================================================
+# Build tests
+# ===========================================================================
 
 # ---------------------------------------------------------------------------
 testBuildDirectoryCreation(){
@@ -84,7 +88,7 @@ testBuildwithOptionOutput(){
   grabMainOutput build image 1
 
   assertEquals \
-    "'mokctl build' should fail with correct output" \
+    "'mokctl build image 1' should fail with correct output" \
     "ERROR No more options expected, '1' is unexpected for 'build image'" \
     "${LINES[0]}"   
 }
@@ -543,6 +547,135 @@ testValidDeleteClusterCommand() {
   assertEquals \
     "Valid command: 'mokctl delete cluster mycluster'" \
     "$DELETE_CLUSTER_NAME" "mycluster"
+}
+
+# ===========================================================================
+# mokctl get tests
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+testGetRunWithOneArgShouldFail() {
+# ---------------------------------------------------------------------------
+
+  main get >/dev/null
+  assertTrue \
+    "Run with 'mokctl get' should fail" \
+    "[[ $? -ge 1 ]]"
+}
+
+# ---------------------------------------------------------------------------
+testGetRunWithOneArgShouldFailOutput() {
+# ---------------------------------------------------------------------------
+
+  grabMainOutput get
+  
+  assertEquals \
+    "Run with 'mokctl get' should fail with correct output" \
+    "No SUBCOMMAND supplied" "${LINES[0]}"   
+}
+
+# ---------------------------------------------------------------------------
+testGetWith2Options(){
+# ---------------------------------------------------------------------------
+# There are no options for 'get clusters'
+
+  main get clusters mycluster 1 >/dev/null
+  assertEquals \
+    "'mokctl get clusters mycluster 1' should fail" \
+    "1" "$?"
+}
+
+# ---------------------------------------------------------------------------
+testGetWith2OptionsOutput(){
+# ---------------------------------------------------------------------------
+# There are no options for 'get cluster'
+
+  grabMainOutput get cluster mycluster 1
+
+  assertEquals \
+    "'mokctl get cluster mycluster 1' should fail with correct output" \
+    "ERROR No more options expected, '1' is unexpected for 'get cluster'" \
+    "${LINES[0]}"   
+}
+
+# ---------------------------------------------------------------------------
+testGetWith2OptionOutput2(){
+# ---------------------------------------------------------------------------
+
+  grabMainOutput get clusters mycluster 1
+
+  assertEquals \
+    "'mokctl get clusters mycluster 1' should fail with correct output" \
+    "ERROR No more options expected, '1' is unexpected for 'get cluster'" \
+    "${LINES[0]}"   
+}
+
+# ---------------------------------------------------------------------------
+testGetClustersOutputsClusterNames(){
+# ---------------------------------------------------------------------------
+# There are no options for 'get clusters'. Checks that 'get clusters' works
+# as well as 'get cluster' which was tried above.
+
+  get_mok_cluster_docker_ids() { echo "5c844b362d2a"; }
+  get_info_about_container_using_docker() {
+    cat tests/testfiles/docker_inspect_container.txt
+  }
+  grabMainOutput get clusters
+
+  assertEquals \
+    "'mokctl get clusters' should return cluster names" \
+    "mycluster2" \
+    "${LINES[0]}"   
+}
+
+# ---------------------------------------------------------------------------
+testGetClustersReturnsOKForNamedCluster(){
+# ---------------------------------------------------------------------------
+
+  get_mok_cluster_docker_ids() { echo "123456"; return $OK; }
+  get_info_about_container_using_docker() {
+    cat tests/testfiles/docker_inspect_container.txt
+  }
+
+  grabMainOutput get cluster mycluster2
+
+  assertEquals \
+    "'mokctl get cluster mycluster2' should return cluster name" \
+    "mycluster2" \
+    "${LINES[0]}"   
+}
+
+# ---------------------------------------------------------------------------
+testGetClustersReturnsOKForZeroClusters(){
+# ---------------------------------------------------------------------------
+
+  get_mok_cluster_docker_ids() { return $OK; }
+  get_info_about_container_using_docker() {
+    cat tests/testfiles/docker_inspect_container.txt
+  }
+  main get clusters
+  r=$?
+
+  assertEquals \
+    "'mokctl get clusters' should return cluster names" \
+    "0" \
+    "$r"   
+}
+
+# ---------------------------------------------------------------------------
+testGetClustersOutputsNothing(){
+# ---------------------------------------------------------------------------
+
+  get_mok_cluster_docker_ids() { return $OK; }
+  get_info_about_container_using_docker() {
+    cat tests/testfiles/docker_inspect_container.txt
+  }
+  grabMainOutput get clusters
+
+  assertEquals \
+    "'mokctl get clusters' should return cluster names" \
+    "" \
+    "${LINES[0]}"   
 }
 
 # ===========================================================================

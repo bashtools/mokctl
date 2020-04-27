@@ -15,6 +15,7 @@ CREATE_CLUSTER_NAME=
 declare -i CREATE_CLUSTER_NUM_MASTERS=
 declare -i CREATE_CLUSTER_NUM_WORKERS=
 DELETE_CLUSTER_NAME=
+GET_CLUSTER_NAME=
 
 # Directory to unpack the build files
 DOCKERBUILDTMPDIR=
@@ -48,8 +49,35 @@ main() {
   case "$COMMAND" in
     create) do_create ;;
     delete) do_delete ;;
-    build)  do_build ;;
+    build)  do_build  ;;
+    get)    do_get    ;;
   esac
+}
+
+# ===========================================================================
+# MOKCTL GET
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+do_get() {
+# ---------------------------------------------------------------------------
+# Calls the correct command/subcommand function
+
+  case $SUBCOMMAND in
+    cluster)  do_get_clusters_sanity_checks || return $?
+              do_get_clusters_nomutate "$GET_CLUSTER_NAME"
+              ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+do_get_clusters_sanity_checks() {
+# ---------------------------------------------------------------------------
+# No sanity checks required.
+# Globals: None
+# No args expected
+
+  :
 }
 
 # ===========================================================================
@@ -220,6 +248,68 @@ do_build_image_mutate() {
   fi
 
   return $retval
+}
+
+# ---------------------------------------------------------------------------
+do_get_clusters_nomutate() {
+# ---------------------------------------------------------------------------
+# Mutate functions make system changes but this one doesn't and I don't
+#  know where to put it yet.
+# Gets cluster details
+# Globals: None
+# Args
+#   arg1 - cluster name, optional
+
+  local id output clustname=$1
+  declare -a nodes
+
+  [[ -n $clustname ]] && clustname="=$clustname"
+
+  output=$(get_mok_cluster_docker_ids "$clustname") || return $?
+
+  if [[ -z $output ]]; then
+    return $OK
+  fi
+
+  readarray nodes <<<$output
+
+  # Use 'docker inspect' to get the value of the label $LABELKEY
+
+  for id in ${nodes[@]}; do
+    output=$(get_info_about_container_using_docker $id) || return $?
+    sed -rn '/Labels/,/}/ {s/[":,]//g; s/^ *'"$LABELKEY"' ([^ ]*).*/\1/p }' \
+      <<<$output
+  done
+}
+
+# ===========================================================================
+# FUNCTIONS BELOW ARE HELPERS FOR do_get_clusters_nomutate()
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+get_mok_cluster_docker_ids() {
+# ---------------------------------------------------------------------------
+# Use 'docker ps .. label= ..' to get a list of mok clusters
+# Args
+#   arg1 - mok cluster name, optional
+
+  docker ps -a -f label=$LABELKEY$1 -q || {
+    echo "ERROR: docker failed\n" >/dev/stderr
+    return $ERROR
+  }
+}
+
+# ---------------------------------------------------------------------------
+get_info_about_container_using_docker() {
+# ---------------------------------------------------------------------------
+# Use 'docker inspect $id' to get details about container $id
+# Args
+#   arg1 - docker container id
+
+  docker inspect $1 || {
+    echo -e "\nERROR: docker failed\n" >/dev/stderr
+    return $ERROR
+  }
 }
 
 # ===========================================================================
@@ -400,7 +490,6 @@ parse_options() {
                      echo
                      return $ERROR
                    }
-                   SUBCOMMAND="$1"
                  ;;
             OPTION) check_option_token $1
                    [[ $? -eq $ERROR ]] && {
@@ -466,7 +555,9 @@ check_command_token() {
       ;;
     delete) COMMAND=delete
       ;;
-    build) COMMAND=build
+    build)  COMMAND=build
+      ;;
+    get)    COMMAND=get
       ;;
     ?*) return $ERROR
       ;;
@@ -484,7 +575,8 @@ check_subcommand_token() {
   case $COMMAND in
     create) check_create_subcommand_token $1 ;;
     delete) check_delete_subcommand_token $1 ;;
-    build) check_build_subcommand_token $1   ;;
+    build)  check_build_subcommand_token $1  ;;
+    get)    check_get_subcommand_token $1  ;;
   esac
 }
 
@@ -542,6 +634,24 @@ check_build_subcommand_token() {
 }
 
 # ---------------------------------------------------------------------------
+check_get_subcommand_token() {
+# ---------------------------------------------------------------------------
+# Check for a valid token in subcommand state
+# Args:
+#   arg1 - token
+
+  case $1 in
+    clusters) ;&
+    cluster) SUBCOMMAND="cluster"
+      ;;
+    ?*) return $ERROR
+      ;;
+  esac
+
+  STATE=OPTION
+}
+
+# ---------------------------------------------------------------------------
 check_option_token() {
 # ---------------------------------------------------------------------------
 # Check for a valid token in option state
@@ -559,6 +669,13 @@ check_option_token() {
     delete)
       case $SUBCOMMAND in
         cluster) DELETE_CLUSTER_NAME="$1"
+          STATE="END"
+          ;;
+      esac
+      ;;
+    get)
+      case $SUBCOMMAND in
+        cluster) GET_CLUSTER_NAME="$1"
           STATE="END"
           ;;
       esac
@@ -678,24 +795,9 @@ sanity_checks(){
 }
 
 # ---------------------------------------------------------------------------
-usage() {
+create_command_help() {
 # ---------------------------------------------------------------------------
-# Every tool, no matter how small, should have help text!
-
-  echo
-  echo "Usage: mokctl [-h] <COMMAND> <SUBCOMMAND> [SUBCOMMAND_OPTIONS...]"
-  echo
-  echo "Global options:"
-  echo
-  echo "  -h - This help text"
-  echo
-  echo "Where COMMAND can be one of:"
-  echo
-  echo "  create"
-  echo "  delete"
-  echo "  build"
-  echo
-  echo "create SUBCOMMANDs:"
+  echo "create SUBCOMMANDs are:"
   echo
   echo "  cluster - Create a local kubernetes cluster."
   echo
@@ -709,9 +811,14 @@ usage() {
   echo "  NUM_MASTERS - The number of master containers."
   echo "  NUM_WORKERS - The number of worker containers."
   echo
-  echo "delete SUBCOMMANDs:"
+}
+
+# ---------------------------------------------------------------------------
+delete_command_help() {
+# ---------------------------------------------------------------------------
+  echo "delete SUBCOMMANDs are:"
   echo
-  echo "  cluster - Create a local kubernetes cluster."
+  echo "  cluster - Delete a local kubernetes cluster."
   echo
   echo "delete cluster options:"
   echo
@@ -719,7 +826,12 @@ usage() {
   echo "  delete cluster NAME"
   echo "  NAME        - The name of the cluster to delete"
   echo
-  echo "build SUBCOMMANDs:"
+}
+
+# ---------------------------------------------------------------------------
+build_command_help() {
+# ---------------------------------------------------------------------------
+  echo "build SUBCOMMANDs are:"
   echo
   echo "  image - Creates the $BASEIMAGENAME base image."
   echo
@@ -728,6 +840,56 @@ usage() {
   echo " Format:"
   echo "  build image"
   echo
+}
+
+# ---------------------------------------------------------------------------
+get_command_help() {
+# ---------------------------------------------------------------------------
+  echo "get SUBCOMMANDs are:"
+  echo
+  echo "  cluster(s) - list all mokctl managed clusters."
+  echo
+  echo "get cluster(s) options:"
+  echo
+  echo " Format:"
+  echo "  get cluster(s) [NAME]"
+  echo "  NAME        - (optional) The name of the cluster to get"
+  echo "                details about."
+  echo
+}
+
+# ---------------------------------------------------------------------------
+usage() {
+# ---------------------------------------------------------------------------
+# Every tool, no matter how small, should have help text!
+
+  case $COMMAND in
+    create) create_command_help; return 0 ;;
+    delete) delete_command_help; return 0 ;;
+    build) build_command_help; return 0 ;;
+    get) get_command_help; return 0 ;;
+  esac
+
+  echo
+  echo "Usage: mokctl [-h] <COMMAND> <SUBCOMMAND> [SUBCOMMAND_OPTIONS...]"
+  echo
+  echo "Global options:"
+  echo
+  echo "  -h - This help text"
+  echo
+  echo "Where COMMAND can be one of:"
+  echo
+  echo "  create - Add item(s) to the system."
+  echo "  delete - Delete item(s) from the system."
+  echo "  build  - Build item(s) used by the system."
+  echo "  get    - Get details about items in the system."
+  echo
+  
+  create_command_help
+  delete_command_help
+  build_command_help
+  get_command_help
+
   echo "EXAMPLES"
   echo
   echo "Build the image used for masters and workers:"

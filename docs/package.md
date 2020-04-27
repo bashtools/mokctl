@@ -248,13 +248,7 @@ To start a new cluster with two nodes, master-1 and node-1, with the new Dockerf
   docker build -t local/mok-centos-7 .
 
   # Start a master-1 and node-1
-  docker run --privileged \
-    -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
-    -v /lib/modules:/lib/modules:ro \
-    --tmpfs /run --tmpfs /tmp -d \
-    --name master-1 \
-    --hostname master-1 \
-    local/mok-centos-7
+  h
 
   docker run --privileged \
     -v /sys/fs/cgroup:/sys/fs/cgroup:ro \

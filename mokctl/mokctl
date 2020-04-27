@@ -345,7 +345,7 @@ get_cluster_size() {
 
   declare -a nodes
 
-  output=$(get_cluster_ids $1) || return $?
+  output=$(get_docker_ids_for_cluster $1) || return $?
 
   # read the nodes array and delete blank lines
   readarray nodes < <(echo "$output" | sed '/^$/d')
@@ -438,7 +438,7 @@ delete_cluster_nodes() {
 # Args:
 #   arg1 - Name of the cluster to delete
 
-  ids=$(get_cluster_ids $1) || return $?
+  ids=$(get_docker_ids_for_cluster $1) || return $?
  
   echo -e "The following containers will be deleted:\n"
 
@@ -611,16 +611,11 @@ check_command_token() {
 #   arg1 - token
 
   case $1 in
-    create) COMMAND=create
-      ;;
-    delete) COMMAND=delete
-      ;;
-    build)  COMMAND=build
-      ;;
-    get)    COMMAND=get
-      ;;
-    ?*) return $ERROR
-      ;;
+    create) COMMAND=create ;;
+    delete) COMMAND=delete ;;
+    build)  COMMAND=build  ;;
+    get)    COMMAND=get    ;;
+    ?*)     return $ERROR  ;;
   esac
   STATE="SUBCOMMAND"
 }
@@ -636,7 +631,7 @@ check_subcommand_token() {
     create) check_create_subcommand_token $1 ;;
     delete) check_delete_subcommand_token $1 ;;
     build)  check_build_subcommand_token $1  ;;
-    get)    check_get_subcommand_token $1  ;;
+    get)    check_get_subcommand_token $1    ;;
   esac
 }
 
@@ -648,10 +643,8 @@ check_create_subcommand_token() {
 #   arg1 - token
 
   case $1 in
-    cluster) SUBCOMMAND="cluster"
-      ;;
-    ?*) return $ERROR
-      ;;
+    cluster) SUBCOMMAND="cluster" ;;
+    ?*) return $ERROR ;;
   esac
 
   STATE="OPTION"
@@ -667,10 +660,8 @@ check_delete_subcommand_token() {
 #   arg1 - token
 
   case $1 in
-    cluster) SUBCOMMAND="cluster"
-      ;;
-    ?*) return $ERROR
-      ;;
+    cluster) SUBCOMMAND="cluster" ;;
+    ?*) return $ERROR ;;
   esac
 
   STATE=OPTION
@@ -684,10 +675,8 @@ check_build_subcommand_token() {
 #   arg1 - token
 
   case $1 in
-    image) SUBCOMMAND="image"
-      ;;
-    ?*) return $ERROR
-      ;;
+    image) SUBCOMMAND="image" ;;
+    ?*) return $ERROR ;;
   esac
 
   STATE=END
@@ -702,10 +691,8 @@ check_get_subcommand_token() {
 
   case $1 in
     clusters) ;&
-    cluster) SUBCOMMAND="cluster"
-      ;;
-    ?*) return $ERROR
-      ;;
+    cluster) SUBCOMMAND="cluster" ;;
+    ?*) return $ERROR ;;
   esac
 
   STATE=OPTION
@@ -798,12 +785,16 @@ check_option3_token() {
 # ---------------------------------------------------------------------------
 delete_docker_container() {
 # ---------------------------------------------------------------------------
+# Stops and removes docker container.
+# Args:
+#   arg1 - docker id to delete
+
     docker stop $id || return $?
     docker rm $id || return $?
 }
 
 # ---------------------------------------------------------------------------
-get_cluster_ids() {
+get_docker_ids_for_cluster() {
 # ---------------------------------------------------------------------------
 # Get all cluster ids for labelled containers
 # Args:

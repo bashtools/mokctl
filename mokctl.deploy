@@ -5,7 +5,7 @@
 # ===========================================================================
 # Don't change any globals
 
-# The initial state for the state machine
+# The initial state of the parser
 STATE="COMMAND"
 
 # Parser sets these:
@@ -28,9 +28,9 @@ declare -r BASEIMAGENAME="mok-centos-7"
 declare -r ERROR=1
 declare -r OK=0
 declare -r SPINNER=('◐' '◓' '◑' '◒')
-declare -r colgreen="\e[0;32;40m"
-declare -r colred="\e[0;31;40m"
-declare -r colreset="\e[0;37;40m"
+declare -r colgreen=`tput setaf 2`
+declare -r colred=`tput setaf 1`
+declare -r colreset=`tput sgr0`
 declare -r success="$colgreen✓$colreset"
 declare -r failure="$colred✕$colreset"
 
@@ -214,7 +214,7 @@ do_build_image_mutate() {
   retval=$?
 
   if [[ $retval -eq 0 ]]; then
-    echo "Image built successfully"
+    : # We only need the tick
   else
     echo "Image build failed"
   fi
@@ -709,12 +709,11 @@ run_with_progress() {
   echo -n "$displaytext"
   ( while true; do
     for i in {0..3}; do
-      echo -en "\r  ${SPINNER[i]}"
+      echo -en "\r  ${SPINNER[i]} "
       sleep .1
     done
   done ) & 
 
-  sleep 60
   # Wait for the command to finish
   wait %1
 
@@ -739,7 +738,7 @@ sanity_checks(){
 # Check our environment
 # No args expected
 
-  for binary in docker grep sed; do
+  for binary in tput docker grep sed; do
     if ! which $binary >& /dev/null; then
       echo "ERROR: $binary binary not found in path. Aborting."
       return 1
@@ -802,7 +801,7 @@ usage() {
   echo
   echo "Build the image used for masters and workers:"
   echo
-  echo "  mokctl create image"
+  echo "  mokctl build image"
   echo
   echo "Create a single node cluster:"
   echo "Note that the master node will be made schedulable for pods."

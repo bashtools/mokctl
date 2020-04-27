@@ -6,7 +6,7 @@ mokctl.deploy: mokctl mok-centos-7
 	bash mokctl/embed-dockerfile.sh
 	chmod +x mokctl.deploy
 
-install:
+install: all
 	install mokctl.deploy /usr/local/bin/mokctl
 
 uninstall:

@@ -549,6 +549,23 @@ testValidDeleteClusterCommand() {
     "$DELETE_CLUSTER_NAME" "mycluster"
 }
 
+# ---------------------------------------------------------------------------
+testValidDeleteClusterCommandWithNonexistentName() {
+# ---------------------------------------------------------------------------
+
+  # Check that all the create cluster vars are set
+
+  delete_cluster_nodes(){ :; }
+  get_cluster_size() { echo -n ""; return $OK; }
+
+  grabMainOutput delete cluster mycluster
+
+  assertEquals \
+    "Valid command: 'mokctl delete cluster mycluster'" \
+    "ERROR: No cluster exists with name, 'mycluster'. Aborting." \
+    "${LINES[1]}"
+}
+
 # ===========================================================================
 # mokctl get tests
 # ===========================================================================
@@ -624,8 +641,8 @@ testGetClustersOutputsClusterNames(){
 
   assertEquals \
     "'mokctl get clusters' should return cluster names" \
-    "mycluster2" \
-    "${LINES[0]}"   
+    "mycluster2   5c844b362d2a  mycluster2-master-1  172.17.0.3" \
+    "${LINES[1]}"   
 }
 
 # ---------------------------------------------------------------------------
@@ -641,8 +658,8 @@ testGetClustersReturnsOKForNamedCluster(){
 
   assertEquals \
     "'mokctl get cluster mycluster2' should return cluster name" \
-    "mycluster2" \
-    "${LINES[0]}"   
+    "mycluster2   123456     mycluster2-master-1  172.17.0.3" \
+    "${LINES[1]}"
 }
 
 # ---------------------------------------------------------------------------

@@ -846,7 +846,7 @@ install:
     install mokctl.deploy /usr/local/bin/mokctl
 ```
 
-Now, as I'm getting ready to finish this off I realised I have written any tests. We really will need some so let's do that first.
+Now, as I'm getting ready to finish this off I realised I haven't written any tests. We really will need some so let's do that first.
 
 ## Add tests
 

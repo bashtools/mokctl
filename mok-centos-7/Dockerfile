@@ -21,6 +21,7 @@ RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do \
       cri-o \
       iptables \
       iproute-tc \
+      openssl \
       kubelet$K8SBINVER \
       kubeadm$K8SBINVER \
       kubectl$K8SBINVER \
@@ -31,7 +32,6 @@ RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do \
     && rm -f /etc/cni/net.d/100-crio-bridge.conf \
     && rm -f /etc/cni/net.d/200-loopback.conf \
     && systemctl enable crio \
-    && systemctl enable kubelet \
     && curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz \
     && tar zxvf crictl-$CRICTL_VERSION-linux-amd64.tar.gz -C /usr/local/bin \
     && rm -f crictl-$CRICTL_VERSION-linux-amd64.tar.gz

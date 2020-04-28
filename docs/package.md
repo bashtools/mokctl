@@ -248,7 +248,13 @@ To start a new cluster with two nodes, master-1 and node-1, with the new Dockerf
   docker build -t local/mok-centos-7 .
 
   # Start a master-1 and node-1
-  h
+  docker run --privileged \
+    -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+    -v /lib/modules:/lib/modules:ro \
+    --tmpfs /run --tmpfs /tmp -d \
+    --name master-1 \
+    --hostname master-1 \
+    local/mok-centos-7
 
   docker run --privileged \
     -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
@@ -275,7 +281,7 @@ Then copy and paste:
   # Run the preflight phase
   kubeadm init \
     --pod-network-cidr=10.244.0.0/16 \
-    --ignore-preflight-errors Swap
+    --ignore-preflight-errors Swap \
     phase preflight
 
   # Set up the kubelet
@@ -994,8 +1000,6 @@ unittest: mokctl.deploy
 
 I'll finish off the tests so you can contribute if you want to but I won't give any more updates about this. It's all in the github repo, and won't really get any more complex than this.
 
----
-
 > **Side Note**: About using shUnit2: To do unit tests, all the functions in the original script (in this case `mokctl`)  need to be copied into the shUnit2 execution space. This means that `exit` can't be called otherwise shUnit2 exits. I went through the code and replaced all my `exit` commands with `return`. Finally, instead of calling `exit` to set the script exit code use `return`. This will set the exit code of the script but won't exit shUnit2. This is a good programming habit anyway, especially when writing libraries, and when using shUnit2 the script is essentially run as a library. A few tips for writing testable shell scripts:
 > 
 > * Use functions for everything.
@@ -1022,8 +1026,6 @@ I'll finish off the tests so you can contribute if you want to but I won't give 
 >   main "$@"
 > fi
 > ```
-
----
 
 ### All done!
 

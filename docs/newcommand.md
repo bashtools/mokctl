@@ -34,6 +34,6 @@ The outcome is shown in the commit:
 
 [Add 'mokctl get cluster OPTIONAL_NAME' command · mclarkson/my-own-kind@6ba00b3 · GitHub](https://github.com/mclarkson/my-own-kind/commit/6ba00b3b01509a83a8bb43bfe83cb2cad6603f72)
 
-Which is not totally clear, so will do another one soon...
+Which is not totally clear, so will do another one soon... hopefully...
 
 

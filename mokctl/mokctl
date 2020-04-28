@@ -211,10 +211,19 @@ do_create_cluster_mutate() {
     create_master_nodes $CREATE_CLUSTER_NUM_MASTERS || return $?
   }
 
+  # TODO Query the server for all pods ready instead
+  run_with_progress \
+    "    Waiting for master to be ready." \
+    sleep 90
+
   [[ $CREATE_CLUSTER_NUM_WORKERS -gt 0 ]] && {
-    create_worker_nodes $CREATE_CLUSTER_NUM_WORKERS || return $?
+    create_worker_nodes "$CREATE_CLUSTER_NUM_WORKERS" || return $?
   }
 
+  echo
+  echo "Cluster, '$CREATE_CLUSTER_NAME', can be accessed using:"
+  echo
+  echo "export KKUBECONFIG=~/.mok/admin.conf"
   echo
 
   return $OK
@@ -360,34 +369,43 @@ create_master_nodes() {
 # Args:
 #   arg1 - number of master nodes to create
 
-  declare -i i=0
   local retval=0
+  declare -i i=0
 
   for i in $(seq 1 $1); do
     run_with_progress \
-        "    Creating base container, '$CREATE_CLUSTER_NAME-master-$i'" \
-        docker run --privileged \
-            -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
-            -v /lib/modules:/lib/modules:ro \
-            --tmpfs /run --tmpfs /tmp \
-            --detach \
-            --name $CREATE_CLUSTER_NAME-master-$i \
-            --hostname $CREATE_CLUSTER_NAME-master-$i \
-            --label $LABELKEY=$CREATE_CLUSTER_NAME \
-            local/$BASEIMAGENAME
-
-    retval=$?
-    [[ $retval -ne 0 ]] && {
-      echo "ERROR: Docker returned an error, shown below"
+      "    Creating base container, '$CREATE_CLUSTER_NAME-master-$i'" \
+      create_docker_container \
+        "$CREATE_CLUSTER_NAME-master-$i" \
+        "$LABELKEY=$CREATE_CLUSTER_NAME"
+    [[ $? -ne 0 ]] && {
       echo
       cat $RUNWITHPROGRESS_OUTPUT
       rm $RUNWITHPROGRESS_OUTPUT
       echo
+      echo "ERROR: Docker failed."
+      return $ERROR
+    }
+    run_with_progress \
+      "    Setting up '$CREATE_CLUSTER_NAME-master-$i'" \
+      set_up_master_node "$CREATE_CLUSTER_NAME-master-$i"
+    [[ $? -ne 0 ]] && {
+      echo
+      cat $RUNWITHPROGRESS_OUTPUT
+      echo
+      echo "ERROR: Set up failed. See above, and also in the file:"
+      echo "$RUNWITHPROGRESS_OUTPUT"
       return $ERROR
     }
   done
 
-  return $retval
+  # For now, copy admin.conf from master to ~/.mok/admin.conf
+
+  mkdir -p ~/.mok/
+  docker cp "$CREATE_CLUSTER_NAME-master-$i":/etc/kubernetes/admin.conf \
+    ~/.mok/admin.conf
+
+  return $OK
 }
 
 # ---------------------------------------------------------------------------
@@ -397,34 +415,47 @@ create_worker_nodes() {
 # Args:
 #   arg1 - number of master nodes to create
 
+  local retval=0 cahash token ip
   declare -i i=0
-  local retval=0
+
+  # Runs a script on master node to get details
+  t=$(get_master_join_details $CREATE_CLUSTER_NAME-master-1) || {
+    echo -e "\nERROR: Problem with 'get_master_join_details'.\n"
+    return $ERROR
+  }
+
+  # Sets cahash, token, and masterip:
+  eval $t
 
   for i in $(seq 1 $1); do
     run_with_progress \
       "    Creating base container, '$CREATE_CLUSTER_NAME-worker-$i'" \
-      docker run --privileged \
-          -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
-          -v /lib/modules:/lib/modules:ro \
-          --tmpfs /run --tmpfs /tmp \
-          --detach \
-          --name $CREATE_CLUSTER_NAME-worker-$i \
-          --hostname $CREATE_CLUSTER_NAME-worker-$i \
-          --label $LABELKEY=$CREATE_CLUSTER_NAME \
-          local/$BASEIMAGENAME
-
-    retval=$?
-    [[ $retval -ne 0 ]] && {
-      echo "ERROR: Docker returned an error, shown below"
+      create_docker_container \
+        "$CREATE_CLUSTER_NAME-worker-$i" \
+        "$LABELKEY=$CREATE_CLUSTER_NAME"
+    [[ $? -ne 0 ]] && {
       echo
       cat $RUNWITHPROGRESS_OUTPUT
       rm $RUNWITHPROGRESS_OUTPUT
       echo
+      echo "ERROR: Docker failed."
+      return $ERROR
+    }
+    run_with_progress \
+      "    Setting up '$CREATE_CLUSTER_NAME-worker-$i'" \
+      set_up_worker_node "$CREATE_CLUSTER_NAME-worker-$i" \
+        "$cahash" "$token" "$masterip"
+    [[ $? -ne 0 ]] && {
+      echo
+      cat $RUNWITHPROGRESS_OUTPUT
+      echo
+      echo "ERROR: Set up failed. See above, and also in the file:"
+      echo "$RUNWITHPROGRESS_OUTPUT"
       return $ERROR
     }
   done
 
-  return $retval
+  return $OK
 }
 
 # ===========================================================================
@@ -513,6 +544,394 @@ create_docker_build_dir() {
 
   #mok-centos-7-tarball-start 
   #mok-centos-7-tarball-end
+}
+
+# ===========================================================================
+# HELPERS
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+get_master_join_details(){
+# ---------------------------------------------------------------------------
+# 'docker exec' into the master to get CA hash, a token, and the master IP.
+# The caller can eval the output of this function to set the variables:
+# cahash, token, and masterip.
+# Args:
+#   arg1 - id/name of master container
+
+  local joinvarsfile=`mktemp --tmpdir=/var/tmp`
+
+  cat <<'EnD' >$joinvarsfile
+#!/bin/bash
+set -e
+
+cahash=$(openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | \
+        openssl rsa -pubin -outform der 2>/dev/null | \
+        openssl dgst -sha256 -hex | sed 's/^.* //')
+token=$(kubeadm token create --kubeconfig=/etc/kubernetes/admin.conf 2>/dev/null)
+ip=$(ip ro get 8.8.8.8 | cut -d" " -f 7)
+
+echo "cahash=$cahash"
+echo "token=$token"
+echo "masterip=$ip"
+
+exit 0
+EnD
+
+  docker cp $joinvarsfile $1:/root/joinvars.sh || return $?
+  rm -f $joinvarsfile
+
+  docker exec $1 bash /root/joinvars.sh
+}
+
+# ---------------------------------------------------------------------------
+set_up_master_node() {
+# ---------------------------------------------------------------------------
+# Use kubeadm to set up the master node.
+# Args:
+#   arg1 - the container to set up.
+
+  local setupfile=`mktemp --tmpdir=/var/tmp`
+
+  cat <<'EnD' >$setupfile
+# Disable ipv6
+sysctl -w net.ipv6.conf.all.disable_ipv6=1
+sysctl -w net.ipv6.conf.default.disable_ipv6=1
+
+# Run the preflight phase
+kubeadm init \
+  --ignore-preflight-errors Swap \
+  phase preflight
+
+# Set up the kubelet
+kubeadm init phase kubelet-start
+
+# Edit the kubelet configuration file
+echo "failSwapOn: false" >>/var/lib/kubelet/config.yaml
+
+# Tell kubeadm to carry on from here
+kubeadm init \
+  --pod-network-cidr=10.244.0.0/16 \
+  --ignore-preflight-errors Swap \
+  --skip-phases=preflight,kubelet-start
+
+declare -i i=120
+while [[ $((i--)) -gt 0 ]]; do
+  curl -k https://localhost:6443/api/ && break
+  sleep 1
+done
+
+export KUBECONFIG=/etc/kubernetes/admin.conf
+
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/2140ac876ef134e0ed5af15c65e414cf26827915/Documentation/kube-flannel.yml
+EnD
+
+  docker cp $setupfile $1:/root/setup.sh
+  rm -f $setupfile
+
+  docker exec $1 bash /root/setup.sh
+}
+
+# ---------------------------------------------------------------------------
+set_up_worker_node() {
+# ---------------------------------------------------------------------------
+# Use kubeadm to set up the master node
+# Args:
+#   arg1 - the container to set up.
+
+  local setupfile=`mktemp --tmpdir=/var/tmp`
+  local cahash=$2 token=$3 masterip=$4
+
+  cat <<EnD >$setupfile
+# Wait for the master API to become ready
+while true; do
+  curl -k https://$masterip:6443/
+  [[ \$? -eq 0 ]] && break
+  sleep 1
+done
+
+# Do the preflight tests (ignoring swap error)
+kubeadm join \
+  phase preflight \
+    --token $token \
+      --discovery-token-ca-cert-hash sha256:$cahash \
+        --ignore-preflight-errors Swap \
+          $masterip:6443
+
+# Set up the kubelet
+kubeadm join \
+  phase kubelet-start \
+    --token $token \
+      --discovery-token-ca-cert-hash sha256:$cahash \
+        $masterip:6443 &
+
+while true; do
+  [[ -e /var/lib/kubelet/config.yaml ]] && break
+    sleep 1
+  done
+
+# Edit the kubelet configuration file
+echo "failSwapOn: false" >>/var/lib/kubelet/config.yaml
+
+systemctl restart kubelet
+EnD
+
+  docker cp $setupfile $1:/root/setup.sh
+  rm -f $setupfile
+
+  docker exec $1 bash /root/setup.sh
+}
+
+# ---------------------------------------------------------------------------
+create_docker_container() {
+# ---------------------------------------------------------------------------
+# Runs a new container with docker run.
+# Args:
+#   arg1 - name to use as the name and hostname.
+#   arg2 - the label to write to the container.
+
+  docker run --privileged \
+      -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+      -v /lib/modules:/lib/modules:ro \
+      --tmpfs /run --tmpfs /tmp \
+      --detach \
+      --name $1 \
+      --hostname $1 \
+      --label $2 \
+      local/$BASEIMAGENAME
+}
+
+# ---------------------------------------------------------------------------
+delete_docker_container() {
+# ---------------------------------------------------------------------------
+# Stops and removes docker container.
+# Args:
+#   arg1 - docker id to delete
+
+  docker stop $id || return $?
+  docker rm $id || return $?
+}
+
+# ---------------------------------------------------------------------------
+get_docker_ids_for_cluster() {
+# ---------------------------------------------------------------------------
+# Get all cluster ids for labelled containers
+# Args:
+#   arg1 - Cluster name
+
+  local value
+
+  [[ -n $1 ]] && value="=$1"
+
+  output=$(docker ps -a -f label=$LABELKEY$value -q) || {
+    echo -e "ERROR: Docker command failed\n" >/dev/stderr
+    return $ERROR
+  }
+
+  echo "$output"
+
+  return $OK
+}
+
+# ---------------------------------------------------------------------------
+run_with_progress() {
+# ---------------------------------------------------------------------------
+# Display a progress spinner, display item text, display a tick or cross
+# based on the exit code.
+# Args:
+#   arg1 - the text to display
+#   argN - remaining args are the program and its arguments
+
+  local displaytext=$1
+  declare -g RUNWITHPROGRESS_OUTPUT=`mktemp --tmpdir=/var/tmp`
+
+  shift
+  # Run the command in the background
+  $@ &>$RUNWITHPROGRESS_OUTPUT &
+  # Turn the cursor off
+  tput civis
+
+  # Start the spin animation
+  echo -n "$displaytext"
+  ( while true; do
+    for i in {0..3}; do
+      echo -en "\r  ${SPINNER[i]} "
+      sleep .1
+    done
+  done ) & 
+
+  # Wait for the command to finish
+  wait %1
+  retval=$?
+
+  # Kill the spinner
+  kill %2
+
+  # Mark success/fail
+  if [[ $retval -eq 0 ]]; then
+    echo -e "\r  $success"
+  else
+    echo -e "\r  $failure"
+  fi
+
+  # Restore the cursor
+  tput cnorm
+
+  return $retval
+}
+
+# ---------------------------------------------------------------------------
+sanity_checks(){
+# ---------------------------------------------------------------------------
+# Check our environment
+# No args expected
+
+  for binary in column tput docker grep sed; do
+    if ! which $binary >& /dev/null; then
+      echo "ERROR: $binary binary not found in path. Aborting."
+      return 1
+    fi
+  done
+}
+
+# ---------------------------------------------------------------------------
+create_command_help() {
+# ---------------------------------------------------------------------------
+  echo "create SUBCOMMANDs are:"
+  echo
+  echo "  cluster - Create a local kubernetes cluster."
+  echo
+  echo "create cluster options:"
+  echo
+  echo " Format:"
+  echo "  create cluster NAME NUM_MASTERS NUM_WORKERS"
+  echo "  NAME        - The name of the cluster. This will be used as"
+  echo "                the prefix in the name for newly created"
+  echo "                docker containers."
+  echo "  NUM_MASTERS - The number of master containers."
+  echo "  NUM_WORKERS - The number of worker containers."
+  echo
+}
+
+# ---------------------------------------------------------------------------
+delete_command_help() {
+# ---------------------------------------------------------------------------
+  echo "delete SUBCOMMANDs are:"
+  echo
+  echo "  cluster - Delete a local kubernetes cluster."
+  echo
+  echo "delete cluster options:"
+  echo
+  echo " Format:"
+  echo "  delete cluster NAME"
+  echo "  NAME        - The name of the cluster to delete"
+  echo
+}
+
+# ---------------------------------------------------------------------------
+build_command_help() {
+# ---------------------------------------------------------------------------
+  echo "build SUBCOMMANDs are:"
+  echo
+  echo "  image - Creates the $BASEIMAGENAME base image."
+  echo
+  echo "build image options:"
+  echo
+  echo " Format:"
+  echo "  build image"
+  echo
+}
+
+# ---------------------------------------------------------------------------
+get_command_help() {
+# ---------------------------------------------------------------------------
+  echo "get SUBCOMMANDs are:"
+  echo
+  echo "  cluster(s) - list all mokctl managed clusters."
+  echo
+  echo "get cluster(s) options:"
+  echo
+  echo " Format:"
+  echo "  get cluster(s) [NAME]"
+  echo "  NAME        - (optional) The name of the cluster to get"
+  echo "                details about."
+  echo
+}
+
+# ---------------------------------------------------------------------------
+usage() {
+# ---------------------------------------------------------------------------
+# Every tool, no matter how small, should have help text!
+
+  case $COMMAND in
+    create) create_command_help; return 0 ;;
+    delete) delete_command_help; return 0 ;;
+    build) build_command_help; return 0 ;;
+    get) get_command_help; return 0 ;;
+  esac
+
+  echo
+  echo "Usage: mokctl [-h] <COMMAND> <SUBCOMMAND> [SUBCOMMAND_OPTIONS...]"
+  echo
+  echo "Global options:"
+  echo
+  echo "  -h - This help text"
+  echo
+  echo "Where COMMAND can be one of:"
+  echo
+  echo "  create - Add item(s) to the system."
+  echo "  delete - Delete item(s) from the system."
+  echo "  build  - Build item(s) used by the system."
+  echo "  get    - Get details about items in the system."
+  echo
+  
+  create_command_help
+  delete_command_help
+  build_command_help
+  get_command_help
+
+  echo "EXAMPLES"
+  echo
+  echo "Get a list of mok clusters"
+  echo
+  echo "  mokctl get clusters"
+  echo
+  echo "Build the image used for masters and workers:"
+  echo
+  echo "  mokctl build image"
+  echo
+  echo "Create a single node cluster:"
+  echo "Note that the master node will be made schedulable for pods."
+  echo
+  echo "  mokctl create cluster mycluster 1 0"
+  echo
+  echo "Create a single master and single node cluster:"
+  echo "Note that the master node will NOT be schedulable for pods."
+  echo
+  echo "  mokctl create cluster mycluster 1 1"
+  echo
+  echo "Delete a cluster:"
+  echo
+  echo "  mokctl delete cluster mycluster"
+  echo
+}
+
+# ---------------------------------------------------------------------------
+cleanup() {
+# ---------------------------------------------------------------------------
+# Called when the script exits.
+
+  [[ -e "$DOCKERBUILDTMPDIR" ]] && \
+    [[ $DOCKERBUILDTMPDIR == "/var/tmp/"* ]] && {
+    rm -rf "$DOCKERBUILDTMPDIR"
+  }
+
+  # If progress spinner crashed make sure the cursor is shown
+  tput cnorm
+
+  # Kill the spinny, and anything else, if they're running
+  [[ -n `jobs -p` ]] &&  echo -e "$colred\r  ✕$colreset"
+  for i in `jobs -p`; do kill $i; done
 }
 
 # ===========================================================================
@@ -776,240 +1195,6 @@ check_option3_token() {
       esac
       ;;
   esac
-}
-
-# ===========================================================================
-# HELPERS
-# ===========================================================================
-
-# ---------------------------------------------------------------------------
-delete_docker_container() {
-# ---------------------------------------------------------------------------
-# Stops and removes docker container.
-# Args:
-#   arg1 - docker id to delete
-
-    docker stop $id || return $?
-    docker rm $id || return $?
-}
-
-# ---------------------------------------------------------------------------
-get_docker_ids_for_cluster() {
-# ---------------------------------------------------------------------------
-# Get all cluster ids for labelled containers
-# Args:
-#   arg1 - Cluster name
-
-  local value
-
-  [[ -n $1 ]] && value="=$1"
-
-  output=$(docker ps -a -f label=$LABELKEY$value -q) || {
-    echo -e "ERROR: Docker command failed\n" >/dev/stderr
-    return $ERROR
-  }
-
-  echo "$output"
-
-  return $OK
-}
-
-# ---------------------------------------------------------------------------
-run_with_progress() {
-# ---------------------------------------------------------------------------
-# Display a progress spinner, display item text, display a tick or cross
-# based on the exit code.
-# Args:
-#   arg1 - the text to display
-#   argN - remaining args are the program and its arguments
-
-  local displaytext=$1
-  declare -g RUNWITHPROGRESS_OUTPUT=`mktemp --tmpdir=/var/tmp`
-
-  shift
-  # Run the command in the background
-  $@ &>$RUNWITHPROGRESS_OUTPUT &
-  # Turn the cursor off
-  tput civis
-
-  # Start the spin animation
-  echo -n "$displaytext"
-  ( while true; do
-    for i in {0..3}; do
-      echo -en "\r  ${SPINNER[i]} "
-      sleep .1
-    done
-  done ) & 
-
-  # Wait for the command to finish
-  wait %1
-
-  retval=$?
-  if [[ $retval -eq 0 ]]; then
-    echo -e "\r  $success"
-  else
-    echo -e "\r  $failure"
-  fi
-
-  # Kill the spinner
-  kill %2
-  # Restore the cursor
-  tput cnorm
-
-  return $retval
-}
-
-# ---------------------------------------------------------------------------
-sanity_checks(){
-# ---------------------------------------------------------------------------
-# Check our environment
-# No args expected
-
-  for binary in column tput docker grep sed; do
-    if ! which $binary >& /dev/null; then
-      echo "ERROR: $binary binary not found in path. Aborting."
-      return 1
-    fi
-  done
-}
-
-# ---------------------------------------------------------------------------
-create_command_help() {
-# ---------------------------------------------------------------------------
-  echo "create SUBCOMMANDs are:"
-  echo
-  echo "  cluster - Create a local kubernetes cluster."
-  echo
-  echo "create cluster options:"
-  echo
-  echo " Format:"
-  echo "  create cluster NAME NUM_MASTERS NUM_WORKERS"
-  echo "  NAME        - The name of the cluster. This will be used as"
-  echo "                the prefix in the name for newly created"
-  echo "                docker containers."
-  echo "  NUM_MASTERS - The number of master containers."
-  echo "  NUM_WORKERS - The number of worker containers."
-  echo
-}
-
-# ---------------------------------------------------------------------------
-delete_command_help() {
-# ---------------------------------------------------------------------------
-  echo "delete SUBCOMMANDs are:"
-  echo
-  echo "  cluster - Delete a local kubernetes cluster."
-  echo
-  echo "delete cluster options:"
-  echo
-  echo " Format:"
-  echo "  delete cluster NAME"
-  echo "  NAME        - The name of the cluster to delete"
-  echo
-}
-
-# ---------------------------------------------------------------------------
-build_command_help() {
-# ---------------------------------------------------------------------------
-  echo "build SUBCOMMANDs are:"
-  echo
-  echo "  image - Creates the $BASEIMAGENAME base image."
-  echo
-  echo "build image options:"
-  echo
-  echo " Format:"
-  echo "  build image"
-  echo
-}
-
-# ---------------------------------------------------------------------------
-get_command_help() {
-# ---------------------------------------------------------------------------
-  echo "get SUBCOMMANDs are:"
-  echo
-  echo "  cluster(s) - list all mokctl managed clusters."
-  echo
-  echo "get cluster(s) options:"
-  echo
-  echo " Format:"
-  echo "  get cluster(s) [NAME]"
-  echo "  NAME        - (optional) The name of the cluster to get"
-  echo "                details about."
-  echo
-}
-
-# ---------------------------------------------------------------------------
-usage() {
-# ---------------------------------------------------------------------------
-# Every tool, no matter how small, should have help text!
-
-  case $COMMAND in
-    create) create_command_help; return 0 ;;
-    delete) delete_command_help; return 0 ;;
-    build) build_command_help; return 0 ;;
-    get) get_command_help; return 0 ;;
-  esac
-
-  echo
-  echo "Usage: mokctl [-h] <COMMAND> <SUBCOMMAND> [SUBCOMMAND_OPTIONS...]"
-  echo
-  echo "Global options:"
-  echo
-  echo "  -h - This help text"
-  echo
-  echo "Where COMMAND can be one of:"
-  echo
-  echo "  create - Add item(s) to the system."
-  echo "  delete - Delete item(s) from the system."
-  echo "  build  - Build item(s) used by the system."
-  echo "  get    - Get details about items in the system."
-  echo
-  
-  create_command_help
-  delete_command_help
-  build_command_help
-  get_command_help
-
-  echo "EXAMPLES"
-  echo
-  echo "Get a list of mok clusters"
-  echo
-  echo "  mokctl get clusters"
-  echo
-  echo "Build the image used for masters and workers:"
-  echo
-  echo "  mokctl build image"
-  echo
-  echo "Create a single node cluster:"
-  echo "Note that the master node will be made schedulable for pods."
-  echo
-  echo "  mokctl create cluster mycluster 1 0"
-  echo
-  echo "Create a single master and single node cluster:"
-  echo "Note that the master node will NOT be schedulable for pods."
-  echo
-  echo "  mokctl create cluster mycluster 1 1"
-  echo
-  echo "Delete a cluster:"
-  echo
-  echo "  mokctl delete cluster mycluster"
-  echo
-}
-
-# ---------------------------------------------------------------------------
-cleanup() {
-# ---------------------------------------------------------------------------
-# Called when the script exits.
-
-  [[ -e "$DOCKERBUILDTMPDIR" ]] && \
-    [[ $DOCKERBUILDTMPDIR == "/var/tmp/"* ]] && {
-    rm -rf "$DOCKERBUILDTMPDIR"
-  }
-
-  # If progress spinner crashed make sure the cursor is shown
-  tput cnorm
-
-  # Kill the spinny, and anything else, if they're running
-  for i in `jobs -p`; do kill $i; echo -e "$colred\r  ✕$colreset" ; done
 }
 
 # Calls main() if we're called from the command line

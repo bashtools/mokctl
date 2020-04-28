@@ -221,11 +221,7 @@ The container also needs to be 'privileged' since it does many things an applica
 }
 ```
 
----
-
 > **Side Note**: Just in case you don't know, all the [cgroup](https://www.kernel.org/doc/Documentation/cgroup-v1/) and [namespace]([namespaces(7) - Linux manual page](http://man7.org/linux/man-pages/man7/namespaces.7.html)) features that are used to containerise an application are actually features of the Linux kernel - many people think it's `docker` that provides all that loveliness. In contrast, `docker` is a wrapper around these kernel features. Before docker the two leading projects were [libvirt](), which was used to control [KVM](https://www.linux-kvm.org/page/Main_Page) but [libvirt-lxc](http://libvirt.org/drvlxc.html) did the container part, and [lxc](https://linuxcontainers.org/lxc/introduction/), before it moved to [Ubuntu](https://ubuntu.com/). These projects put a great deal of work into the user-space side of these kernel features and were very active contributers to the linux kernel. [OpenVZ](https://openvz.org/) were there before everyone else though with huge patches to the linux kernel that could not be merged. OpenVZ is still more secure than linux kernel containerisation and they also contributed many smaller patches to the linux kernel. OpenVZ is still the most secure and performant way to provide general purpose linux containers to users - when used for hosting for instance.
-
----
 
 ### Log in to the Centos 7 container
 
@@ -504,8 +500,7 @@ Take a look at all the phases available using `kubeadm init --help` and read [ku
 {
   # Run the preflight phase
   kubeadm init \
-    --pod-network-cidr=10.244.0.0/16 \
-    --ignore-preflight-errors Swap
+    --ignore-preflight-errors Swap \
     phase preflight
 
   # Set up the kubelet

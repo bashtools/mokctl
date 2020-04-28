@@ -421,7 +421,7 @@ testCreateClusterMasterNodesWithSuccess(){
 # Override get_cluster_size to return an arbitrary number which would
 # be the 'docker ps' return code
 
-  docker() { sleep 1; return 0; }
+  do_create_cluster_mutate() { return $OK; }
   get_cluster_size() { echo "0"; return 0; }
 
   main create cluster myclust 1 0 >/dev/null

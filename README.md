@@ -59,6 +59,8 @@ sudo make uninstall
 
 Take note of the [Status](#status) above.
 
+![](/docs/images/mokctl-demo.gif)
+
 ## License
 
 Apache 2 - You can do what you like with the software, as long as you include the required notices. This permissive license contains a patent license 

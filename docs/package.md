@@ -793,7 +793,7 @@ fi
 
 ```
 
-The command line parser, in the Bash code above, uses a state machine, which will allow us to add new functionality in a scalable way. I thought I would put the work in right now to code a state machine just in case we end up needing to add more commands. It's surprising how long scripts intended for limited use hang around so it's good to start off well, and indeed, kubernetes was initially a large set of shell scripts!
+The command line parser, in the Bash code above, implements a state machine, which will allow us to add new functionality in a scalable way. I thought I would put the work in right now to code a state machine just in case we end up needing to add more commands. It's surprising how long scripts intended for limited use hang around so it's good to start off well, and indeed, kubernetes was initially a large set of shell scripts!
 
 The code currently makes sure that the correct sub-command and options are supplied for each command.
 

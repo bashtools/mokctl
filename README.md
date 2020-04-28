@@ -6,7 +6,7 @@ My Own [Kind](https://kind.sigs.k8s.io/) - Build a conformant kubernetes cluster
 
 If you follow the instructions in this repository you will end up building your own [Kind](https://kind.sigs.k8s.io/). I'm pretty sure it won't be easy though - there's so much that can go wrong!
 
-To get the most out of the "labs", and I use that term loosely, you should have a good overall understanding of kubernetes. Some good resources are:
+To get the most out of the "labs", and I use that term loosely, you should have some theoretical understanding of kubernetes. Some good resources are:
 
 * [Certified Kubernetes Administrator (CKA) with Practice Exam Tests](https://www.udemy.com/course/certified-kubernetes-administrator-with-practice-tests/)
 * [Kubernetes in Action by Marko Luksa](https://www.goodreads.com/book/show/34013922-kubernetes-in-action)

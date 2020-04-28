@@ -1018,7 +1018,7 @@ I'll finish off the tests so you can contribute if you want to but I won't give 
 >   
 >   Writing tests once the code is written is HARD. Already I have had to change the program to make testing work well. Imagine how hard it would be if it was a thousand lines long. [Test Driven Development](https://en.wikipedia.org/wiki/Test-driven_development), TDD, is probably the way to go and I will be using TDD for any more functions I write. TDD also helps to keep functions small and single-purpose.
 > 
-> * Constant can't be used.
+> * Constants can't be used.
 >
 >   The tests will fail in strange ways if using constants, with `declare -r`. ShUnit2 runs each test in the same address space (it doesn't fork a new process). Our Bash script is sourced for each test and it tries to reset the constant (read-only) variables, which, is not allowed. To get around this I used `sed` to remove `declare -r` from the source. I did not want to lose constants and figured this was better than removing them altogether.
 >

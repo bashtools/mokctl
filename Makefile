@@ -1,6 +1,6 @@
 .PHONY: all install clean test unittest
 
-all: mokctl.deploy
+all: mokctl.deploy tags
 
 mokctl.deploy: mokctl mok-centos-7
 	bash mokctl/embed-dockerfile.sh
@@ -20,5 +20,8 @@ test: clean mokctl.deploy
 
 buildtest: clean mokctl.deploy
 	./tests/build-tests.sh
+
+tags: mokctl
+	ctags --language-force=sh mokctl/mokctl tests/unit-tests.sh
 
 # vim:noet:ts=2:sw=2

@@ -795,7 +795,7 @@ fi
 
 The command line parser, starting in `parse_options()` above, implements a state machine, which will allow new functionality to be added in a scalable way. I thought I would put the work in right now to code a state machine just in case we need more commands later in. It's surprising how long scripts intended for limited use hang around so it's good to start off well, and indeed, kubernetes was initially a large set of shell scripts!
 
-The code currently makes sure that the correct sub-command and options are supplied for each command.
+The code makes sure that valid commands, their sub-commands and their options are supplied in the right order for the parent context.
 
 The work that we need doing will go into the two functions: `do_create_cluster()`, and `do_delete_cluster()`.
 
@@ -1033,7 +1033,7 @@ I'll finish off the tests so you can contribute if you want to but I won't give 
 
 ### All done!
 
-Buried in about a thousand lines of code are the functions that actually do the work. Let's see what they look like:
+Buried in about a thousand lines of code are the functions that actually do the work. The functions below are all indirectly called by `do_create`, `do_delete` and `do_build`, which are not shown here. Let's see what they look like:
 
 ```bash
 # ---------------------------------------------------------------------------
@@ -1221,7 +1221,7 @@ EnD
 
 Not too bad, and quite close to the original commands so it should be fairly easy to understand what's going on. Take a look at [the source](/mokctl/mokctl) to see the whole script.
 
-> **Side Note**: Throughout the code I have used explicit and implicit return values to indicate success or failure to the caller. If there is an error, I try to output the error and details as soon as possible then return an error value. This is just the same way it is done when writing in Google Go (golang) and is a good pattern to follow. 
+> **Side Note**: Throughout the code I have used explicit and implicit return values to indicate success or failure to the calling function. If there is an error, I try to output the error and details as soon as possible then return an error status. This is the same way it is done when writing in Google Go (golang). 
 
 ## Trying it out
 

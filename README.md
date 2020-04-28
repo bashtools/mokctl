@@ -82,7 +82,7 @@ I wanted something quite particular to my own needs/wants:
 * To set up a kubernetes cluster on my under-powered laptop.
   
   My laptop is small and light with no internal fans. This means it's also not particularly powerful and it only has 8GB of RAM. Running Mumshad's kubernetes-the-hard-way has not been possible on my machine.
-  I use Fedora and Gnome, and have done so for years since moving from Debian. I changed to Fedora at that time to be able to use the latest Gnome and found it so stable and easy to set up that I never went back to Debian. So, this document is **meant specifically for Fedora**, but any modern Linux should be fine.
+  I use Fedora and Gnome, and have done so for years since moving from Debian. So, this document is **meant specifically for Fedora**, but any modern Linux should be fine.
 
 * To set up a full kubernetes cluster inside containers.
   

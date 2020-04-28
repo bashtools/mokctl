@@ -1029,13 +1029,193 @@ I'll finish off the tests so you can contribute if you want to but I won't give 
 
 ### All done!
 
-The ‘do_’ functions are completed. Let's see what they look like:
+Buried in about a thousand lines of code are the functions that actually do the work. Let's see what they look like:
 
 ```bash
+# ---------------------------------------------------------------------------
+create_docker_container() {
+# ---------------------------------------------------------------------------
+# Runs a new container with docker run.
+# Args:
+#   arg1 - name to use as the name and hostname.
+#   arg2 - the label to write to the container.
+
+  docker run --privileged \
+      -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+      -v /lib/modules:/lib/modules:ro \
+      --tmpfs /run --tmpfs /tmp \
+      --detach \
+      --name $1 \
+      --hostname $1 \
+      --label $2 \
+      local/$BASEIMAGENAME
+}
+
+# ---------------------------------------------------------------------------
+delete_docker_container() {
+# ---------------------------------------------------------------------------
+# Stops and removes docker container.
+# Args:
+#   arg1 - docker id to delete
+
+  docker stop $id || return $?
+  docker rm $id || return $?
+}
+
+...
+
+# ---------------------------------------------------------------------------
+build_container_image() {
+# ---------------------------------------------------------------------------
+# Creates the docker build directory in $DOCKERBUILDTMPDIR then calls
+# docker build to build the image.
+# No args expected.
+
+  create_docker_build_dir
+
+  run_with_progress \
+      "    Creating base image, '$BASEIMAGENAME'" \
+      docker build -t "local/$BASEIMAGEAME" "$DOCKERBUILDTMPDIR/$BASEIMAGENAME"
+
+  retval=$?
+  [[ $retval -ne 0 ]] && {
+    echo "ERROR: Docker returned an error, shown below"
+    echo
+    cat $RUNWITHPROGRESS_OUTPUT
+    echo
+    return $ERROR
+  }
+
+  return $retval
+}
+
+...
+
+# ---------------------------------------------------------------------------
+get_master_join_details(){
+# ---------------------------------------------------------------------------
+# 'docker exec' into the master to get CA hash, a token, and the master IP.
+# The caller can eval the output of this function to set the variables:
+# cahash, token, and masterip.
+# Args:
+#   arg1 - id/name of master container
+
+  local joinvarsfile=`mktemp --tmpdir=/var/tmp`
+
+  cat <<'EnD' >$joinvarsfile
+#!/bin/bash
+set -e
+cahash=$(openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | \
+        openssl rsa -pubin -outform der 2>/dev/null | \
+        openssl dgst -sha256 -hex | sed 's/^.* //')
+token=$(kubeadm token create --kubeconfig=/etc/kubernetes/admin.conf 2>/dev/null)
+ip=$(ip ro get 8.8.8.8 | cut -d" " -f 7)
+echo "cahash=$cahash"
+echo "token=$token"
+echo "masterip=$ip"
+exit 0
+EnD
+
+  docker cp $joinvarsfile $1:/root/joinvars.sh || return $?
+  rm -f $joinvarsfile
+
+  docker exec $1 bash /root/joinvars.sh
+}
+
+...
+
+# ---------------------------------------------------------------------------
+set_up_master_node() {
+# ---------------------------------------------------------------------------
+# Use kubeadm to set up the master node.
+# Args:
+#   arg1 - the container to set up.
+
+  local setupfile=`mktemp --tmpdir=/var/tmp`
+
+  cat <<'EnD' >$setupfile
+# Disable ipv6
+sysctl -w net.ipv6.conf.all.disable_ipv6=1
+sysctl -w net.ipv6.conf.default.disable_ipv6=1
+# Run the preflight phase
+kubeadm init \
+  --ignore-preflight-errors Swap \
+  phase preflight
+# Set up the kubelet
+kubeadm init phase kubelet-start
+# Edit the kubelet configuration file
+echo "failSwapOn: false" >>/var/lib/kubelet/config.yaml
+# Tell kubeadm to carry on from here
+kubeadm init \
+  --pod-network-cidr=10.244.0.0/16 \
+  --ignore-preflight-errors Swap \
+  --skip-phases=preflight,kubelet-start
+declare -i i=120
+while [[ $((i--)) -gt 0 ]]; do
+  curl -k https://localhost:6443/api/ && break
+  sleep 1
+done
+export KUBECONFIG=/etc/kubernetes/admin.conf
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/2140ac876ef134e0ed5af15c65e414cf26827915/Documentation/kube-flannel.yml
+EnD
+
+  docker cp $setupfile $1:/root/setup.sh
+  rm -f $setupfile
+
+  docker exec $1 bash /root/setup.sh
+}
+
+...
+
+# ---------------------------------------------------------------------------
+set_up_worker_node() {
+# ---------------------------------------------------------------------------
+# Use kubeadm to set up the master node
+# Args:
+#   arg1 - the container to set up.
+
+  local setupfile=`mktemp --tmpdir=/var/tmp`
+  local cahash=$2 token=$3 masterip=$4
+
+  cat <<EnD >$setupfile
+# Wait for the master API to become ready
+while true; do
+  curl -k https://$masterip:6443/
+  [[ \$? -eq 0 ]] && break
+  sleep 1
+done
+# Do the preflight tests (ignoring swap error)
+kubeadm join \
+  phase preflight \
+    --token $token \
+      --discovery-token-ca-cert-hash sha256:$cahash \
+        --ignore-preflight-errors Swap \
+          $masterip:6443
+# Set up the kubelet
+kubeadm join \
+  phase kubelet-start \
+    --token $token \
+      --discovery-token-ca-cert-hash sha256:$cahash \
+        $masterip:6443 &
+while true; do
+  [[ -e /var/lib/kubelet/config.yaml ]] && break
+    sleep 1
+  done
+# Edit the kubelet configuration file
+echo "failSwapOn: false" >>/var/lib/kubelet/config.yaml
+systemctl restart kubelet
+EnD
+
+  docker cp $setupfile $1:/root/setup.sh
+  rm -f $setupfile
+
+  docker exec $1 bash /root/setup.sh
+}
+
 
 ```
 
-Not too bad, and quite close to the original commands so it shouldn't be too hard to follow how it works.
+Not too bad, and quite close to the original commands so it should be fairly easy to understand what's going on. Take a look at [the source](/mokctl/mokctl) to see the whole script.
 
 ## Trying it out
 
@@ -1043,8 +1223,46 @@ We'll do a complete end-to-end test, from cloning this repo, installing the soft
 
 ### The End to End Experience
 
-```bash
+Install:
 
+```bash
+git clone https://github.com/mclarkson/my-own-kind.git
+cd my-own-kind
+sudo make install
+```
+
+Build the image:
+
+```bash
+mokctl build image
+```
+
+Create a cluster with one master and one worker:
+
+```bash
+mokctl create cluster mycluster 1 1
+```
+
+Get the full help text with `mokctl -h`, and also shorter command help, for example:
+
+```bash
+mokctl create -h
+mokctl delete -h
+mokctl build -h
+mokctl get -h
+```
+
+Delete the cluster:
+
+```bash
+mokctl delete cluster mycluster
+```
+
+And finally to uninstall `mokctl`:
+
+```bash
+# In the my-own-kind top-level repository directory
+make uninstall
 ```
 
 That's it!

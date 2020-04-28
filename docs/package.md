@@ -1019,9 +1019,9 @@ I'll finish off the tests so you can contribute if you want to but I won't give 
 >   Writing tests once the code is written is HARD. Already I have had to change the program to make testing work well. Imagine how hard it would be if it was a thousand lines long. [Test Driven Development](https://en.wikipedia.org/wiki/Test-driven_development), TDD, is probably the way to go and I will be using TDD for any more functions I write. TDD also helps to keep functions small and single-purpose.
 > 
 > * Constants can't be used.
->
+>   
 >   The tests will fail in strange ways if using constants, with `declare -r`. ShUnit2 runs each test in the same address space (it doesn't fork a new process). Our Bash script is sourced for each test and it tries to reset the constant (read-only) variables, which, is not allowed. To get around this I used `sed` to remove `declare -r` from the source. I did not want to lose constants and figured this was better than removing them altogether.
->
+> 
 > * Use the following code to ensure `main()` is only called when run from the command line. I put it at the end of the source code, and have `main()` close to the top as that's what drives the whole program and is the first function I would like to see when looking at the code.
 > 
 > ```bash
@@ -1220,6 +1220,8 @@ EnD
 ```
 
 Not too bad, and quite close to the original commands so it should be fairly easy to understand what's going on. Take a look at [the source](/mokctl/mokctl) to see the whole script.
+
+> **Side Note**: Throughout the code I have used explicit and implicit return values to indicate success or failure to the caller. If there is an error, I try to output the error and details as soon as possible then return an error value. This is just the same way it is done when writing in Google Go (golang) and is a good pattern to follow. 
 
 ## Trying it out
 

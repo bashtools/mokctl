@@ -230,121 +230,6 @@ do_create_cluster_mutate() {
 }
 
 # ---------------------------------------------------------------------------
-do_delete_cluster_mutate() {
-# ---------------------------------------------------------------------------
-# Mutate functions make system changes.
-
-  declare -i numnodes=0
-
-  numnodes=$(get_cluster_size $DELETE_CLUSTER_NAME) || return $?
-
-  [[ $numnodes -eq 0 ]] && {
-    echo -en "\nERROR: No cluster exists with name, '$DELETE_CLUSTER_NAME'."
-    echo -e " Aborting.\n"
-    return $ERROR
-  }
-
-  delete_cluster_nodes $DELETE_CLUSTER_NAME
-}
-
-# ---------------------------------------------------------------------------
-do_build_image_mutate() {
-# ---------------------------------------------------------------------------
-# Mutate functions make system changes.
-# Builds the $BASEIMAGENAME base image used for masters and workers.
-# Globals: None
-# No args expected
-
-  local retval=0
-
-  build_container_image
-  retval=$?
-
-  if [[ $retval -eq 0 ]]; then
-    : # We only need the tick
-  else
-    echo "Image build failed"
-  fi
-
-  return $retval
-}
-
-# ---------------------------------------------------------------------------
-do_get_clusters_nomutate() {
-# ---------------------------------------------------------------------------
-# Mutate functions make system changes but this one doesn't and I don't
-#  know where to put it yet.
-# Gets cluster details
-# Globals: None
-# Args
-#   arg1 - cluster name, optional
-
-  local id output clustname=$1
-  declare -a nodes
-
-  [[ -n $clustname ]] && clustname="=$clustname"
-
-  ids=$(get_mok_cluster_docker_ids "$clustname") || return $?
-
-  if [[ -z $ids ]]; then
-    return $OK
-  fi
-
-  readarray nodes <<<$ids
-
-  # Use 'docker inspect' to get the value of the label $LABELKEY
-
-  ( echo "MOK_Cluster Docker_ID Container_Name IP_Address"
-  for id in ${nodes[@]}; do
-    info=$(get_info_about_container_using_docker $id) || return $?
-    clustname=$(sed -rn \
-      '/Labels/,/}/ {s/[":,]//g; s/^ *'"$LABELKEY"' ([^ ]*).*/\1/p }' \
-      <<<$info)
-    containerhostname=$(sed -rn \
-      '/"Config"/,/}/ {s/[":,]//g; s/^ *Hostname ([^ ]*).*/\1/p }' \
-      <<<$info)
-    containerip=$(sed -rn \
-      '/NetworkSettings/,/Networks/ {s/[":,]//g; s/^ *IPAddress ([^ ]*).*/\1/p }' \
-      <<<$info)
-    echo "$clustname $id $containerhostname $containerip"
-  done ) | column -t
-}
-
-# ===========================================================================
-# FUNCTIONS BELOW ARE HELPERS FOR do_get_clusters_nomutate()
-# ===========================================================================
-
-# ---------------------------------------------------------------------------
-get_mok_cluster_docker_ids() {
-# ---------------------------------------------------------------------------
-# Use 'docker ps .. label= ..' to get a list of mok clusters
-# Args
-#   arg1 - mok cluster name, optional
-
-  docker ps -a -f label=$LABELKEY$1 -q || {
-    echo "ERROR: docker failed\n" >/dev/stderr
-    return $ERROR
-  }
-}
-
-# ---------------------------------------------------------------------------
-get_info_about_container_using_docker() {
-# ---------------------------------------------------------------------------
-# Use 'docker inspect $id' to get details about container $id
-# Args
-#   arg1 - docker container id
-
-  docker inspect $1 || {
-    echo -e "\nERROR: docker failed\n" >/dev/stderr
-    return $ERROR
-  }
-}
-
-# ===========================================================================
-# FUNCTIONS BELOW ARE HELPERS FOR do_create_cluster_mutate()
-# ===========================================================================
-
-# ---------------------------------------------------------------------------
 get_cluster_size() {
 # ---------------------------------------------------------------------------
 # Search for an existing cluster using labels. All cluster nodes are
@@ -360,6 +245,27 @@ get_cluster_size() {
   readarray nodes < <(echo "$output" | sed '/^$/d')
 
   echo "${#nodes[*]}"
+}
+
+# ---------------------------------------------------------------------------
+get_docker_ids_for_cluster() {
+# ---------------------------------------------------------------------------
+# Get all cluster ids for labelled containers
+# Args:
+#   arg1 - Cluster name
+
+  local value
+
+  [[ -n $1 ]] && value="=$1"
+
+  output=$(docker ps -a -f label=$LABELKEY$value -q) || {
+    echo -e "ERROR: Docker command failed\n" >/dev/stderr
+    return $ERROR
+  }
+
+  echo "$output"
+
+  return $OK
 }
 
 # ---------------------------------------------------------------------------
@@ -406,6 +312,25 @@ create_master_nodes() {
     ~/.mok/admin.conf
 
   return $OK
+}
+
+# ---------------------------------------------------------------------------
+create_docker_container() {
+# ---------------------------------------------------------------------------
+# Runs a new container with docker run.
+# Args:
+#   arg1 - name to use as the name and hostname.
+#   arg2 - the label to write to the container.
+
+  docker run --privileged \
+      -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+      -v /lib/modules:/lib/modules:ro \
+      --tmpfs /run --tmpfs /tmp \
+      --detach \
+      --name $1 \
+      --hostname $1 \
+      --label $2 \
+      local/$BASEIMAGENAME
 }
 
 # ---------------------------------------------------------------------------
@@ -457,98 +382,6 @@ create_worker_nodes() {
 
   return $OK
 }
-
-# ===========================================================================
-# FUNCTIONS BELOW ARE HELPERS FOR do_delete_cluster_mutate()
-# ===========================================================================
-
-# ---------------------------------------------------------------------------
-delete_cluster_nodes() {
-# ---------------------------------------------------------------------------
-# Delete all cluster nodes.
-# Args:
-#   arg1 - Name of the cluster to delete
-
-  ids=$(get_docker_ids_for_cluster $1) || return $?
- 
-  echo -e "The following containers will be deleted:\n"
-
-  do_get_clusters_nomutate $1
-
-  echo -en "\nAre you sure you want to delete the cluster? (y/N) >"
-
-  read ans
-
-  [[ "$ans" != "y" ]] && {
-    echo -e "\nCancelling by user request."
-    return $OK
-  }
-
-  echo
-
-  for id in $ids; do
-    run_with_progress \
-      "    Deleting id, '$id' from cluster '$1'." \
-      delete_docker_container $id
-      r=$?
-      [[ $r -ne 0 ]] && {
-        cat "$RUNWITHPROGRESS_OUTPUT"
-        echo -e "\nERROR: Docker failed.\n"
-        return $r
-      }
-  done
-  
-  echo
-}
-
-# ===========================================================================
-# FUNCTIONS BELOW ARE HELPERS FOR do_build_image_mutate()
-# ===========================================================================
-
-# ---------------------------------------------------------------------------
-build_container_image() {
-# ---------------------------------------------------------------------------
-# Creates the docker build directory in $DOCKERBUILDTMPDIR then calls
-# docker build to build the image.
-# No args expected.
-
-  create_docker_build_dir
-
-  run_with_progress \
-      "    Creating base image, '$BASEIMAGENAME'" \
-      docker build -t "local/$BASEIMAGENAME" "$DOCKERBUILDTMPDIR/$BASEIMAGENAME"
-  
-  retval=$?
-  [[ $retval -ne 0 ]] && {
-    echo "ERROR: Docker returned an error, shown below"
-    echo
-    cat $RUNWITHPROGRESS_OUTPUT
-    echo
-    return $ERROR
-  }
-
-  return $retval
-}
-
-# ---------------------------------------------------------------------------
-create_docker_build_dir() {
-# ---------------------------------------------------------------------------
-# Creates a docker build directory in /var/tmp/tmp.XXXXXXXX
-# No args expected
-
-  DOCKERBUILDTMPDIR=`mktemp -d --tmpdir=/var/tmp`
-
-  # The following comments should not be removed or changed.
-  # embed-dockerfile.sh adds a base64 encoded tarball and
-  #  unpacking code between them.
-
-  #mok-centos-7-tarball-start 
-  #mok-centos-7-tarball-end
-}
-
-# ===========================================================================
-# HELPERS
-# ===========================================================================
 
 # ---------------------------------------------------------------------------
 get_master_join_details(){
@@ -683,22 +516,60 @@ EnD
 }
 
 # ---------------------------------------------------------------------------
-create_docker_container() {
+do_delete_cluster_mutate() {
 # ---------------------------------------------------------------------------
-# Runs a new container with docker run.
-# Args:
-#   arg1 - name to use as the name and hostname.
-#   arg2 - the label to write to the container.
+# Mutate functions make system changes.
 
-  docker run --privileged \
-      -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
-      -v /lib/modules:/lib/modules:ro \
-      --tmpfs /run --tmpfs /tmp \
-      --detach \
-      --name $1 \
-      --hostname $1 \
-      --label $2 \
-      local/$BASEIMAGENAME
+  declare -i numnodes=0
+
+  numnodes=$(get_cluster_size $DELETE_CLUSTER_NAME) || return $?
+
+  [[ $numnodes -eq 0 ]] && {
+    echo -en "\nERROR: No cluster exists with name, '$DELETE_CLUSTER_NAME'."
+    echo -e " Aborting.\n"
+    return $ERROR
+  }
+
+  delete_cluster_nodes $DELETE_CLUSTER_NAME
+}
+
+# ---------------------------------------------------------------------------
+delete_cluster_nodes() {
+# ---------------------------------------------------------------------------
+# Delete all cluster nodes.
+# Args:
+#   arg1 - Name of the cluster to delete
+
+  ids=$(get_docker_ids_for_cluster $1) || return $?
+ 
+  echo -e "The following containers will be deleted:\n"
+
+  do_get_clusters_nomutate $1
+
+  echo -en "\nAre you sure you want to delete the cluster? (y/N) >"
+
+  read ans
+
+  [[ "$ans" != "y" ]] && {
+    echo -e "\nCancelling by user request."
+    return $OK
+  }
+
+  echo
+
+  for id in $ids; do
+    run_with_progress \
+      "    Deleting id, '$id' from cluster '$1'." \
+      delete_docker_container $id
+      r=$?
+      [[ $r -ne 0 ]] && {
+        cat "$RUNWITHPROGRESS_OUTPUT"
+        echo -e "\nERROR: Docker failed.\n"
+        return $r
+      }
+  done
+  
+  echo
 }
 
 # ---------------------------------------------------------------------------
@@ -713,25 +584,142 @@ delete_docker_container() {
 }
 
 # ---------------------------------------------------------------------------
-get_docker_ids_for_cluster() {
+do_build_image_mutate() {
 # ---------------------------------------------------------------------------
-# Get all cluster ids for labelled containers
-# Args:
-#   arg1 - Cluster name
+# Mutate functions make system changes.
+# Builds the $BASEIMAGENAME base image used for masters and workers.
+# Globals: None
+# No args expected
 
-  local value
+  local retval=0
 
-  [[ -n $1 ]] && value="=$1"
+  build_container_image
+  retval=$?
 
-  output=$(docker ps -a -f label=$LABELKEY$value -q) || {
-    echo -e "ERROR: Docker command failed\n" >/dev/stderr
+  if [[ $retval -eq 0 ]]; then
+    : # We only need the tick
+  else
+    echo "Image build failed"
+  fi
+
+  return $retval
+}
+
+# ---------------------------------------------------------------------------
+build_container_image() {
+# ---------------------------------------------------------------------------
+# Creates the docker build directory in $DOCKERBUILDTMPDIR then calls
+# docker build to build the image.
+# No args expected.
+
+  create_docker_build_dir
+
+  run_with_progress \
+      "    Creating base image, '$BASEIMAGENAME'" \
+      docker build -t "local/$BASEIMAGENAME" "$DOCKERBUILDTMPDIR/$BASEIMAGENAME"
+  
+  retval=$?
+  [[ $retval -ne 0 ]] && {
+    echo "ERROR: Docker returned an error, shown below"
+    echo
+    cat $RUNWITHPROGRESS_OUTPUT
+    echo
     return $ERROR
   }
 
-  echo "$output"
-
-  return $OK
+  return $retval
 }
+
+# ---------------------------------------------------------------------------
+create_docker_build_dir() {
+# ---------------------------------------------------------------------------
+# Creates a docker build directory in /var/tmp/tmp.XXXXXXXX
+# No args expected
+
+  DOCKERBUILDTMPDIR=`mktemp -d --tmpdir=/var/tmp`
+
+  # The following comments should not be removed or changed.
+  # embed-dockerfile.sh adds a base64 encoded tarball and
+  #  unpacking code between them.
+
+  #mok-centos-7-tarball-start 
+  #mok-centos-7-tarball-end
+}
+
+# ===========================================================================
+#                              NON-MUTATORS
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+do_get_clusters_nomutate() {
+# ---------------------------------------------------------------------------
+# Mutate functions make system changes but this one doesn't and I don't
+#  know where to put it yet.
+# Gets cluster details
+# Globals: None
+# Args
+#   arg1 - cluster name, optional
+
+  local id output clustname=$1
+  declare -a nodes
+
+  [[ -n $clustname ]] && clustname="=$clustname"
+
+  ids=$(get_mok_cluster_docker_ids "$clustname") || return $?
+
+  if [[ -z $ids ]]; then
+    return $OK
+  fi
+
+  readarray nodes <<<$ids
+
+  # Use 'docker inspect' to get the value of the label $LABELKEY
+
+  ( echo "MOK_Cluster Docker_ID Container_Name IP_Address"
+  for id in ${nodes[@]}; do
+    info=$(get_info_about_container_using_docker $id) || return $?
+    clustname=$(sed -rn \
+      '/Labels/,/}/ {s/[":,]//g; s/^ *'"$LABELKEY"' ([^ ]*).*/\1/p }' \
+      <<<$info)
+    containerhostname=$(sed -rn \
+      '/"Config"/,/}/ {s/[":,]//g; s/^ *Hostname ([^ ]*).*/\1/p }' \
+      <<<$info)
+    containerip=$(sed -rn \
+      '/NetworkSettings/,/Networks/ {s/[":,]//g; s/^ *IPAddress ([^ ]*).*/\1/p }' \
+      <<<$info)
+    echo "$clustname $id $containerhostname $containerip"
+  done ) | column -t
+}
+
+# ---------------------------------------------------------------------------
+get_mok_cluster_docker_ids() {
+# ---------------------------------------------------------------------------
+# Use 'docker ps .. label= ..' to get a list of mok clusters
+# Args
+#   arg1 - mok cluster name, optional
+
+  docker ps -a -f label=$LABELKEY$1 -q || {
+    echo "ERROR: docker failed\n" >/dev/stderr
+    return $ERROR
+  }
+}
+
+# ---------------------------------------------------------------------------
+get_info_about_container_using_docker() {
+# ---------------------------------------------------------------------------
+# Use 'docker inspect $id' to get details about container $id
+# Args
+#   arg1 - docker container id
+
+  docker inspect $1 || {
+    echo -e "\nERROR: docker failed\n" >/dev/stderr
+    return $ERROR
+  }
+}
+
+# ===========================================================================
+#                                 HELPERS
+# ===========================================================================
 
 # ---------------------------------------------------------------------------
 run_with_progress() {
@@ -792,6 +780,64 @@ sanity_checks(){
       return 1
     fi
   done
+}
+
+# ---------------------------------------------------------------------------
+usage() {
+# ---------------------------------------------------------------------------
+# Every tool, no matter how small, should have help text!
+
+  case $COMMAND in
+    create) create_command_help; return 0 ;;
+    delete) delete_command_help; return 0 ;;
+    build) build_command_help; return 0 ;;
+    get) get_command_help; return 0 ;;
+  esac
+
+  echo
+  echo "Usage: mokctl [-h] <COMMAND> <SUBCOMMAND> [SUBCOMMAND_OPTIONS...]"
+  echo
+  echo "Global options:"
+  echo
+  echo "  -h - This help text"
+  echo
+  echo "Where COMMAND can be one of:"
+  echo
+  echo "  create - Add item(s) to the system."
+  echo "  delete - Delete item(s) from the system."
+  echo "  build  - Build item(s) used by the system."
+  echo "  get    - Get details about items in the system."
+  echo
+  
+  create_command_help
+  delete_command_help
+  build_command_help
+  get_command_help
+
+  echo "EXAMPLES"
+  echo
+  echo "Get a list of mok clusters"
+  echo
+  echo "  mokctl get clusters"
+  echo
+  echo "Build the image used for masters and workers:"
+  echo
+  echo "  mokctl build image"
+  echo
+  echo "Create a single node cluster:"
+  echo "Note that the master node will be made schedulable for pods."
+  echo
+  echo "  mokctl create cluster mycluster 1 0"
+  echo
+  echo "Create a single master and single node cluster:"
+  echo "Note that the master node will NOT be schedulable for pods."
+  echo
+  echo "  mokctl create cluster mycluster 1 1"
+  echo
+  echo "Delete a cluster:"
+  echo
+  echo "  mokctl delete cluster mycluster"
+  echo
 }
 
 # ---------------------------------------------------------------------------
@@ -859,64 +905,6 @@ get_command_help() {
 }
 
 # ---------------------------------------------------------------------------
-usage() {
-# ---------------------------------------------------------------------------
-# Every tool, no matter how small, should have help text!
-
-  case $COMMAND in
-    create) create_command_help; return 0 ;;
-    delete) delete_command_help; return 0 ;;
-    build) build_command_help; return 0 ;;
-    get) get_command_help; return 0 ;;
-  esac
-
-  echo
-  echo "Usage: mokctl [-h] <COMMAND> <SUBCOMMAND> [SUBCOMMAND_OPTIONS...]"
-  echo
-  echo "Global options:"
-  echo
-  echo "  -h - This help text"
-  echo
-  echo "Where COMMAND can be one of:"
-  echo
-  echo "  create - Add item(s) to the system."
-  echo "  delete - Delete item(s) from the system."
-  echo "  build  - Build item(s) used by the system."
-  echo "  get    - Get details about items in the system."
-  echo
-  
-  create_command_help
-  delete_command_help
-  build_command_help
-  get_command_help
-
-  echo "EXAMPLES"
-  echo
-  echo "Get a list of mok clusters"
-  echo
-  echo "  mokctl get clusters"
-  echo
-  echo "Build the image used for masters and workers:"
-  echo
-  echo "  mokctl build image"
-  echo
-  echo "Create a single node cluster:"
-  echo "Note that the master node will be made schedulable for pods."
-  echo
-  echo "  mokctl create cluster mycluster 1 0"
-  echo
-  echo "Create a single master and single node cluster:"
-  echo "Note that the master node will NOT be schedulable for pods."
-  echo
-  echo "  mokctl create cluster mycluster 1 1"
-  echo
-  echo "Delete a cluster:"
-  echo
-  echo "  mokctl delete cluster mycluster"
-  echo
-}
-
-# ---------------------------------------------------------------------------
 cleanup() {
 # ---------------------------------------------------------------------------
 # Called when the script exits.
@@ -935,7 +923,7 @@ cleanup() {
 }
 
 # ===========================================================================
-# FUNCTIONS FOR PARSING THE COMMAND LINE BELOW
+#                   FUNCTIONS FOR PARSING THE COMMAND LINE
 # ===========================================================================
 
 # ---------------------------------------------------------------------------

@@ -221,124 +221,13 @@ do_create_cluster_mutate() {
   }
 
   echo
+  echo "Cluster, '$CREATE_CLUSTER_NAME', can be accessed using:"
+  echo
+  echo "export KUBECONFIG=~/.mok/admin.conf"
+  echo
 
   return $OK
 }
-
-# ---------------------------------------------------------------------------
-do_delete_cluster_mutate() {
-# ---------------------------------------------------------------------------
-# Mutate functions make system changes.
-
-  declare -i numnodes=0
-
-  numnodes=$(get_cluster_size $DELETE_CLUSTER_NAME) || return $?
-
-  [[ $numnodes -eq 0 ]] && {
-    echo -en "\nERROR: No cluster exists with name, '$DELETE_CLUSTER_NAME'."
-    echo -e " Aborting.\n"
-    return $ERROR
-  }
-
-  delete_cluster_nodes $DELETE_CLUSTER_NAME
-}
-
-# ---------------------------------------------------------------------------
-do_build_image_mutate() {
-# ---------------------------------------------------------------------------
-# Mutate functions make system changes.
-# Builds the $BASEIMAGENAME base image used for masters and workers.
-# Globals: None
-# No args expected
-
-  local retval=0
-
-  build_container_image
-  retval=$?
-
-  if [[ $retval -eq 0 ]]; then
-    : # We only need the tick
-  else
-    echo "Image build failed"
-  fi
-
-  return $retval
-}
-
-# ---------------------------------------------------------------------------
-do_get_clusters_nomutate() {
-# ---------------------------------------------------------------------------
-# Mutate functions make system changes but this one doesn't and I don't
-#  know where to put it yet.
-# Gets cluster details
-# Globals: None
-# Args
-#   arg1 - cluster name, optional
-
-  local id output clustname=$1
-  declare -a nodes
-
-  [[ -n $clustname ]] && clustname="=$clustname"
-
-  ids=$(get_mok_cluster_docker_ids "$clustname") || return $?
-
-  if [[ -z $ids ]]; then
-    return $OK
-  fi
-
-  readarray nodes <<<$ids
-
-  # Use 'docker inspect' to get the value of the label $LABELKEY
-
-  ( echo "MOK_Cluster Docker_ID Container_Name IP_Address"
-  for id in ${nodes[@]}; do
-    info=$(get_info_about_container_using_docker $id) || return $?
-    clustname=$(sed -rn \
-      '/Labels/,/}/ {s/[":,]//g; s/^ *'"$LABELKEY"' ([^ ]*).*/\1/p }' \
-      <<<$info)
-    containerhostname=$(sed -rn \
-      '/"Config"/,/}/ {s/[":,]//g; s/^ *Hostname ([^ ]*).*/\1/p }' \
-      <<<$info)
-    containerip=$(sed -rn \
-      '/NetworkSettings/,/Networks/ {s/[":,]//g; s/^ *IPAddress ([^ ]*).*/\1/p }' \
-      <<<$info)
-    echo "$clustname $id $containerhostname $containerip"
-  done ) | column -t
-}
-
-# ===========================================================================
-# FUNCTIONS BELOW ARE HELPERS FOR do_get_clusters_nomutate()
-# ===========================================================================
-
-# ---------------------------------------------------------------------------
-get_mok_cluster_docker_ids() {
-# ---------------------------------------------------------------------------
-# Use 'docker ps .. label= ..' to get a list of mok clusters
-# Args
-#   arg1 - mok cluster name, optional
-
-  docker ps -a -f label=$LABELKEY$1 -q || {
-    echo "ERROR: docker failed\n" >/dev/stderr
-    return $ERROR
-  }
-}
-
-# ---------------------------------------------------------------------------
-get_info_about_container_using_docker() {
-# ---------------------------------------------------------------------------
-# Use 'docker inspect $id' to get details about container $id
-# Args
-#   arg1 - docker container id
-
-  docker inspect $1 || {
-    echo -e "\nERROR: docker failed\n" >/dev/stderr
-    return $ERROR
-  }
-}
-
-# ===========================================================================
-# FUNCTIONS BELOW ARE HELPERS FOR do_create_cluster_mutate()
-# ===========================================================================
 
 # ---------------------------------------------------------------------------
 get_cluster_size() {
@@ -356,6 +245,27 @@ get_cluster_size() {
   readarray nodes < <(echo "$output" | sed '/^$/d')
 
   echo "${#nodes[*]}"
+}
+
+# ---------------------------------------------------------------------------
+get_docker_ids_for_cluster() {
+# ---------------------------------------------------------------------------
+# Get all cluster ids for labelled containers
+# Args:
+#   arg1 - Cluster name
+
+  local value
+
+  [[ -n $1 ]] && value="=$1"
+
+  output=$(docker ps -a -f label=$LABELKEY$value -q) || {
+    echo -e "ERROR: Docker command failed\n" >/dev/stderr
+    return $ERROR
+  }
+
+  echo "$output"
+
+  return $OK
 }
 
 # ---------------------------------------------------------------------------
@@ -402,6 +312,25 @@ create_master_nodes() {
     ~/.mok/admin.conf
 
   return $OK
+}
+
+# ---------------------------------------------------------------------------
+create_docker_container() {
+# ---------------------------------------------------------------------------
+# Runs a new container with docker run.
+# Args:
+#   arg1 - name to use as the name and hostname.
+#   arg2 - the label to write to the container.
+
+  docker run --privileged \
+      -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+      -v /lib/modules:/lib/modules:ro \
+      --tmpfs /run --tmpfs /tmp \
+      --detach \
+      --name $1 \
+      --hostname $1 \
+      --label $2 \
+      local/$BASEIMAGENAME
 }
 
 # ---------------------------------------------------------------------------
@@ -453,167 +382,6 @@ create_worker_nodes() {
 
   return $OK
 }
-
-# ===========================================================================
-# FUNCTIONS BELOW ARE HELPERS FOR do_delete_cluster_mutate()
-# ===========================================================================
-
-# ---------------------------------------------------------------------------
-delete_cluster_nodes() {
-# ---------------------------------------------------------------------------
-# Delete all cluster nodes.
-# Args:
-#   arg1 - Name of the cluster to delete
-
-  ids=$(get_docker_ids_for_cluster $1) || return $?
- 
-  echo -e "The following containers will be deleted:\n"
-
-  do_get_clusters_nomutate $1
-
-  echo -en "\nAre you sure you want to delete the cluster? (y/N) >"
-
-  read ans
-
-  [[ "$ans" != "y" ]] && {
-    echo -e "\nCancelling by user request."
-    return $OK
-  }
-
-  echo
-
-  for id in $ids; do
-    run_with_progress \
-      "    Deleting id, '$id' from cluster '$1'." \
-      delete_docker_container $id
-      r=$?
-      [[ $r -ne 0 ]] && {
-        cat "$RUNWITHPROGRESS_OUTPUT"
-        echo -e "\nERROR: Docker failed.\n"
-        return $r
-      }
-  done
-  
-  echo
-}
-
-# ===========================================================================
-# FUNCTIONS BELOW ARE HELPERS FOR do_build_image_mutate()
-# ===========================================================================
-
-# ---------------------------------------------------------------------------
-build_container_image() {
-# ---------------------------------------------------------------------------
-# Creates the docker build directory in $DOCKERBUILDTMPDIR then calls
-# docker build to build the image.
-# No args expected.
-
-  create_docker_build_dir
-
-  run_with_progress \
-      "    Creating base image, '$BASEIMAGENAME'" \
-      docker build -t "local/$BASEIMAGENAME" "$DOCKERBUILDTMPDIR/$BASEIMAGENAME"
-  
-  retval=$?
-  [[ $retval -ne 0 ]] && {
-    echo "ERROR: Docker returned an error, shown below"
-    echo
-    cat $RUNWITHPROGRESS_OUTPUT
-    echo
-    return $ERROR
-  }
-
-  return $retval
-}
-
-# ---------------------------------------------------------------------------
-create_docker_build_dir() {
-# ---------------------------------------------------------------------------
-# Creates a docker build directory in /var/tmp/tmp.XXXXXXXX
-# No args expected
-
-  DOCKERBUILDTMPDIR=`mktemp -d --tmpdir=/var/tmp`
-
-  # The following comments should not be removed or changed.
-  # embed-dockerfile.sh adds a base64 encoded tarball and
-  #  unpacking code between them.
-
-  #mok-centos-7-tarball-start 
-  cat <<EnD | base64 -d | tar xz -C $DOCKERBUILDTMPDIR 
-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
-27It27It27L9Q9p/AKxUxh4AUAAA
-EnD
-  #mok-centos-7-tarball-end
-}
-
-# ===========================================================================
-# HELPERS
-# ===========================================================================
 
 # ---------------------------------------------------------------------------
 get_master_join_details(){
@@ -748,22 +516,60 @@ EnD
 }
 
 # ---------------------------------------------------------------------------
-create_docker_container() {
+do_delete_cluster_mutate() {
 # ---------------------------------------------------------------------------
-# Runs a new container with docker run.
-# Args:
-#   arg1 - name to use as the name and hostname.
-#   arg2 - the label to write to the container.
+# Mutate functions make system changes.
 
-  docker run --privileged \
-      -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
-      -v /lib/modules:/lib/modules:ro \
-      --tmpfs /run --tmpfs /tmp \
-      --detach \
-      --name $1 \
-      --hostname $1 \
-      --label $2 \
-      local/$BASEIMAGENAME
+  declare -i numnodes=0
+
+  numnodes=$(get_cluster_size $DELETE_CLUSTER_NAME) || return $?
+
+  [[ $numnodes -eq 0 ]] && {
+    echo -en "\nERROR: No cluster exists with name, '$DELETE_CLUSTER_NAME'."
+    echo -e " Aborting.\n"
+    return $ERROR
+  }
+
+  delete_cluster_nodes $DELETE_CLUSTER_NAME
+}
+
+# ---------------------------------------------------------------------------
+delete_cluster_nodes() {
+# ---------------------------------------------------------------------------
+# Delete all cluster nodes.
+# Args:
+#   arg1 - Name of the cluster to delete
+
+  ids=$(get_docker_ids_for_cluster $1) || return $?
+ 
+  echo -e "The following containers will be deleted:\n"
+
+  do_get_clusters_nomutate $1
+
+  echo -en "\nAre you sure you want to delete the cluster? (y/N) >"
+
+  read ans
+
+  [[ "$ans" != "y" ]] && {
+    echo -e "\nCancelling by user request."
+    return $OK
+  }
+
+  echo
+
+  for id in $ids; do
+    run_with_progress \
+      "    Deleting id, '$id' from cluster '$1'." \
+      delete_docker_container $id
+      r=$?
+      [[ $r -ne 0 ]] && {
+        cat "$RUNWITHPROGRESS_OUTPUT"
+        echo -e "\nERROR: Docker failed.\n"
+        return $r
+      }
+  done
+  
+  echo
 }
 
 # ---------------------------------------------------------------------------
@@ -778,25 +584,211 @@ delete_docker_container() {
 }
 
 # ---------------------------------------------------------------------------
-get_docker_ids_for_cluster() {
+do_build_image_mutate() {
 # ---------------------------------------------------------------------------
-# Get all cluster ids for labelled containers
-# Args:
-#   arg1 - Cluster name
+# Mutate functions make system changes.
+# Builds the $BASEIMAGENAME base image used for masters and workers.
+# Globals: None
+# No args expected
 
-  local value
+  local retval=0
 
-  [[ -n $1 ]] && value="=$1"
+  build_container_image
+  retval=$?
 
-  output=$(docker ps -a -f label=$LABELKEY$value -q) || {
-    echo -e "ERROR: Docker command failed\n" >/dev/stderr
+  if [[ $retval -eq 0 ]]; then
+    : # We only need the tick
+  else
+    echo "Image build failed"
+  fi
+
+  return $retval
+}
+
+# ---------------------------------------------------------------------------
+build_container_image() {
+# ---------------------------------------------------------------------------
+# Creates the docker build directory in $DOCKERBUILDTMPDIR then calls
+# docker build to build the image.
+# No args expected.
+
+  create_docker_build_dir
+
+  run_with_progress \
+      "    Creating base image, '$BASEIMAGENAME'" \
+      docker build -t "local/$BASEIMAGENAME" "$DOCKERBUILDTMPDIR/$BASEIMAGENAME"
+  
+  retval=$?
+  [[ $retval -ne 0 ]] && {
+    echo "ERROR: Docker returned an error, shown below"
+    echo
+    cat $RUNWITHPROGRESS_OUTPUT
+    echo
     return $ERROR
   }
 
-  echo "$output"
-
-  return $OK
+  return $retval
 }
+
+# ---------------------------------------------------------------------------
+create_docker_build_dir() {
+# ---------------------------------------------------------------------------
+# Creates a docker build directory in /var/tmp/tmp.XXXXXXXX
+# No args expected
+
+  DOCKERBUILDTMPDIR=`mktemp -d --tmpdir=/var/tmp`
+
+  # The following comments should not be removed or changed.
+  # embed-dockerfile.sh adds a base64 encoded tarball and
+  #  unpacking code between them.
+
+  #mok-centos-7-tarball-start 
+  cat <<EnD | base64 -d | tar xz -C $DOCKERBUILDTMPDIR 
+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
+oi3aoi3aP6T9B+1GwZgAUAAA
+EnD
+  #mok-centos-7-tarball-end
+}
+
+# ===========================================================================
+#                              NON-MUTATORS
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+do_get_clusters_nomutate() {
+# ---------------------------------------------------------------------------
+# Mutate functions make system changes but this one doesn't and I don't
+#  know where to put it yet.
+# Gets cluster details
+# Globals: None
+# Args
+#   arg1 - cluster name, optional
+
+  local id output clustname=$1
+  declare -a nodes
+
+  [[ -n $clustname ]] && clustname="=$clustname"
+
+  ids=$(get_mok_cluster_docker_ids "$clustname") || return $?
+
+  if [[ -z $ids ]]; then
+    return $OK
+  fi
+
+  readarray nodes <<<$ids
+
+  # Use 'docker inspect' to get the value of the label $LABELKEY
+
+  ( echo "MOK_Cluster Docker_ID Container_Name IP_Address"
+  for id in ${nodes[@]}; do
+    info=$(get_info_about_container_using_docker $id) || return $?
+    clustname=$(sed -rn \
+      '/Labels/,/}/ {s/[":,]//g; s/^ *'"$LABELKEY"' ([^ ]*).*/\1/p }' \
+      <<<$info)
+    containerhostname=$(sed -rn \
+      '/"Config"/,/}/ {s/[":,]//g; s/^ *Hostname ([^ ]*).*/\1/p }' \
+      <<<$info)
+    containerip=$(sed -rn \
+      '/NetworkSettings/,/Networks/ {s/[":,]//g; s/^ *IPAddress ([^ ]*).*/\1/p }' \
+      <<<$info)
+    echo "$clustname $id $containerhostname $containerip"
+  done ) | column -t
+}
+
+# ---------------------------------------------------------------------------
+get_mok_cluster_docker_ids() {
+# ---------------------------------------------------------------------------
+# Use 'docker ps .. label= ..' to get a list of mok clusters
+# Args
+#   arg1 - mok cluster name, optional
+
+  docker ps -a -f label=$LABELKEY$1 -q || {
+    echo "ERROR: docker failed\n" >/dev/stderr
+    return $ERROR
+  }
+}
+
+# ---------------------------------------------------------------------------
+get_info_about_container_using_docker() {
+# ---------------------------------------------------------------------------
+# Use 'docker inspect $id' to get details about container $id
+# Args
+#   arg1 - docker container id
+
+  docker inspect $1 || {
+    echo -e "\nERROR: docker failed\n" >/dev/stderr
+    return $ERROR
+  }
+}
+
+# ===========================================================================
+#                                 HELPERS
+# ===========================================================================
 
 # ---------------------------------------------------------------------------
 run_with_progress() {
@@ -857,6 +849,64 @@ sanity_checks(){
       return 1
     fi
   done
+}
+
+# ---------------------------------------------------------------------------
+usage() {
+# ---------------------------------------------------------------------------
+# Every tool, no matter how small, should have help text!
+
+  case $COMMAND in
+    create) create_command_help; return 0 ;;
+    delete) delete_command_help; return 0 ;;
+    build) build_command_help; return 0 ;;
+    get) get_command_help; return 0 ;;
+  esac
+
+  echo
+  echo "Usage: mokctl [-h] <COMMAND> <SUBCOMMAND> [SUBCOMMAND_OPTIONS...]"
+  echo
+  echo "Global options:"
+  echo
+  echo "  -h - This help text"
+  echo
+  echo "Where COMMAND can be one of:"
+  echo
+  echo "  create - Add item(s) to the system."
+  echo "  delete - Delete item(s) from the system."
+  echo "  build  - Build item(s) used by the system."
+  echo "  get    - Get details about items in the system."
+  echo
+  
+  create_command_help
+  delete_command_help
+  build_command_help
+  get_command_help
+
+  echo "EXAMPLES"
+  echo
+  echo "Get a list of mok clusters"
+  echo
+  echo "  mokctl get clusters"
+  echo
+  echo "Build the image used for masters and workers:"
+  echo
+  echo "  mokctl build image"
+  echo
+  echo "Create a single node cluster:"
+  echo "Note that the master node will be made schedulable for pods."
+  echo
+  echo "  mokctl create cluster mycluster 1 0"
+  echo
+  echo "Create a single master and single node cluster:"
+  echo "Note that the master node will NOT be schedulable for pods."
+  echo
+  echo "  mokctl create cluster mycluster 1 1"
+  echo
+  echo "Delete a cluster:"
+  echo
+  echo "  mokctl delete cluster mycluster"
+  echo
 }
 
 # ---------------------------------------------------------------------------
@@ -924,64 +974,6 @@ get_command_help() {
 }
 
 # ---------------------------------------------------------------------------
-usage() {
-# ---------------------------------------------------------------------------
-# Every tool, no matter how small, should have help text!
-
-  case $COMMAND in
-    create) create_command_help; return 0 ;;
-    delete) delete_command_help; return 0 ;;
-    build) build_command_help; return 0 ;;
-    get) get_command_help; return 0 ;;
-  esac
-
-  echo
-  echo "Usage: mokctl [-h] <COMMAND> <SUBCOMMAND> [SUBCOMMAND_OPTIONS...]"
-  echo
-  echo "Global options:"
-  echo
-  echo "  -h - This help text"
-  echo
-  echo "Where COMMAND can be one of:"
-  echo
-  echo "  create - Add item(s) to the system."
-  echo "  delete - Delete item(s) from the system."
-  echo "  build  - Build item(s) used by the system."
-  echo "  get    - Get details about items in the system."
-  echo
-  
-  create_command_help
-  delete_command_help
-  build_command_help
-  get_command_help
-
-  echo "EXAMPLES"
-  echo
-  echo "Get a list of mok clusters"
-  echo
-  echo "  mokctl get clusters"
-  echo
-  echo "Build the image used for masters and workers:"
-  echo
-  echo "  mokctl build image"
-  echo
-  echo "Create a single node cluster:"
-  echo "Note that the master node will be made schedulable for pods."
-  echo
-  echo "  mokctl create cluster mycluster 1 0"
-  echo
-  echo "Create a single master and single node cluster:"
-  echo "Note that the master node will NOT be schedulable for pods."
-  echo
-  echo "  mokctl create cluster mycluster 1 1"
-  echo
-  echo "Delete a cluster:"
-  echo
-  echo "  mokctl delete cluster mycluster"
-  echo
-}
-
-# ---------------------------------------------------------------------------
 cleanup() {
 # ---------------------------------------------------------------------------
 # Called when the script exits.
@@ -1000,7 +992,7 @@ cleanup() {
 }
 
 # ===========================================================================
-# FUNCTIONS FOR PARSING THE COMMAND LINE BELOW
+#                   FUNCTIONS FOR PARSING THE COMMAND LINE
 # ===========================================================================
 
 # ---------------------------------------------------------------------------

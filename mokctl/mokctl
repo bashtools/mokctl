@@ -30,8 +30,8 @@ CREATE_CLUSTER_NAME=
 CREATE_CLUSTER_K8SVER=
 CREATE_CLUSTER_NUM_MASTERS=0
 CREATE_CLUSTER_NUM_WORKERS=0
-CREATE_CLUSTER_SKIPMASTERSETUP=$FALSE
-CREATE_CLUSTER_SKIPWORKERSETUP=$FALSE
+CREATE_CLUSTER_SKIPMASTERSETUP=
+CREATE_CLUSTER_SKIPWORKERSETUP=
 DELETE_CLUSTER_NAME=
 GET_CLUSTER_NAME=
 
@@ -72,8 +72,8 @@ set_globals() {
   CREATE_CLUSTER_K8SVER=
   CREATE_CLUSTER_NUM_MASTERS=
   CREATE_CLUSTER_NUM_WORKERS=
-  CREATE_CLUSTER_SKIPMASTERSETUP=$FALSE
-  CREATE_CLUSTER_SKIPWORKERSETUP=$FALSE
+  CREATE_CLUSTER_SKIPMASTERSETUP=
+  CREATE_CLUSTER_SKIPWORKERSETUP=
   DELETE_CLUSTER_NAME=
   GET_CLUSTER_NAME=
 }
@@ -1017,7 +1017,7 @@ parse_options() {
       --skipmastersetup) verify_option '--skipmastersetup' || return $ERROR
                          CREATE_CLUSTER_SKIPMASTERSETUP=$TRUE
                          ;;
-      --skipworkersetup) verify_option '--skipmastersetup' || return $ERROR
+      --skipworkersetup) verify_option '--skipworkersetup' || return $ERROR
                          CREATE_CLUSTER_SKIPWORKERSETUP=$TRUE
                          ;;
       --k8sver) verify_option '--k8sver' || return $ERROR

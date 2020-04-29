@@ -5,6 +5,21 @@
 # ===========================================================================
 # Don't change any globals
 
+# Constants
+declare -r LABELKEY="MokCluster"
+declare -r BASEIMAGENAME="mok-centos-7"
+declare -r ERROR=1
+declare -r OK=0
+declare -r TRUE=1
+declare -r FALSE=0
+declare -r SPINNER=('◐' '◓' '◑' '◒')
+
+colgreen=`tput setaf 2`
+colred=`tput setaf 1`
+colreset=`tput sgr0`
+success="$colgreen✓$colreset"
+failure="$colred✕$colreset"
+
 # The initial state of the parser
 STATE="COMMAND"
 
@@ -12,8 +27,11 @@ STATE="COMMAND"
 COMMAND=
 SUBCOMMAND=
 CREATE_CLUSTER_NAME=
-declare -i CREATE_CLUSTER_NUM_MASTERS=
-declare -i CREATE_CLUSTER_NUM_WORKERS=
+CREATE_CLUSTER_K8SVER=
+CREATE_CLUSTER_NUM_MASTERS=0
+CREATE_CLUSTER_NUM_WORKERS=0
+CREATE_CLUSTER_SKIPMASTERSETUP=$FALSE
+CREATE_CLUSTER_SKIPWORKERSETUP=$FALSE
 DELETE_CLUSTER_NAME=
 GET_CLUSTER_NAME=
 
@@ -23,18 +41,6 @@ DOCKERBUILDTMPDIR=
 # For the spinning progress animation
 RUNWITHPROGRESS_OUTPUT=
 
-# Constants
-declare -r LABELKEY="MokCluster"
-declare -r BASEIMAGENAME="mok-centos-7"
-declare -r ERROR=1
-declare -r OK=0
-declare -r SPINNER=('◐' '◓' '◑' '◒')
-declare -r colgreen=`tput setaf 2`
-declare -r colred=`tput setaf 1`
-declare -r colreset=`tput sgr0`
-declare -r success="$colgreen✓$colreset"
-declare -r failure="$colred✕$colreset"
-
 # ===========================================================================
 main() {
 # ===========================================================================
@@ -42,9 +48,11 @@ main() {
 
   trap cleanup EXIT
 
-  sanity_checks || return $?
+  set_globals || return
 
-  parse_options "$@" || return $?
+  sanity_checks || return
+
+  parse_options "$@" || return
 
   case "$COMMAND" in
     create) do_create ;;
@@ -52,6 +60,22 @@ main() {
     build)  do_build  ;;
     get)    do_get    ;;
   esac
+}
+
+# ---------------------------------------------------------------------------
+set_globals() {
+# ---------------------------------------------------------------------------
+
+  COMMAND=
+  SUBCOMMAND=
+  CREATE_CLUSTER_NAME=
+  CREATE_CLUSTER_K8SVER=
+  CREATE_CLUSTER_NUM_MASTERS=
+  CREATE_CLUSTER_NUM_WORKERS=
+  CREATE_CLUSTER_SKIPMASTERSETUP=$FALSE
+  CREATE_CLUSTER_SKIPWORKERSETUP=$FALSE
+  DELETE_CLUSTER_NAME=
+  GET_CLUSTER_NAME=
 }
 
 # ===========================================================================
@@ -64,7 +88,7 @@ do_get() {
 # Calls the correct command/subcommand function
 
   case $SUBCOMMAND in
-    cluster)  do_get_clusters_sanity_checks || return $?
+    cluster)  do_get_clusters_sanity_checks || return
               do_get_clusters_nomutate "$GET_CLUSTER_NAME"
               ;;
   esac
@@ -90,7 +114,7 @@ do_build() {
 # Calls the correct command/subcommand function
 
   case $SUBCOMMAND in
-    image) do_build_image_sanity_checks || return $?
+    image) do_build_image_sanity_checks || return
            do_build_image_mutate
            ;;
   esac
@@ -116,7 +140,7 @@ do_create() {
 # Calls the correct command/subcommand function
 
   case $SUBCOMMAND in
-    cluster) do_create_cluster_sanity_checks || return $?
+    cluster) do_create_cluster_sanity_checks || return
              do_create_cluster_mutate
              ;;
   esac
@@ -160,7 +184,7 @@ do_delete() {
 # No args expected
 
   case $SUBCOMMAND in
-    cluster) do_delete_cluster_sanity_checks || return $?
+    cluster) do_delete_cluster_sanity_checks || return
              do_delete_cluster_mutate
              ;;
   esac
@@ -189,14 +213,14 @@ do_delete_cluster_sanity_checks() {
 do_create_cluster_mutate() {
 # ---------------------------------------------------------------------------
 # Mutate functions make system changes.
-# Global variables: 
+# Global variables:
 #   CREATE_CLUSTER_NAME        - (string) cluster name
 #   CREATE_CLUSTER_NUM_MASTERS - (int) num masters
 #   CREATE_CLUSTER_NUM_WORKERS - (int) num workers
 
   declare -i numnodes=0
 
-  numnodes=$(get_cluster_size $CREATE_CLUSTER_NAME) || return $?
+  numnodes=$(get_cluster_size $CREATE_CLUSTER_NAME) || return
 
   [[ $numnodes -gt 0 ]] && {
     echo
@@ -208,7 +232,7 @@ do_create_cluster_mutate() {
   echo
 
   [[ $CREATE_CLUSTER_NUM_MASTERS -gt 0 ]] && {
-    create_master_nodes $CREATE_CLUSTER_NUM_MASTERS || return $?
+    create_master_nodes $CREATE_CLUSTER_NUM_MASTERS || return
   }
 
   # TODO Query the server for all pods ready instead
@@ -217,7 +241,7 @@ do_create_cluster_mutate() {
     sleep 90
 
   [[ $CREATE_CLUSTER_NUM_WORKERS -gt 0 ]] && {
-    create_worker_nodes "$CREATE_CLUSTER_NUM_WORKERS" || return $?
+    create_worker_nodes "$CREATE_CLUSTER_NUM_WORKERS" || return
   }
 
   echo
@@ -237,9 +261,10 @@ get_cluster_size() {
 # Args:
 #   arg1 - name to search for.
 
+  local output
   declare -a nodes
 
-  output=$(get_docker_ids_for_cluster $1) || return $?
+  output=$(get_docker_ids_for_cluster $1) || return
 
   # read the nodes array and delete blank lines
   readarray nodes < <(echo "$output" | sed '/^$/d')
@@ -254,7 +279,7 @@ get_docker_ids_for_cluster() {
 # Args:
 #   arg1 - Cluster name
 
-  local value
+  local value output
 
   [[ -n $1 ]] && value="=$1"
 
@@ -340,7 +365,7 @@ create_worker_nodes() {
 # Args:
 #   arg1 - number of master nodes to create
 
-  local retval=0 cahash token ip
+  local retval=0 cahash token ip t
   declare -i i=0
 
   # Runs a script on master node to get details
@@ -411,7 +436,7 @@ echo "masterip=$ip"
 exit 0
 EnD
 
-  docker cp $joinvarsfile $1:/root/joinvars.sh || return $?
+  docker cp $joinvarsfile $1:/root/joinvars.sh || return
   rm -f $joinvarsfile
 
   docker exec $1 bash /root/joinvars.sh
@@ -522,7 +547,7 @@ do_delete_cluster_mutate() {
 
   declare -i numnodes=0
 
-  numnodes=$(get_cluster_size $DELETE_CLUSTER_NAME) || return $?
+  numnodes=$(get_cluster_size $DELETE_CLUSTER_NAME) || return
 
   [[ $numnodes -eq 0 ]] && {
     echo -en "\nERROR: No cluster exists with name, '$DELETE_CLUSTER_NAME'."
@@ -540,8 +565,10 @@ delete_cluster_nodes() {
 # Args:
 #   arg1 - Name of the cluster to delete
 
-  ids=$(get_docker_ids_for_cluster $1) || return $?
- 
+  local id ids r
+
+  ids=$(get_docker_ids_for_cluster $1) || return
+
   echo -e "The following containers will be deleted:\n"
 
   do_get_clusters_nomutate $1
@@ -568,7 +595,7 @@ delete_cluster_nodes() {
         return $r
       }
   done
-  
+
   echo
 }
 
@@ -579,8 +606,8 @@ delete_docker_container() {
 # Args:
 #   arg1 - docker id to delete
 
-  docker stop $id || return $?
-  docker rm $id || return $?
+  docker stop $id || return
+  docker rm $id || return
 }
 
 # ---------------------------------------------------------------------------
@@ -597,7 +624,7 @@ do_build_image_mutate() {
   retval=$?
 
   if [[ $retval -eq 0 ]]; then
-    : # We only need the tick
+    : # We only need the tick - no text
   else
     echo "Image build failed"
   fi
@@ -612,12 +639,14 @@ build_container_image() {
 # docker build to build the image.
 # No args expected.
 
+  local retval
+
   create_docker_build_dir
 
   run_with_progress \
       "    Creating base image, '$BASEIMAGENAME'" \
       docker build -t "local/$BASEIMAGENAME" "$DOCKERBUILDTMPDIR/$BASEIMAGENAME"
-  
+
   retval=$?
   [[ $retval -ne 0 ]] && {
     echo "ERROR: Docker returned an error, shown below"
@@ -729,12 +758,14 @@ do_get_clusters_nomutate() {
 # Args
 #   arg1 - cluster name, optional
 
-  local id output clustname=$1
+  local ids id info output clustname=$1
+  local containerhostname containerip
+
   declare -a nodes
 
   [[ -n $clustname ]] && clustname="=$clustname"
 
-  ids=$(get_mok_cluster_docker_ids "$clustname") || return $?
+  ids=$(get_mok_cluster_docker_ids "$clustname") || return
 
   if [[ -z $ids ]]; then
     return $OK
@@ -746,7 +777,7 @@ do_get_clusters_nomutate() {
 
   ( echo "MOK_Cluster Docker_ID Container_Name IP_Address"
   for id in ${nodes[@]}; do
-    info=$(get_info_about_container_using_docker $id) || return $?
+    info=$(get_info_about_container_using_docker $id) || return
     clustname=$(sed -rn \
       '/Labels/,/}/ {s/[":,]//g; s/^ *'"$LABELKEY"' ([^ ]*).*/\1/p }' \
       <<<$info)
@@ -799,8 +830,9 @@ run_with_progress() {
 #   arg1 - the text to display
 #   argN - remaining args are the program and its arguments
 
-  local displaytext=$1
-  declare -g RUNWITHPROGRESS_OUTPUT=`mktemp --tmpdir=/var/tmp`
+  local displaytext=$1 retval i
+
+  RUNWITHPROGRESS_OUTPUT=`mktemp --tmpdir=/var/tmp`
 
   shift
   # Run the command in the background
@@ -815,7 +847,7 @@ run_with_progress() {
       echo -en "\r  ${SPINNER[i]} "
       sleep .1
     done
-  done ) & 
+  done ) &
 
   # Wait for the command to finish
   wait %1
@@ -843,12 +875,23 @@ sanity_checks(){
 # Check our environment
 # No args expected
 
+  local binary
+
   for binary in column tput docker grep sed; do
     if ! which $binary >& /dev/null; then
       echo "ERROR: $binary binary not found in path. Aborting."
       return 1
     fi
   done
+
+  # Disable terminal escapes (colours) if stdout is not a terminal
+  [ -t 1 ] || {
+    colgreen=
+    colred=
+    colreset=
+    success="✓"
+    failure="✕"
+  }
 }
 
 # ---------------------------------------------------------------------------
@@ -857,10 +900,10 @@ usage() {
 # Every tool, no matter how small, should have help text!
 
   case $COMMAND in
-    create) create_command_help; return 0 ;;
-    delete) delete_command_help; return 0 ;;
-    build) build_command_help; return 0 ;;
-    get) get_command_help; return 0 ;;
+    create) create_command_help; return $OK ;;
+    delete) delete_command_help; return $OK ;;
+    build) build_command_help; return $OK ;;
+    get) get_command_help; return $OK ;;
   esac
 
   echo
@@ -868,7 +911,8 @@ usage() {
   echo
   echo "Global options:"
   echo
-  echo "  -h - This help text"
+  echo "  --help"
+  echo "  -h     - This help text"
   echo
   echo "Where COMMAND can be one of:"
   echo
@@ -877,7 +921,7 @@ usage() {
   echo "  build  - Build item(s) used by the system."
   echo "  get    - Get details about items in the system."
   echo
-  
+
   create_command_help
   delete_command_help
   build_command_help
@@ -916,7 +960,7 @@ create_command_help() {
   echo
   echo "  cluster - Create a local kubernetes cluster."
   echo
-  echo "create cluster options:"
+  echo "create cluster [flags] options:"
   echo
   echo " Format:"
   echo "  create cluster NAME NUM_MASTERS NUM_WORKERS"
@@ -925,6 +969,15 @@ create_command_help() {
   echo "                docker containers."
   echo "  NUM_MASTERS - The number of master containers."
   echo "  NUM_WORKERS - The number of worker containers."
+  echo
+  echo " Flags:"
+  echo "  --skipmastersetup - Create the master container but don't set it"
+  echo "         up. Useful for manually installing kubernetes. Kubeadm, "
+  echo "         kubelet and kubectl will be installed at the requested "
+  echo "         version. See also '--k8sver' flag."
+  echo "  --skipworkersetup - The same as '--skipmastersetup', but skips"
+  echo "         setting up the worker."
+  echo "  --k8sver VERSION - Unimplemented."
   echo
 }
 
@@ -978,17 +1031,21 @@ cleanup() {
 # ---------------------------------------------------------------------------
 # Called when the script exits.
 
+  local i
+
   [[ -e "$DOCKERBUILDTMPDIR" ]] && \
     [[ $DOCKERBUILDTMPDIR == "/var/tmp/"* ]] && {
     rm -rf "$DOCKERBUILDTMPDIR"
   }
 
   # If progress spinner crashed make sure the cursor is shown
-  tput cnorm
+  [ -t 1 ] && tput cnorm
 
   # Kill the spinny, and anything else, if they're running
   [[ -n `jobs -p` ]] &&  echo -e "$colred\r  ✕$colreset"
   for i in `jobs -p`; do kill $i; done
+  
+  return $OK
 }
 
 # ===========================================================================
@@ -1007,8 +1064,23 @@ parse_options() {
   while [ "$ARGN" -ne 0 ]
   do
     case $1 in
+      --skipmastersetup) verify_option '--skipmastersetup' || return $ERROR
+                         CREATE_CLUSTER_SKIPMASTERSETUP=$TRUE
+                         ;;
+      --skipworkersetup) verify_option '--skipmastersetup' || return $ERROR
+                         CREATE_CLUSTER_SKIPWORKERSETUP=$TRUE
+                         ;;
+      --k8sver) verify_option '--k8sver' || return $ERROR
+                         CREATE_CLUSTER_K8SVER=$1
+                         shift
+                         ;;
+      --help) ;&
       -h) usage
-          return $OK
+          return $ERROR
+      ;;
+      --?*) usage
+            echo "Invalid option: '$1'"
+            return $ERROR
       ;;
       ?*) case "$STATE" in
             COMMAND) check_command_token $1
@@ -1078,6 +1150,10 @@ parse_options() {
 
   return $OK
 }
+
+# ===========================================================================
+#                    COMMAND, SUBCOMMAND, OPTION PROCESSING
+# ===========================================================================
 
 # ---------------------------------------------------------------------------
 check_command_token() {
@@ -1252,6 +1328,133 @@ check_option3_token() {
       esac
       ;;
   esac
+}
+
+# ===========================================================================
+#                              FLAG PROCESSING
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+verify_option() {
+# ---------------------------------------------------------------------------
+# Check that the sent option is valid for the command-subcommand or global
+# options.
+# Args:
+#   arg1 - The option to check.
+
+  case "$COMMAND$SUBCOMMAND" in
+    create) ;& # Treat flags located just before
+    delete) ;& # or just after COMMAND
+    build) ;&  # as global options.
+    get) ;&
+    '') check_valid_global_opts $1
+      ;;
+    createcluster) check_valid_create_cluster_opts $1
+      ;;
+    deletecluster) check_valid_delete_cluster_opts $1
+      ;;
+    buildimage) check_valid_build_image_opts $1
+      ;;
+    getcluster) check_valid_get_cluster_opts $1
+      ;;
+  esac && return $OK
+
+  return $ERROR
+}
+
+# ---------------------------------------------------------------------------
+check_valid_global_opts() {
+# ---------------------------------------------------------------------------
+# Args:
+#   arg1 - The option to check.
+
+  local i validopts=(
+    "--help"
+    "-h"
+  )
+
+  for i in ${validopts[@]}; do
+    [[ "$1" == "$i" ]] && return $OK
+  done
+
+  usage
+  echo "ERROR: '$1' is not a valid global option."
+  return $ERROR
+}
+
+# ---------------------------------------------------------------------------
+check_valid_create_cluster_opts() {
+# ---------------------------------------------------------------------------
+# Args:
+#   arg1 - The option to check.
+
+  local i validopts=(
+    "--skipmastersetup"
+    "--skipworkersetup"
+    "--k8sver"
+  )
+
+  for i in ${validopts[@]}; do
+    [[ "$1" == "$i" ]] && return $OK
+  done
+
+  usage
+  echo "ERROR: '$1' is not a valid 'create cluster' option."
+  return $ERROR
+}
+
+# ---------------------------------------------------------------------------
+check_valid_delete_cluster_opts() {
+# ---------------------------------------------------------------------------
+# Args:
+#   arg1 - The option to check.
+
+  local i validopts=(
+  )
+
+  for i in ${validopts[@]}; do
+    [[ "$1" == "$i" ]] && return $OK
+  done
+
+  usage
+  echo "ERROR: '$1' is not a valid 'delete cluster' option."
+  return $ERROR
+}
+
+# ---------------------------------------------------------------------------
+check_valid_build_image_opts() {
+# ---------------------------------------------------------------------------
+# Args:
+#   arg1 - The option to check.
+
+  local i validopts=(
+  )
+
+  for i in ${validopts[@]}; do
+    [[ "$1" == "$i" ]] && return $OK
+  done
+
+  usage
+  echo "ERROR: '$1' is not a valid 'build image' option."
+  return $ERROR
+}
+
+# ---------------------------------------------------------------------------
+check_valid_get_cluster_opts() {
+# ---------------------------------------------------------------------------
+# Args:
+#   arg1 - The option to check.
+
+  local i validopts=(
+  )
+
+  for i in ${validopts[@]}; do
+    [[ "$1" == "$i" ]] && return $OK
+  done
+
+  usage
+  echo "ERROR: '$1' is not a valid 'get cluster' option."
+  return $ERROR
 }
 
 # Calls main() if we're called from the command line

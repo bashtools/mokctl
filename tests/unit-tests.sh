@@ -8,7 +8,7 @@
 testMakeCreatesMokctlDeploy(){
 # ---------------------------------------------------------------------------
 
-  make 2&>/dev/null
+  make &>/dev/null
   assertTrue \
     "Check that make creates mokctl.deploy" \
     "[[ -e 'mokctl.deploy' ]]"
@@ -66,7 +66,7 @@ testBuildwithNoSubcommandOutput(){
 
   assertEquals \
     "'mokctl build' should fail with correct output" \
-    "No SUBCOMMAND supplied" "${LINES[0]}"   
+    "No SUBCOMMAND supplied" "${LINES[0]}"
 }
 
 # ---------------------------------------------------------------------------
@@ -90,7 +90,7 @@ testBuildwithOptionOutput(){
   assertEquals \
     "'mokctl build image 1' should fail with correct output" \
     "ERROR No more options expected, '1' is unexpected for 'build image'" \
-    "${LINES[0]}"   
+    "${LINES[0]}"
 }
 
 # ---------------------------------------------------------------------------
@@ -126,14 +126,26 @@ testRunWithNoArgsShouldFail() {
 testRunWithNoArgsShouldFailOutput() {
 # ---------------------------------------------------------------------------
 
-  do_create_cluster_mutate(){ :; }
-  do_delete_cluster_mutate(){ :; }
+  do_create_cluster_mutate() { :; }
+  do_delete_cluster_mutate() { :; }
 
   grabMainOutput
-  
+
   assertEquals \
     "Run with no arguments should fail with correct output" \
-    "No COMMAND supplied" "${LINES[0]}"   
+    "No COMMAND supplied" "${LINES[0]}"
+}
+
+# ---------------------------------------------------------------------------
+testInvalidFlagGlobalFlag() {
+# ---------------------------------------------------------------------------
+
+  do_create_cluster_mutate() { :; }
+
+  grabMainOutput --asdf >/dev/null
+  assertEquals \
+    "'mokctl --asdf' should fail" \
+    "Invalid option: '--asdf'" "${LINES[0]}"
 }
 
 # ===========================================================================
@@ -141,10 +153,51 @@ testRunWithNoArgsShouldFailOutput() {
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
+testCreateClusterInvalidFlag() {
+# ---------------------------------------------------------------------------
+
+  do_create_cluster_mutate() { :; }
+
+  grabMainOutput create cluster --fdsa >/dev/null
+
+  assertEquals \
+    "'mokctl create cluster --fdsa' should fail" \
+    "Invalid option: '--fdsa'" "${LINES[0]}"
+}
+
+# ---------------------------------------------------------------------------
+testCreateClusterValidFlag2() {
+# ---------------------------------------------------------------------------
+
+  local r
+
+  do_create_cluster_mutate() { :; }
+
+  main create cluster --skipworkersetup bob 1 0
+  r=$?
+
+  assertEquals \
+    "'mokctl create cluster --skipworkersetup bob 1 0' should pass" \
+    "0" "$r"
+}
+
+# ---------------------------------------------------------------------------
+testCreateClusterInvalidLocalAsGlobalFlag() {
+# ---------------------------------------------------------------------------
+
+  do_create_cluster_mutate() { :; }
+
+  grabMainOutput --skipmastersetup create cluster 1 0 >/dev/null
+  assertEquals \
+    "'mokctl --asdf' should fail" \
+    "ERROR: '--skipmastersetup' is not a valid global option." "${LINES[0]}"
+}
+
+# ---------------------------------------------------------------------------
 testRunWithOneArgShouldFail() {
 # ---------------------------------------------------------------------------
 
-  do_create_cluster_mutate(){ :; }
+  do_create_cluster_mutate() { :; }
 
   main create >/dev/null
   assertTrue \
@@ -156,20 +209,20 @@ testRunWithOneArgShouldFail() {
 testRunWithOneArgShouldFailOutput() {
 # ---------------------------------------------------------------------------
 
-  do_create_cluster_mutate(){ :; }
+  do_create_cluster_mutate() { :; }
 
   grabMainOutput create
-  
+
   assertEquals \
     "'mokctl create' should fail with correct output" \
-    "No SUBCOMMAND supplied" "${LINES[0]}"   
+    "No SUBCOMMAND supplied" "${LINES[0]}"
 }
 
 # ---------------------------------------------------------------------------
 testNotEnoughOptionsToCreateCluster() {
 # ---------------------------------------------------------------------------
 
-  do_create_cluster_mutate(){ :; }
+  do_create_cluster_mutate() { :; }
 
   main create cluster >/dev/null
   assertTrue \
@@ -181,35 +234,40 @@ testNotEnoughOptionsToCreateCluster() {
 testNotEnoughOptionsToCreateClusterOutput() {
 # ---------------------------------------------------------------------------
 
-  do_create_cluster_mutate(){ :; }
+  do_create_cluster_mutate() { :; }
 
   grabMainOutput create cluster
-  
+
   assertEquals \
     "'mokctl create cluster' should fail with correct output" \
-    "Please provide the Cluster NAME to create." "${LINES[0]}"   
+    "Please provide the Cluster NAME to create." "${LINES[0]}"
 }
+
 
 # ---------------------------------------------------------------------------
 testNotEnoughOptionsToCreateClusterName() {
 # ---------------------------------------------------------------------------
 
-  do_create_cluster_mutate(){ :; }
+  local r
 
-  main create cluster name >/dev/null
-  assertTrue \
+  do_create_cluster_mutate() { :; }
+
+  main create cluster name
+  r=$?
+
+  assertEquals \
     "'create cluster name' should fail" \
-    "[[ $? -ge 1 ]]"
+    "1" "$r"
 }
 
 # ---------------------------------------------------------------------------
 testNotEnoughOptionsToCreateClusterNameOutput() {
 # ---------------------------------------------------------------------------
 
-  do_create_cluster_mutate(){ :; }
+  do_create_cluster_mutate() { :; }
 
   grabMainOutput create cluster mycluster
-  
+
   assertEquals \
     "'create cluster name' should fail with correct output" \
     "Please provide the number of Masters to create. Must be 1 or more." \
@@ -220,22 +278,24 @@ testNotEnoughOptionsToCreateClusterNameOutput() {
 testNotEnoughOptionsToCreateClusterName1() {
 # ---------------------------------------------------------------------------
 
-  do_create_cluster_mutate(){ :; }
+  do_create_cluster_mutate() { :; }
 
   main create cluster name 1 >/dev/null
-  assertTrue \
+  r=$?
+
+  assertEquals \
     "'create cluster name 1' should fail" \
-    "[[ $? -ge 1 ]]"
+    "1" "$r"
 }
 
 # ---------------------------------------------------------------------------
 testNotEnoughOptionsToCreateClusterName1Output() {
 # ---------------------------------------------------------------------------
 
-  do_create_cluster_mutate(){ :; }
+  do_create_cluster_mutate() { :; }
 
   grabMainOutput create cluster mycluster 1
-  
+
   assertEquals \
     "'create cluster name 1' should fail with correct output" \
     "Please provide the number of Workers to create." \
@@ -247,7 +307,7 @@ testZeroMastersShouldFail() {
 # ---------------------------------------------------------------------------
 # Can't create a cluster with 0 masters
 
-  do_create_cluster_mutate(){ :; }
+  do_create_cluster_mutate() { :; }
 
   main create cluster name 0 0 >/dev/null
   assertTrue \
@@ -259,10 +319,10 @@ testZeroMastersShouldFail() {
 testZeroMastersShouldFailOutput() {
 # ---------------------------------------------------------------------------
 
-  do_create_cluster_mutate(){ :; }
+  do_create_cluster_mutate() { :; }
 
   grabMainOutput create cluster mycluster 0 0
-  
+
   assertEquals \
     "'create cluster name 0 0' should fail with correct output" \
     "Please provide the number of Masters to create. Must be 1 or more." \
@@ -274,7 +334,7 @@ testZeroMastersShouldFail2() {
 # ---------------------------------------------------------------------------
 # Can't create a cluster with 0 masters and >0 workers
 
-  do_create_cluster_mutate(){ :; }
+  do_create_cluster_mutate() { :; }
 
   main create cluster name 0 1 >/dev/null
   assertTrue \
@@ -286,10 +346,10 @@ testZeroMastersShouldFail2() {
 testZeroMastersShouldFail2Output() {
 # ---------------------------------------------------------------------------
 
-  do_create_cluster_mutate(){ :; }
+  do_create_cluster_mutate() { :; }
 
   grabMainOutput create cluster mycluster 0 1
-  
+
   assertEquals \
     "'create cluster name 0 0' should fail with correct output" \
     "Please provide the number of Masters to create. Must be 1 or more." \
@@ -302,7 +362,7 @@ testValidCreateClusterCommand() {
 
   # Check that all the create cluster vars are set
 
-  do_create_cluster_mutate(){ :; }
+  do_create_cluster_mutate() { :; }
 
   parse_options create cluster mycluster 1 0
   assertTrue \
@@ -318,7 +378,7 @@ testValidCreateClusterCommand2() {
 
   # Check that all the create cluster vars are set
 
-  do_create_cluster_mutate(){ :; }
+  do_create_cluster_mutate() { :; }
 
   parse_options create cluster mycluster 1 1
   assertTrue \
@@ -334,7 +394,7 @@ testValidCreateClusterCommand3() {
 
   # Check that all the create cluster vars are set
 
-  do_create_cluster_mutate(){ :; }
+  do_create_cluster_mutate() { :; }
 
   parse_options create cluster mycluster 3 6
   assertTrue \
@@ -349,7 +409,7 @@ testCreateClusterExtraOptions() {
 # ---------------------------------------------------------------------------
 # Can't create a cluster with 0 masters and >0 workers
 
-  do_create_cluster_mutate(){ :; }
+  do_create_cluster_mutate() { :; }
 
   main create cluster name 1 1 2 >/dev/null
   assertTrue \
@@ -361,10 +421,10 @@ testCreateClusterExtraOptions() {
 testCreateClusterExtraOptionsOutput() {
 # ---------------------------------------------------------------------------
 
-  do_create_cluster_mutate(){ :; }
+  do_create_cluster_mutate() { :; }
 
   grabMainOutput create cluster mycluster 1 1 2
-  
+
   assertEquals \
     "'create cluster mycluster 1 1 2' should fail with correct output" \
     "ERROR No more options expected, '2' is unexpected for 'create cluster'" \
@@ -421,11 +481,14 @@ testCreateClusterMasterNodesWithSuccess(){
 # Override get_cluster_size to return an arbitrary number which would
 # be the 'docker ps' return code
 
+  local r
+
   do_create_cluster_mutate() { return $OK; }
   get_cluster_size() { echo "0"; return 0; }
 
   main create cluster myclust 1 0 >/dev/null
   r=$?
+
   assertEquals \
     "'mokctl create cluster myclust 1 0 should succeed" \
     "0" "$r"
@@ -437,6 +500,8 @@ testCreateClusterMasterNodesWithFailure(){
 # Override get_cluster_size to return an arbitrary number which would
 # be the 'docker ps' return code
 
+  local r
+
   docker() { sleep 1; return 0; }
 
   # echo "1" below means that a node exists already which means
@@ -445,6 +510,7 @@ testCreateClusterMasterNodesWithFailure(){
 
   main create cluster myclust 1 0 >/dev/null
   r=$?
+
   assertEquals \
     "'mokctl create cluster myclust 1 0 should fail" \
     "1" "$r"
@@ -456,12 +522,15 @@ testCreateClusterMasterNodesWithFailure2(){
 # Override get_cluster_size to return an arbitrary number which would
 # be the 'docker ps' return code
 
+  local r
+
   # return 1 below means that docker failed
   docker() { sleep 1; return 1; }
   get_cluster_size() { echo "0"; return 0; }
 
   main create cluster myclust 1 0 >/dev/null
   r=$?
+
   assertEquals \
     "'mokctl create cluster myclust 1 0 should fail" \
     "1" "$r"
@@ -486,10 +555,10 @@ testDeleteRunWithOneArgShouldFailOutput() {
 # ---------------------------------------------------------------------------
 
   grabMainOutput delete
-  
+
   assertEquals \
     "Run with 'mokctl delete' should fail with correct output" \
-    "No SUBCOMMAND supplied" "${LINES[0]}"   
+    "No SUBCOMMAND supplied" "${LINES[0]}"
 }
 
 # ---------------------------------------------------------------------------
@@ -507,10 +576,10 @@ testNotEnoughOptionsToDeleteClusterOutput() {
 # ---------------------------------------------------------------------------
 
   grabMainOutput delete cluster
-  
+
   assertEquals \
     "Run with 'mokctl delete cluster' should fail with correct output" \
-    "Please provide the Cluster NAME to delete." "${LINES[0]}"   
+    "Please provide the Cluster NAME to delete." "${LINES[0]}"
 }
 
 # ---------------------------------------------------------------------------
@@ -528,7 +597,7 @@ testNotEnoughOptionsToDeleteClusterNameOutput() {
 # ---------------------------------------------------------------------------
 
   grabMainOutput delete mycluster mycluster
-  
+
   assertEquals \
     "'delete cluster mycluster' should fail with correct output" \
     "Invalid SUBCOMMAND for delete, 'mycluster'." \
@@ -585,10 +654,10 @@ testGetRunWithOneArgShouldFailOutput() {
 # ---------------------------------------------------------------------------
 
   grabMainOutput get
-  
+
   assertEquals \
     "Run with 'mokctl get' should fail with correct output" \
-    "No SUBCOMMAND supplied" "${LINES[0]}"   
+    "No SUBCOMMAND supplied" "${LINES[0]}"
 }
 
 # ---------------------------------------------------------------------------
@@ -612,7 +681,7 @@ testGetWith2OptionsOutput(){
   assertEquals \
     "'mokctl get cluster mycluster 1' should fail with correct output" \
     "ERROR No more options expected, '1' is unexpected for 'get cluster'" \
-    "${LINES[0]}"   
+    "${LINES[0]}"
 }
 
 # ---------------------------------------------------------------------------
@@ -624,7 +693,7 @@ testGetWith2OptionOutput2(){
   assertEquals \
     "'mokctl get clusters mycluster 1' should fail with correct output" \
     "ERROR No more options expected, '1' is unexpected for 'get cluster'" \
-    "${LINES[0]}"   
+    "${LINES[0]}"
 }
 
 # ---------------------------------------------------------------------------
@@ -642,7 +711,7 @@ testGetClustersOutputsClusterNames(){
   assertEquals \
     "'mokctl get clusters' should return cluster names" \
     "mycluster2   5c844b362d2a  mycluster2-master-1  172.17.0.3" \
-    "${LINES[1]}"   
+    "${LINES[1]}"
 }
 
 # ---------------------------------------------------------------------------
@@ -663,8 +732,26 @@ testGetClustersReturnsOKForNamedCluster(){
 }
 
 # ---------------------------------------------------------------------------
+testGetClustersOutputsNothing(){
+# ---------------------------------------------------------------------------
+
+  get_mok_cluster_docker_ids() { return $OK; }
+  get_info_about_container_using_docker() {
+    cat tests/testfiles/docker_inspect_container.txt
+  }
+
+  grabMainOutput get clusters
+
+  assertEquals \
+    "'mokctl get clusters' should return no cluster names" \
+    "" "${LINES[0]}"
+}
+
+# ---------------------------------------------------------------------------
 testGetClustersReturnsOKForZeroClusters(){
 # ---------------------------------------------------------------------------
+
+  local r
 
   get_mok_cluster_docker_ids() { return $OK; }
   get_info_about_container_using_docker() {
@@ -675,24 +762,7 @@ testGetClustersReturnsOKForZeroClusters(){
 
   assertEquals \
     "'mokctl get clusters' should return cluster names" \
-    "0" \
-    "$r"   
-}
-
-# ---------------------------------------------------------------------------
-testGetClustersOutputsNothing(){
-# ---------------------------------------------------------------------------
-
-  get_mok_cluster_docker_ids() { return $OK; }
-  get_info_about_container_using_docker() {
-    cat tests/testfiles/docker_inspect_container.txt
-  }
-  grabMainOutput get clusters
-
-  assertEquals \
-    "'mokctl get clusters' should return cluster names" \
-    "" \
-    "${LINES[0]}"   
+    "0" "$r"
 }
 
 # ===========================================================================
@@ -700,22 +770,34 @@ testGetClustersOutputsNothing(){
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
-setUp() {
+oneTimeSetUp() {
 # ---------------------------------------------------------------------------
-# source mokctl.deploy and disable output of usage().
 # 'sed' is used to remove 'declare -r' - readonly variables.
 #   Readonly variables cannot be deleted without using 'gdb'!
 
-  sed 's/^declare -r \(.*\)/\1/' mokctl.deploy >mokctl.deploy.noconst
+  sed 's/^ *declare -r \(.*\)/\1/' mokctl.deploy >mokctl.deploy.noconst
+}
+
+# ---------------------------------------------------------------------------
+setUp() {
+# ---------------------------------------------------------------------------
+# source mokctl.deploy and disable output of usage().
+
   . ./mokctl.deploy.noconst
-  usage() { :; }
+  #set_globals
+  usage() { return $OK; }
 }
 
 # ---------------------------------------------------------------------------
 tearDown(){
 # ---------------------------------------------------------------------------
-  rm -rf /var/tmp/mokctl-unit-tests.*
   cleanup
+}
+
+# ---------------------------------------------------------------------------
+oneTimeTearDown() {
+# ---------------------------------------------------------------------------
+  rm -rf /var/tmp/mokctl-unit-tests.*
 }
 
 # ---------------------------------------------------------------------------
@@ -724,7 +806,7 @@ grabMainOutput() {
 # Helper function. Sets LINES array to script output.
 
   local tmpname=`mktemp --tmpdir=/var/tmp mokctl-unit-tests.XXXXXXXX`
-  main "$@" >$tmpname
+  main "$@" &>$tmpname
   readarray -t LINES <$tmpname
 }
 

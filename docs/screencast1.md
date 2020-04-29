@@ -13,7 +13,7 @@ mokctl build image
 mokctl get -h
 mokctl get clusters
 
-mokctl create -h
+mokctl create 
 mokctl create cluster test1 --skipmastersetup 1 1
 
 export KUBECONFIG=~/.mok/admin.conf

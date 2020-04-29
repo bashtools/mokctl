@@ -784,7 +784,7 @@ setUp() {
 # source mokctl.deploy and disable output of usage().
 
   . ./mokctl.deploy.noconst
-  #set_globals
+  set_globals
   usage() { return $OK; }
 }
 

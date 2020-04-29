@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# To test everything run: `make test`, or `./tests/unit-tests.sh`
+#
+# To run one test: `./tests/unit-tests.sh -- testVerifyOptionInvalid
+#
+# or for more individual tests add more to the end of the previous line
+
 # ===========================================================================
 # Make tests
 # ===========================================================================
@@ -762,6 +768,188 @@ testGetClustersReturnsOKForZeroClusters(){
 
   assertEquals \
     "'mokctl get clusters' should return cluster names" \
+    "0" "$r"
+}
+
+# ---------------------------------------------------------------------------
+testVerifyGlobalOptionValid() {
+# ---------------------------------------------------------------------------
+
+  do_create_cluster_mutate() { :; }
+
+  main create cluster --help
+  r=$?
+
+  assertEquals \
+    "'mokctl create cluster --help' should return OK" \
+    "0" "$r"
+}
+
+# ---------------------------------------------------------------------------
+testVerifyGlobalOptionValid1() {
+# ---------------------------------------------------------------------------
+
+  do_create_cluster_mutate() { :; }
+
+  main create cluster -h
+  r=$?
+
+  assertEquals \
+    "'mokctl create cluster -h' should return OK" \
+    "0" "$r"
+}
+
+# ---------------------------------------------------------------------------
+testVerifyGlobalOptionValid2() {
+# ---------------------------------------------------------------------------
+
+  do_create_cluster_mutate() { :; }
+
+  main -h create cluster
+  r=$?
+
+  assertEquals \
+    "'mokctl -h create clusters' should return OK" \
+    "0" "$r"
+}
+
+# ---------------------------------------------------------------------------
+testVerifyGlobalOptionValid3() {
+# ---------------------------------------------------------------------------
+
+  do_create_cluster_mutate() { :; }
+
+  main --help create cluster
+  r=$?
+
+  assertEquals \
+    "'mokctl --help create clusters' should return OK" \
+    "0" "$r"
+}
+
+# ---------------------------------------------------------------------------
+testVerifyGlobalOptionValid4() {
+# ---------------------------------------------------------------------------
+
+  do_create_cluster_mutate() { :; }
+
+  main create cluster myclust 1 0 -h
+  r=$?
+
+  assertEquals \
+    "'mokctl create clusters myclust 1 0 -h' should return OK" \
+    "0" "$r"
+}
+
+# ---------------------------------------------------------------------------
+testVerifyCreateClusterOptionValid1() {
+# ---------------------------------------------------------------------------
+
+  do_create_cluster_mutate() { :; }
+
+  main create cluster --skipmastersetup myclust 1 0
+  r=$?
+
+  assertEquals \
+    "'mokctl create cluster --skipmastersetup myclust 1 0' should return OK" \
+    "0" "$r"
+}
+
+# ---------------------------------------------------------------------------
+testVerifyCreateClusterOptionValid2() {
+# ---------------------------------------------------------------------------
+
+  do_create_cluster_mutate() { :; }
+
+  main create cluster myclust --skipmastersetup 1 0
+  r=$?
+
+  assertEquals \
+    "'mokctl create cluster myclust --skipmastersetup 1 0' should return OK" \
+    "0" "$r"
+}
+
+# ---------------------------------------------------------------------------
+testVerifyCreateClusterOptionValid3() {
+# ---------------------------------------------------------------------------
+
+  do_create_cluster_mutate() { :; }
+
+  main create cluster myclust 1 --skipmastersetup 0
+  r=$?
+
+  assertEquals \
+    "'mokctl create cluster myclust 1 --skipmastersetup 0' should return OK" \
+    "0" "$r"
+}
+
+# ---------------------------------------------------------------------------
+testVerifyCreateClusterOptionValid4() {
+# ---------------------------------------------------------------------------
+
+  do_create_cluster_mutate() { :; }
+
+  main create cluster myclust 1 0 --skipmastersetup
+  r=$?
+
+  assertEquals \
+    "'mokctl create cluster myclust 1 0 --skipmastersetup' should return OK" \
+    "0" "$r"
+}
+
+# ---------------------------------------------------------------------------
+testVerifyCreateClusterOptionValid5() {
+# ---------------------------------------------------------------------------
+
+  do_create_cluster_mutate() { :; }
+
+  main create cluster --skipworkersetup myclust 1 0
+  r=$?
+
+  assertEquals \
+    "'mokctl create cluster --skipworkersetup myclust 1 0' should return OK" \
+    "0" "$r"
+}
+
+# ---------------------------------------------------------------------------
+testVerifyCreateClusterOptionValid6() {
+# ---------------------------------------------------------------------------
+
+  do_create_cluster_mutate() { :; }
+
+  main create cluster myclust --skipworkersetup 1 0
+  r=$?
+
+  assertEquals \
+    "'mokctl create cluster myclust --skipworkersetup 1 0' should return OK" \
+    "0" "$r"
+}
+
+# ---------------------------------------------------------------------------
+testVerifyCreateClusterOptionValid7() {
+# ---------------------------------------------------------------------------
+
+  do_create_cluster_mutate() { :; }
+
+  main create cluster myclust 1 --skipworkersetup 0
+  r=$?
+
+  assertEquals \
+    "'mokctl create cluster myclust 1 --skipworkersetup 0' should return OK" \
+    "0" "$r"
+}
+
+# ---------------------------------------------------------------------------
+testVerifyCreateClusterOptionValid8() {
+# ---------------------------------------------------------------------------
+
+  do_create_cluster_mutate() { :; }
+
+  main create cluster myclust 1 0 --skipworkersetup
+  r=$?
+
+  assertEquals \
+    "'mokctl create cluster myclust 1 0 --skipworkersetup' should return OK" \
     "0" "$r"
 }
 

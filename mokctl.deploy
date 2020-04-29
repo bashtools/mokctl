@@ -8,10 +8,11 @@
 # Constants
 declare -r LABELKEY="MokCluster"
 declare -r BASEIMAGENAME="mok-centos-7"
-declare -r ERROR=1
 declare -r OK=0
-declare -r TRUE=1
+declare -r ERROR=1
 declare -r FALSE=0
+declare -r TRUE=1
+declare -r STOP=2
 declare -r SPINNER=('◐' '◓' '◑' '◒')
 
 colgreen=`tput setaf 2`
@@ -46,13 +47,21 @@ main() {
 # ===========================================================================
 # Execution begins here
 
+  local r=$OK
+
   trap cleanup EXIT
 
   set_globals || return
 
   sanity_checks || return
 
-  parse_options "$@" || return
+  parse_options "$@" || r=$?
+
+  if [[ $r -eq $ERROR ]]; then
+    return $ERROR
+  elif [[ $r -eq $STOP ]]; then
+    return $OK
+  fi
 
   case "$COMMAND" in
     create) do_create ;;
@@ -378,8 +387,8 @@ create_worker_nodes() {
   local retval=0 cahash token ip t
   declare -i i=0
 
-  [[ -z $CREATE_CLUSTER_SKIPWORKERSETUP \
-     || -z $CREATE_CLUSTER_SKIPMASTERSETUP ]] && {
+  [[ -n $CREATE_CLUSTER_SKIPWORKERSETUP \
+     || -n $CREATE_CLUSTER_SKIPMASTERSETUP ]] || {
     # Runs a script on master node to get details
     t=$(get_master_join_details $CREATE_CLUSTER_NAME-master-1) || {
       echo -e "\nERROR: Problem with 'get_master_join_details'.\n"
@@ -1095,7 +1104,7 @@ parse_options() {
                          ;;
       --help) ;&
       -h) usage
-          return $ERROR
+          return $STOP
       ;;
       --?*) usage
             echo "Invalid option: '$1'"
@@ -1408,6 +1417,8 @@ check_valid_create_cluster_opts() {
 #   arg1 - The option to check.
 
   local i validopts=(
+    "--help"
+    "-h"
     "--skipmastersetup"
     "--skipworkersetup"
     "--k8sver"
@@ -1429,6 +1440,8 @@ check_valid_delete_cluster_opts() {
 #   arg1 - The option to check.
 
   local i validopts=(
+    "--help"
+    "-h"
   )
 
   for i in ${validopts[@]}; do
@@ -1447,6 +1460,8 @@ check_valid_build_image_opts() {
 #   arg1 - The option to check.
 
   local i validopts=(
+    "--help"
+    "-h"
   )
 
   for i in ${validopts[@]}; do
@@ -1465,6 +1480,8 @@ check_valid_get_cluster_opts() {
 #   arg1 - The option to check.
 
   local i validopts=(
+    "--help"
+    "-h"
   )
 
   for i in ${validopts[@]}; do

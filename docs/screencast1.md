@@ -18,7 +18,6 @@ mokctl create cluster test1 --skipmastersetup 1 1
 
 export KUBECONFIG=~/.mok/admin.conf
 kubectl get pods -A
-kubectl get nodes
 mokctl delete cluster test1
 
 This will take a few minutes!

@@ -59,7 +59,7 @@ sudo make uninstall
 
 Take note of the [Status](#status) above.
 
-![](/docs/images/mokctl-demo.gif)
+![](docs/images/mokctl-demo.gif)
 
 ## License
 

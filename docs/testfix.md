@@ -213,8 +213,14 @@ Running busybox worked first time. My system is OK. The following screenshot say
 
 ![](images/firsttimeworkingok.png)
 
+For information about my development environment see: [devenv.md](/docs/devenv.md).
+
 ## Checking against Kind
 
-The CPU usage still seems quite high. Let's compare to Kind.
+The CPU usage still seems quite high and I'm not sure if we will get 3 masters, 3 workers, and a load-balancer running. That would allow me to do a full Kubernetes-the-hard-way. Let's compare CPU usage to Kind.
+
+...
 
 ## What's next
+
+It's taken 9 days to get this far with documentation and a working tool with 60+ tests. Not too bad!

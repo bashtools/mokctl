@@ -1,6 +1,6 @@
 # My Dev Env
 
-**Side Note**: About my development environment. I use [Vim](https://www.vim.org) on [Fedora]( https://getfedora.org/) Linux and here's what my development window looks like:
+About my development environment. I use [Vim](https://www.vim.org) on [Fedora]( https://getfedora.org/) Linux and here's what my development window looks like:
 
  ![](images/mydevenv.png)
 

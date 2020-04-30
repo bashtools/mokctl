@@ -415,7 +415,8 @@ create_worker_nodes() {
       return $ERROR
     }
 
-    [[ -z $CREATE_CLUSTER_SKIPWORKERSETUP ]] && {
+    [[ -n $CREATE_CLUSTER_SKIPWORKERSETUP \
+       || -n $CREATE_CLUSTER_SKIPMASTERSETUP ]] || {
       run_with_progress \
         "    Setting up '$CREATE_CLUSTER_NAME-worker-$i'" \
         set_up_worker_node "$CREATE_CLUSTER_NAME-worker-$i" \

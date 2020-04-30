@@ -248,7 +248,7 @@ do_create_cluster_mutate() {
     # TODO Query the server for all pods ready instead
     run_with_progress \
       "    Waiting for master to be ready." \
-      sleep 90
+      sleep 40
   }
 
   [[ $CREATE_CLUSTER_NUM_WORKERS -gt 0 ]] && {
@@ -415,7 +415,8 @@ create_worker_nodes() {
       return $ERROR
     }
 
-    [[ -z $CREATE_CLUSTER_SKIPWORKERSETUP ]] && {
+    [[ -n $CREATE_CLUSTER_SKIPWORKERSETUP \
+       || -n $CREATE_CLUSTER_SKIPMASTERSETUP ]] || {
       run_with_progress \
         "    Setting up '$CREATE_CLUSTER_NAME-worker-$i'" \
         set_up_worker_node "$CREATE_CLUSTER_NAME-worker-$i" \
@@ -927,10 +928,10 @@ usage() {
 # Every tool, no matter how small, should have help text!
 
   case $COMMAND in
-    create) create_command_help; return $OK ;;
-    delete) delete_command_help; return $OK ;;
-    build) build_command_help; return $OK ;;
-    get) get_command_help; return $OK ;;
+    create) help_usage; return $OK ;;
+    delete) delete_usage; return $OK ;;
+    build) build_usage; return $OK ;;
+    get) get_usage; return $OK ;;
   esac
 
   echo
@@ -949,10 +950,10 @@ usage() {
   echo "  get    - Get details about items in the system."
   echo
 
-  create_command_help
-  delete_command_help
-  build_command_help
-  get_command_help
+  help_usage
+  delete_usage
+  build_usage
+  get_usage
 
   echo "EXAMPLES"
   echo
@@ -981,7 +982,7 @@ usage() {
 }
 
 # ---------------------------------------------------------------------------
-create_command_help() {
+help_usage() {
 # ---------------------------------------------------------------------------
   echo "create SUBCOMMANDs are:"
   echo
@@ -1010,7 +1011,7 @@ create_command_help() {
 }
 
 # ---------------------------------------------------------------------------
-delete_command_help() {
+delete_usage() {
 # ---------------------------------------------------------------------------
   echo "delete SUBCOMMANDs are:"
   echo
@@ -1025,7 +1026,7 @@ delete_command_help() {
 }
 
 # ---------------------------------------------------------------------------
-build_command_help() {
+build_usage() {
 # ---------------------------------------------------------------------------
   echo "build SUBCOMMANDs are:"
   echo
@@ -1039,7 +1040,7 @@ build_command_help() {
 }
 
 # ---------------------------------------------------------------------------
-get_command_help() {
+get_usage() {
 # ---------------------------------------------------------------------------
   echo "get SUBCOMMANDs are:"
   echo

@@ -1,6 +1,7 @@
 # Screencast 1
 
 ```
+# Install
 git clone https://github.com/mclarkson/my-own-kind.git
 cd my-own-kind
 make test
@@ -13,14 +14,15 @@ mokctl build image
 mokctl get -h
 mokctl get clusters
 
-mokctl create 
+# Create a cluster ready for doing the setup yourself
+mokctl create
 mokctl create cluster test1 --skipmastersetup 1 1
 
 export KUBECONFIG=~/.mok/admin.conf
 kubectl get pods -A
 mokctl delete cluster test1
 
-This will take a few minutes!
+# This will take a few minutes!
 mokctl create cluster test1 1 2
 docker ps
 kubectl get pods -A
@@ -36,5 +38,5 @@ mokctl delete cluster test1
 sudo make uninstall
 cd ..
 rm -rf my-own-kind
-Thanks for watching!
+# Thanks for watching!
 ```

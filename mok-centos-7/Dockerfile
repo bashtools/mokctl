@@ -37,6 +37,7 @@ RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do \
     && rm -f crictl-$CRICTL_VERSION-linux-amd64.tar.gz
 COPY k8s.conf /etc/sysctl.d/k8s.conf
 COPY 100-crio-bridge.conf /etc/cni/net.d/100-crio-bridge.conf
+COPY kubelet-config /etc/sysconfig/kubelet
 COPY entrypoint /usr/local/bin
 VOLUME [ "/sys/fs/cgroup" ]
 # SystemD's instuction to halt

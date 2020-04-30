@@ -258,7 +258,7 @@ testNotEnoughOptionsToCreateClusterName() {
 
   do_create_cluster_mutate() { :; }
 
-  main create cluster name
+  main create cluster name >/dev/null
   r=$?
 
   assertEquals \

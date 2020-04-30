@@ -795,7 +795,8 @@ run_with_progress() {
 
   shift
   # Run the command in the background
-  $@ &>$RUNWITHPROGRESS_OUTPUT &
+  (sleep 1; $@) &>$RUNWITHPROGRESS_OUTPUT &
+
   # Turn the cursor off
   tput civis
 

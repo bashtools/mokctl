@@ -29,15 +29,19 @@ In progress. Browse, contribute, but don't use!
    
    We package up what we have learned ready for the next task.
 
-3. [Multi Node]()
+3. [Testing and Fixing](/docs/testfix.md)
+   
+   This thing has bugs. Let's fix it.
+
+1. [Multi Node]()
    
    Build a bigger cluster using our package.
 
-4. [Upgrade](/docs/upgrade.md)
+2. [Upgrade](/docs/upgrade.md)
    
    We can install any version of kubernetes. Let's try installing an older cluster and upgrading it. Not much hand-holding here though.
 
-5. [Add-ons](/docs/addons.md)
+3. [Add-ons](/docs/addons.md)
    
    Trying popluar kubernetes add-ons.
 

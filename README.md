@@ -1,5 +1,7 @@
 # My Own Kind
 
+![](docs/images/mokctl-demo.gif)
+
 ## Summary
 
 Build a conformant kubernetes cluster in containers, on Linux, using docker only, by hand, from scratch, for learning.
@@ -58,8 +60,6 @@ sudo make uninstall
 ```
 
 Take note of the [Status](#status) above.
-
-![](docs/images/mokctl-demo.gif)
 
 ## License
 

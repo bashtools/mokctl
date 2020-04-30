@@ -14,12 +14,19 @@ mokctl build image
 mokctl get -h
 mokctl get clusters
 
-# Create a cluster ready for doing the setup yourself
+# A cluster ready for set up
 mokctl create
 mokctl create cluster test1 --skipmastersetup 1 1
 
 export KUBECONFIG=~/.mok/admin.conf
+# This won't work
 kubectl get pods -A
+mokctl get cluster
+docker exec -ti test1-master-1 bash
+ps axf
+rpm -qa | grep kube
+# Do kubernetes-the-hard-way now :)
+exit
 mokctl delete cluster test1
 
 # This will take a few minutes!

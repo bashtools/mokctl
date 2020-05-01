@@ -244,12 +244,12 @@ do_create_cluster_mutate() {
     create_master_nodes $CREATE_CLUSTER_NUM_MASTERS || return
   }
 
-  [[ -z $CREATE_CLUSTER_SKIPMASTERSETUP ]] && {
-    # TODO Query the server for all pods ready instead
-    run_with_progress \
-      "    Waiting for master to be ready." \
-      sleep 40
-  }
+  #[[ -z $CREATE_CLUSTER_SKIPMASTERSETUP ]] && {
+  #  # TODO Query the server for all pods ready instead
+  #  run_with_progress \
+  #    "    Waiting for master to be ready." \
+  #    sleep 40
+  #}
 
   [[ $CREATE_CLUSTER_NUM_WORKERS -gt 0 ]] && {
     create_worker_nodes "$CREATE_CLUSTER_NUM_WORKERS" || return

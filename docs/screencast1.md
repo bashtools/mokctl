@@ -1,25 +1,23 @@
 # Screencast 1
 
 ```
-# Install
 git clone https://github.com/mclarkson/my-own-kind.git
 cd my-own-kind
 make test
 sudo make install
 
-mokctl --help 
 mokctl build
 mokctl build image
 
 mokctl get -h
 mokctl get clusters
 
-# A cluster ready for set up
 mokctl create
+# Don't set up the containers!
 mokctl create cluster test1 --skipmastersetup 1 1
 
 export KUBECONFIG=~/.mok/admin.conf
-# This won't work
+# This won't work as containers weren't set up
 kubectl get pods -A
 mokctl get cluster
 docker exec -ti test1-master-1 bash

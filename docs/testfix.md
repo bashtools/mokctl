@@ -227,21 +227,21 @@ For information about my development environment see: [devenv.md](/docs/devenv.m
 
 The CPU usage still seems quite high and I'm not sure if we will get 3 masters, 3 workers, and a load-balancer running. That would allow me to do a full Kubernetes-the-hard-way. Let's compare CPU usage to Kind.
 
-kind 4-node cluster uses around 20% CPU, k8sver 1.17.0
+kind 4-node cluster uses around 20% CPU
 
-mok 4-node cluster uses around 50% CPU, k8sver 1.18.2
+mok 4-node cluster uses around 50% CPU
 
 ## Finding the root cause
 
 ### Comparing Components
 
-Kind: Ubuntu 19 containers, containerd
+Kind: Ubuntu 19 nodes, containerd, kind-net, k8s version 1.17.0
 
-Mok: Centos 7 containers, cri-o
+Mok: Centos 7 nodes, cri-o, flannel, k8s version 1.18.2
 
 ### Comparing Logs
 
-View logs master and worker using `journalctl -xef`
+View logs on master and worker using `journalctl -xef`
 
 Kind - Logs stop once kind finishes
 
@@ -286,9 +286,17 @@ configure_proxy
 
 ```
 
+The commit for this fix is [Fix performance issue · mclarkson/my-own-kind@b8676e3 · GitHub](https://github.com/mclarkson/my-own-kind/commit/b8676e36ae255ad7d5ba4dd55d5bee039b1ea542). To view the output created by `entrypoint` use `docker logs <container id>`.
+
 I kept the cgroup driver set to systemd, as this produced the lowest CPU in the first tests at the top of this page and rebuilt the image and built a four node cluster.
 
 It's now using about the same CPU usage as Kind! Great!
+
+Trying a seven node cluster, as that was the goal, so that's 1 master and 6 workers...
+
+... and? Once the system had fully started up it was using under 30% cpu and load is low, but three worker nodes stayed in an Error state. Stopping the nodes and manually starting them worked and I noticed I hadn't enabled the kubelet with `systemctl enable kubelet`. I added the command to `setup_master()` and `setup_worker` (I had taken it out of the Dockerfile because it stopped the set up code working) and tried again, and it still didn't work.
+
+It would be nice to also be able to `mokctl edit cluster myclust add worker 1` to test adding nodes slowly. I've added this to the ‘Help Wanted’ Project in this repository, but I'm happy with this right now.
 
 ## What's next
 

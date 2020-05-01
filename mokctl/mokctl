@@ -311,7 +311,6 @@ create_master_nodes() {
 # Args:
 #   arg1 - number of master nodes to create
 
-  local retval=0
   declare -i i=0
 
   for i in $(seq 1 $1); do
@@ -384,7 +383,7 @@ create_worker_nodes() {
 # Args:
 #   arg1 - number of master nodes to create
 
-  local retval=0 cahash token ip t
+  local cahash token t
   declare -i i=0
 
   [[ -n $CREATE_CLUSTER_SKIPWORKERSETUP \
@@ -720,7 +719,7 @@ do_get_clusters_nomutate() {
 # Args
 #   arg1 - cluster name, optional
 
-  local ids id info output clustname=$1
+  local ids id info clustname=$1
   local containerhostname containerip
 
   declare -a nodes

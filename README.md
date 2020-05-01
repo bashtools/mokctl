@@ -52,6 +52,7 @@ Probably the best way would be to:
 ```bash
 git clone https://github.com/mclarkson/my-own-kind.git
 cd my-own-kind
+make test
 sudo make install
 mokctl build image
 mokctl create cluster mycluster 1 0

@@ -43,5 +43,6 @@ mokctl delete cluster test1
 sudo make uninstall
 cd ..
 rm -rf my-own-kind
+# all traces of my own kind removed
 # Thanks for watching!
 ```

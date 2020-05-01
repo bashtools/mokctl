@@ -207,6 +207,14 @@ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documen
 
 For, MOK this is run in `set_up_master_nodes` in `mokctl`. Changing and retrying... No need to rebuild the image this time.
 
+#### Summary
+
+1. Trying systemd earlier on the worker, but seemed not to so I changed it back.
+   
+   Reading [cgroups(7) - Linux manual page](http://man7.org/linux/man-pages/man7/cgroups.7.html) and the fix_cgroup function comments in [entrypoint](/mok-centos-7/entrypoint).
+
+2. The incorrect Flannel version was installed.
+
 #### All working at last!
 
 Running busybox worked first time. My system is OK. The following screenshot says it all:
@@ -219,7 +227,68 @@ For information about my development environment see: [devenv.md](/docs/devenv.m
 
 The CPU usage still seems quite high and I'm not sure if we will get 3 masters, 3 workers, and a load-balancer running. That would allow me to do a full Kubernetes-the-hard-way. Let's compare CPU usage to Kind.
 
+kind 4-node cluster uses around 20% CPU, k8sver 1.17.0
+
+mok 4-node cluster uses around 50% CPU, k8sver 1.18.2
+
+## Finding the root cause
+
+### Comparing Components
+
+Kind: Ubuntu 19 containers, containerd
+
+Mok: Centos 7 containers, cri-o
+
+### Comparing Logs
+
+View logs master and worker using `journalctl -xef`
+
+Kind - Logs stop once kind finishes
+
+Mok - Logs continue with errors
+
+Mok - Lots of errors like:
+
+> May 01 11\:41:17 myclust-master-1 kubelet[881]: W0501 11\:41:17.258878     881 kubelet_getters.go:297] Path "/var/lib/kubelet/pods/99bb6bcb-7fed-4c59-8158-8566cfbe0df0/volumes" does not exist
+
+So is this something to do with the storage driver?
+
+First lets check if kind uses the same settings listed at the top of this page. Checking...
+
+It mostly does.
+
+After reading [cgroups(7) - Linux manual page](http://man7.org/linux/man-pages/man7/cgroups.7.html) and the fix_cgroup function comments in [entrypoint](/mok-centos-7/entrypoint), and an earlier observation that `/sys/fs/cgroups` in our container is just like the host's `/sys/fs/cgroup`, I checked Kind and it has much less in it's cgroup filesystem.
+
+In the comment the Kind authors say that Docker remaps the cgroup hierarchy which confuses kubelet and cri-o due to `/proc/$PID/cgroup` not matching `/sys/fs/cgroup`. The source of this information is actually on [this systemd documentation page](https://systemd.io/CONTAINER_INTERFACE/) - see point 6.
+
+The Kind fix does not remap any cgroups because in our case Docker does not remap and cgroups either. So, I added the following function to the `entrypoint` file:
+
+```bash
+centos7_fix_cgroup() {
+  local a
+  echo 'INFO: fix cgroup mounts for centos7'
+  local id=$(awk -F/ '{ print $NF; exit }' /proc/1/cgroup)
+  echo "docker id = $id"
+  find /sys/fs/cgroup -name "$id" | while read a ; do mount --bind $a ${a%/*/*}; done
+}
+
 ...
+
+# run pre-init fixups
+fix_kmsg
+fix_mount
+centos7_fix_cgroup     # <-- added before Kind's fix_cgroup
+fix_cgroup
+fix_machine_id
+fix_product_name
+fix_product_uuid
+configure_proxy
+
+```
+
+I kept the cgroup driver set to systemd, as this produced the lowest CPU in the first tests at the top of this page and rebuilt the image and built a four node cluster.
+
+It's now using about the same CPU usage as Kind! Great!
 
 ## What's next
 

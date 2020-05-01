@@ -26,7 +26,7 @@ RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do \
       kubeadm$K8SBINVER \
       kubectl$K8SBINVER \
       --disableexcludes=kubernetes \
-    && sed -i 's/\(cgroup_manager =\).*/\1 "cgroupfs"/' /etc/crio/crio.conf \
+    && sed -i 's/\(cgroup_manager =\).*/\1 "systemd"/' /etc/crio/crio.conf \
     && sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config \
     && sed -i 's/\(conmon = .*\)/#\1/' /etc/crio/crio.conf \
     && rm -f /etc/cni/net.d/100-crio-bridge.conf \

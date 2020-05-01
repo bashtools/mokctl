@@ -42,6 +42,14 @@ fix_mount() {
   mount --make-rshared /
 }
 
+centos7_fix_cgroup() {
+  local a
+  echo 'INFO: fix cgroup mounts for centos7'
+  local id=$(awk -F/ '{ print $NF; exit }' /proc/1/cgroup)
+  echo "docker id = $id"
+  find /sys/fs/cgroup -name "$id" | while read a ; do mount --bind $a ${a%/*/*}; done
+}
+
 fix_cgroup() {
   echo 'INFO: fix cgroup mounts for all subsystems'
   # For each cgroup subsystem, Docker does a bind mount from the current
@@ -137,6 +145,7 @@ EOF
 # run pre-init fixups
 fix_kmsg
 fix_mount
+centos7_fix_cgroup
 fix_cgroup
 fix_machine_id
 fix_product_name

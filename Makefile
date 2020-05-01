@@ -1,4 +1,4 @@
-.PHONY: all install clean test unittest
+.PHONY: all install uninstall purge clean test unittest
 
 all: mokctl.deploy tags
 
@@ -11,6 +11,9 @@ install: all
 
 uninstall:
 	rm -f /usr/local/bin/mokctl
+
+purge: uninstall
+	rm -rf ~/.mok
 
 clean:
 	rm -f mokctl.deploy

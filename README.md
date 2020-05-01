@@ -33,15 +33,15 @@ In progress. Browse, contribute, but don't use!
    
    This thing has bugs. Let's fix it.
 
-1. [Multi Node]()
+4. [Multi Node]()
    
    Build a bigger cluster using our package.
 
-2. [Upgrade](/docs/upgrade.md)
+5. [Upgrade](/docs/upgrade.md)
    
    We can install any version of kubernetes. Let's try installing an older cluster and upgrading it. Not much hand-holding here though.
 
-3. [Add-ons](/docs/addons.md)
+6. [Add-ons](/docs/addons.md)
    
    Trying popluar kubernetes add-ons.
 
@@ -60,7 +60,11 @@ mokctl create cluster mycluster 1 0
 Removal
 
 ```bash
+# To remove mokctl
 sudo make uninstall
+
+# OR, to remove mokctl and the `~/.mok/` configuration directory
+sudo make purge
 ```
 
 Take note of the [Status](#status) above.

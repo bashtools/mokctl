@@ -507,6 +507,8 @@ while [[ $((i--)) -gt 0 ]]; do
   sleep 1
 done
 
+systemctl enable kubelet
+
 export KUBECONFIG=/etc/kubernetes/admin.conf
 
 kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
@@ -559,6 +561,7 @@ while true; do
 # Edit the kubelet configuration file
 echo "failSwapOn: false" >>/var/lib/kubelet/config.yaml
 
+systemctl enable kubelet
 systemctl restart kubelet
 EnD
 

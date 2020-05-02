@@ -37,11 +37,15 @@ In progress. Browse, contribute, but don't use!
    
    Build a bigger cluster using our package.
 
-5. [Upgrade](/docs/upgrade.md)
+5. [Kubernetes the Hard Way](/docs/k8shardway.md)
+   
+   The classic remade for MOK.
+
+6. [Upgrade](/docs/upgrade.md)
    
    We can install any version of kubernetes. Let's try installing an older cluster and upgrading it. Not much hand-holding here though.
 
-6. [Add-ons](/docs/addons.md)
+7. [Add-ons](/docs/addons.md)
    
    Trying popluar kubernetes add-ons.
 

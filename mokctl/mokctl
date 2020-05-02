@@ -45,8 +45,8 @@ RUNWITHPROGRESS_OUTPUT=
 
 # ===========================================================================
 main() {
-# ===========================================================================
-# Execution begins here
+  # ===========================================================================
+  # Execution begins here
 
   local r=$OK
 
@@ -65,16 +65,16 @@ main() {
   fi
 
   case "$COMMAND" in
-    create) do_create ;;
-    delete) do_delete ;;
-    build)  do_build  ;;
-    get)    do_get    ;;
+  create) do_create ;;
+  delete) do_delete ;;
+  build) do_build ;;
+  get) do_get ;;
   esac
 }
 
 # ---------------------------------------------------------------------------
 set_globals() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   COMMAND=
   SUBCOMMAND=
@@ -95,22 +95,23 @@ set_globals() {
 
 # ---------------------------------------------------------------------------
 do_get() {
-# ---------------------------------------------------------------------------
-# Calls the correct command/subcommand function
+  # ---------------------------------------------------------------------------
+  # Calls the correct command/subcommand function
 
   case $SUBCOMMAND in
-    cluster)  do_get_clusters_sanity_checks || return
-              do_get_clusters_nomutate "$GET_CLUSTER_NAME"
-              ;;
+  cluster)
+    do_get_clusters_sanity_checks || return
+    do_get_clusters_nomutate "$GET_CLUSTER_NAME"
+    ;;
   esac
 }
 
 # ---------------------------------------------------------------------------
 do_get_clusters_sanity_checks() {
-# ---------------------------------------------------------------------------
-# No sanity checks required.
-# Globals: None
-# No args expected
+  # ---------------------------------------------------------------------------
+  # No sanity checks required.
+  # Globals: None
+  # No args expected
 
   :
 }
@@ -121,22 +122,23 @@ do_get_clusters_sanity_checks() {
 
 # ---------------------------------------------------------------------------
 do_build() {
-# ---------------------------------------------------------------------------
-# Calls the correct command/subcommand function
+  # ---------------------------------------------------------------------------
+  # Calls the correct command/subcommand function
 
   case $SUBCOMMAND in
-    image) do_build_image_sanity_checks || return
-           do_build_image_mutate
-           ;;
+  image)
+    do_build_image_sanity_checks || return
+    do_build_image_mutate
+    ;;
   esac
 }
 
 # ---------------------------------------------------------------------------
 do_build_image_sanity_checks() {
-# ---------------------------------------------------------------------------
-# No sanity checks required.
-# Globals: None
-# No args expected
+  # ---------------------------------------------------------------------------
+  # No sanity checks required.
+  # Globals: None
+  # No args expected
 
   :
 }
@@ -147,23 +149,24 @@ do_build_image_sanity_checks() {
 
 # ---------------------------------------------------------------------------
 do_create() {
-# ---------------------------------------------------------------------------
-# Calls the correct command/subcommand function
+  # ---------------------------------------------------------------------------
+  # Calls the correct command/subcommand function
 
   case $SUBCOMMAND in
-    cluster) do_create_cluster_sanity_checks || return
-             do_create_cluster_mutate
-             ;;
+  cluster)
+    do_create_cluster_sanity_checks || return
+    do_create_cluster_mutate
+    ;;
   esac
 }
 
 # ---------------------------------------------------------------------------
 do_create_cluster_sanity_checks() {
-# ---------------------------------------------------------------------------
-# Creates a mok cluster. All user vars have been parsed and saved.
-# Globals: CREATE_CLUSTER_NAME CREATE_CLUSTER_NUM_MASTERS
-#          CREATE_CLUSTER_NUM_WORKERS
-# No args expected
+  # ---------------------------------------------------------------------------
+  # Creates a mok cluster. All user vars have been parsed and saved.
+  # Globals: CREATE_CLUSTER_NAME CREATE_CLUSTER_NUM_MASTERS
+  #          CREATE_CLUSTER_NUM_WORKERS
+  # No args expected
 
   if [[ -z $CREATE_CLUSTER_NAME ]]; then
     usage
@@ -190,23 +193,24 @@ do_create_cluster_sanity_checks() {
 
 # ---------------------------------------------------------------------------
 do_delete() {
-# ---------------------------------------------------------------------------
-# Calls the correct command/subcommand function
-# No args expected
+  # ---------------------------------------------------------------------------
+  # Calls the correct command/subcommand function
+  # No args expected
 
   case $SUBCOMMAND in
-    cluster) do_delete_cluster_sanity_checks || return
-             do_delete_cluster_mutate
-             ;;
+  cluster)
+    do_delete_cluster_sanity_checks || return
+    do_delete_cluster_mutate
+    ;;
   esac
 }
 
 # ---------------------------------------------------------------------------
 do_delete_cluster_sanity_checks() {
-# ---------------------------------------------------------------------------
-# Deletes a mok cluster. All user vars have been parsed and saved.
-# Globals: DELETE_CLUSTER_NAME
-# No args expected
+  # ---------------------------------------------------------------------------
+  # Deletes a mok cluster. All user vars have been parsed and saved.
+  # Globals: DELETE_CLUSTER_NAME
+  # No args expected
 
   if [[ -z $DELETE_CLUSTER_NAME ]]; then
     usage
@@ -222,12 +226,12 @@ do_delete_cluster_sanity_checks() {
 
 # ---------------------------------------------------------------------------
 do_create_cluster_mutate() {
-# ---------------------------------------------------------------------------
-# Mutate functions make system changes.
-# Global variables:
-#   CREATE_CLUSTER_NAME        - (string) cluster name
-#   CREATE_CLUSTER_NUM_MASTERS - (int) num masters
-#   CREATE_CLUSTER_NUM_WORKERS - (int) num workers
+  # ---------------------------------------------------------------------------
+  # Mutate functions make system changes.
+  # Global variables:
+  #   CREATE_CLUSTER_NAME        - (string) cluster name
+  #   CREATE_CLUSTER_NUM_MASTERS - (int) num masters
+  #   CREATE_CLUSTER_NUM_WORKERS - (int) num workers
 
   declare -i numnodes=0
 
@@ -268,11 +272,11 @@ do_create_cluster_mutate() {
 
 # ---------------------------------------------------------------------------
 get_cluster_size() {
-# ---------------------------------------------------------------------------
-# Search for an existing cluster using labels. All cluster nodes are
-# labelled with $LABELKEY=$CREATE_CLUSTER_NAME
-# Args:
-#   arg1 - name to search for.
+  # ---------------------------------------------------------------------------
+  # Search for an existing cluster using labels. All cluster nodes are
+  # labelled with $LABELKEY=$CREATE_CLUSTER_NAME
+  # Args:
+  #   arg1 - name to search for.
 
   local output
   declare -a nodes
@@ -287,10 +291,10 @@ get_cluster_size() {
 
 # ---------------------------------------------------------------------------
 get_docker_ids_for_cluster() {
-# ---------------------------------------------------------------------------
-# Get all cluster ids for labelled containers
-# Args:
-#   arg1 - Cluster name
+  # ---------------------------------------------------------------------------
+  # Get all cluster ids for labelled containers
+  # Args:
+  #   arg1 - Cluster name
 
   local value output
 
@@ -308,10 +312,10 @@ get_docker_ids_for_cluster() {
 
 # ---------------------------------------------------------------------------
 create_master_nodes() {
-# ---------------------------------------------------------------------------
-# Create the master nodes
-# Args:
-#   arg1 - number of master nodes to create
+  # ---------------------------------------------------------------------------
+  # Create the master nodes
+  # Args:
+  #   arg1 - number of master nodes to create
 
   declare -i i=0 r
 
@@ -319,11 +323,11 @@ create_master_nodes() {
     run_with_progress \
       "    Creating base container, '$CREATE_CLUSTER_NAME-master-$i'" \
       create_docker_container \
-        "$CREATE_CLUSTER_NAME-master-$i" \
-        "$LABELKEY=$CREATE_CLUSTER_NAME"
+      "$CREATE_CLUSTER_NAME-master-$i" \
+      "$LABELKEY=$CREATE_CLUSTER_NAME"
     r=$?
 
-    [[ "$r" -ne 0 ]] && {
+    [[ $r -ne 0 ]] && {
       echo
       cat $RUNWITHPROGRESS_OUTPUT
       rm $RUNWITHPROGRESS_OUTPUT
@@ -336,9 +340,9 @@ create_master_nodes() {
       run_with_progress \
         "    Setting up '$CREATE_CLUSTER_NAME-master-$i'" \
         set_up_master_node "$CREATE_CLUSTER_NAME-master-$i"
-    r=$?
+      r=$?
 
-      [[ "$r" -ne 0 ]] && {
+      [[ $r -ne 0 ]] && {
         echo
         cat $RUNWITHPROGRESS_OUTPUT
         echo
@@ -363,35 +367,35 @@ create_master_nodes() {
 
 # ---------------------------------------------------------------------------
 create_docker_container() {
-# ---------------------------------------------------------------------------
-# Runs a new container with docker run.
-# Args:
-#   arg1 - name to use as the name and hostname.
-#   arg2 - the label to write to the container.
+  # ---------------------------------------------------------------------------
+  # Runs a new container with docker run.
+  # Args:
+  #   arg1 - name to use as the name and hostname.
+  #   arg2 - the label to write to the container.
 
   docker run --privileged \
-      -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
-      -v /lib/modules:/lib/modules:ro \
-      --tmpfs /run --tmpfs /tmp \
-      --detach \
-      --name "$1" \
-      --hostname "$1" \
-      --label "$2" \
-      local/$BASEIMAGENAME
+    -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+    -v /lib/modules:/lib/modules:ro \
+    --tmpfs /run --tmpfs /tmp \
+    --detach \
+    --name "$1" \
+    --hostname "$1" \
+    --label "$2" \
+    local/$BASEIMAGENAME
 }
 
 # ---------------------------------------------------------------------------
 create_worker_nodes() {
-# ---------------------------------------------------------------------------
-# Create the master nodes
-# Args:
-#   arg1 - number of master nodes to create
+  # ---------------------------------------------------------------------------
+  # Create the master nodes
+  # Args:
+  #   arg1 - number of master nodes to create
 
   local cahash token t
   declare -i i=0
 
-  [[ -n $CREATE_CLUSTER_SKIPWORKERSETUP \
-     || -n $CREATE_CLUSTER_SKIPMASTERSETUP ]] || {
+  [[ -n $CREATE_CLUSTER_SKIPWORKERSETUP || -n \
+  $CREATE_CLUSTER_SKIPMASTERSETUP ]] || {
     # Runs a script on master node to get details
     t=$(get_master_join_details $CREATE_CLUSTER_NAME-master-1) || {
       echo -e "\nERROR: Problem with 'get_master_join_details'.\n"
@@ -406,11 +410,11 @@ create_worker_nodes() {
     run_with_progress \
       "    Creating base container, '$CREATE_CLUSTER_NAME-worker-$i'" \
       create_docker_container \
-        "$CREATE_CLUSTER_NAME-worker-$i" \
-        "$LABELKEY=$CREATE_CLUSTER_NAME"
+      "$CREATE_CLUSTER_NAME-worker-$i" \
+      "$LABELKEY=$CREATE_CLUSTER_NAME"
     r=$?
 
-    [[ "$r" -ne 0 ]] && {
+    [[ $r -ne 0 ]] && {
       echo
       cat $RUNWITHPROGRESS_OUTPUT
       rm $RUNWITHPROGRESS_OUTPUT
@@ -419,15 +423,15 @@ create_worker_nodes() {
       return $ERROR
     }
 
-    [[ -n $CREATE_CLUSTER_SKIPWORKERSETUP \
-       || -n $CREATE_CLUSTER_SKIPMASTERSETUP ]] || {
+    [[ -n $CREATE_CLUSTER_SKIPWORKERSETUP || -n \
+    $CREATE_CLUSTER_SKIPMASTERSETUP ]] || {
       run_with_progress \
         "    Setting up '$CREATE_CLUSTER_NAME-worker-$i'" \
         set_up_worker_node "$CREATE_CLUSTER_NAME-worker-$i" \
-          "$cahash" "$token" "$masterip"
+        "$cahash" "$token" "$masterip"
       r=$?
 
-      [[ "$r" -ne 0 ]] && {
+      [[ $r -ne 0 ]] && {
         echo
         cat $RUNWITHPROGRESS_OUTPUT
         echo
@@ -442,13 +446,13 @@ create_worker_nodes() {
 }
 
 # ---------------------------------------------------------------------------
-get_master_join_details(){
-# ---------------------------------------------------------------------------
-# 'docker exec' into the master to get CA hash, a token, and the master IP.
-# The caller can eval the output of this function to set the variables:
-# cahash, token, and masterip.
-# Args:
-#   arg1 - id/name of master container
+get_master_join_details() {
+  # ---------------------------------------------------------------------------
+  # 'docker exec' into the master to get CA hash, a token, and the master IP.
+  # The caller can eval the output of this function to set the variables:
+  # cahash, token, and masterip.
+  # Args:
+  #   arg1 - id/name of master container
 
   local joinvarsfile
 
@@ -482,10 +486,10 @@ EnD
 
 # ---------------------------------------------------------------------------
 set_up_master_node() {
-# ---------------------------------------------------------------------------
-# Use kubeadm to set up the master node.
-# Args:
-#   arg1 - the container to set up.
+  # ---------------------------------------------------------------------------
+  # Use kubeadm to set up the master node.
+  # Args:
+  #   arg1 - the container to set up.
 
   local setupfile
 
@@ -539,10 +543,10 @@ EnD
 
 # ---------------------------------------------------------------------------
 set_up_worker_node() {
-# ---------------------------------------------------------------------------
-# Use kubeadm to set up the master node
-# Args:
-#   arg1 - the container to set up.
+  # ---------------------------------------------------------------------------
+  # Use kubeadm to set up the master node
+  # Args:
+  #   arg1 - the container to set up.
 
   local setupfile cahash="$2" token="$3" masterip="$4"
 
@@ -596,8 +600,8 @@ EnD
 
 # ---------------------------------------------------------------------------
 do_delete_cluster_mutate() {
-# ---------------------------------------------------------------------------
-# Mutate functions make system changes.
+  # ---------------------------------------------------------------------------
+  # Mutate functions make system changes.
 
   declare -i numnodes=0
 
@@ -614,10 +618,10 @@ do_delete_cluster_mutate() {
 
 # ---------------------------------------------------------------------------
 delete_cluster_nodes() {
-# ---------------------------------------------------------------------------
-# Delete all cluster nodes.
-# Args:
-#   arg1 - Name of the cluster to delete
+  # ---------------------------------------------------------------------------
+  # Delete all cluster nodes.
+  # Args:
+  #   arg1 - Name of the cluster to delete
 
   local id ids r
 
@@ -631,7 +635,7 @@ delete_cluster_nodes() {
 
   read -r ans
 
-  [[ "$ans" != "y" ]] && {
+  [[ $ans != "y" ]] && {
     echo -e "\nCancelling by user request."
     return $OK
   }
@@ -642,13 +646,13 @@ delete_cluster_nodes() {
     run_with_progress \
       "    Deleting id, '$id' from cluster '$1'." \
       delete_docker_container "$id"
-      r=$?
-      [[ $r -ne 0 ]] && {
-        cat "$RUNWITHPROGRESS_OUTPUT"
-        echo -e "\nERROR: Docker failed.\n"
-        err
-        return $r
-      }
+    r=$?
+    [[ $r -ne 0 ]] && {
+      cat "$RUNWITHPROGRESS_OUTPUT"
+      echo -e "\nERROR: Docker failed.\n"
+      err
+      return $r
+    }
   done
 
   echo
@@ -656,10 +660,10 @@ delete_cluster_nodes() {
 
 # ---------------------------------------------------------------------------
 delete_docker_container() {
-# ---------------------------------------------------------------------------
-# Stops and removes docker container.
-# Args:
-#   arg1 - docker id to delete
+  # ---------------------------------------------------------------------------
+  # Stops and removes docker container.
+  # Args:
+  #   arg1 - docker id to delete
 
   docker stop "$id" || err || return
   docker rm "$id" || err
@@ -667,11 +671,11 @@ delete_docker_container() {
 
 # ---------------------------------------------------------------------------
 do_build_image_mutate() {
-# ---------------------------------------------------------------------------
-# Mutate functions make system changes.
-# Builds the $BASEIMAGENAME base image used for masters and workers.
-# Globals: None
-# No args expected
+  # ---------------------------------------------------------------------------
+  # Mutate functions make system changes.
+  # Builds the $BASEIMAGENAME base image used for masters and workers.
+  # Globals: None
+  # No args expected
 
   local retval=0
 
@@ -689,18 +693,18 @@ do_build_image_mutate() {
 
 # ---------------------------------------------------------------------------
 build_container_image() {
-# ---------------------------------------------------------------------------
-# Creates the docker build directory in $DOCKERBUILDTMPDIR then calls
-# docker build to build the image.
-# No args expected.
+  # ---------------------------------------------------------------------------
+  # Creates the docker build directory in $DOCKERBUILDTMPDIR then calls
+  # docker build to build the image.
+  # No args expected.
 
   local retval
 
   create_docker_build_dir || return
 
   run_with_progress \
-      "    Creating base image, '$BASEIMAGENAME'" \
-      docker build -t "local/$BASEIMAGENAME" "$DOCKERBUILDTMPDIR/$BASEIMAGENAME"
+    "    Creating base image, '$BASEIMAGENAME'" \
+    docker build -t "local/$BASEIMAGENAME" "$DOCKERBUILDTMPDIR/$BASEIMAGENAME"
 
   retval=$?
   [[ $retval -ne 0 ]] && {
@@ -716,9 +720,9 @@ build_container_image() {
 
 # ---------------------------------------------------------------------------
 create_docker_build_dir() {
-# ---------------------------------------------------------------------------
-# Creates a docker build directory in /var/tmp/tmp.XXXXXXXX
-# No args expected
+  # ---------------------------------------------------------------------------
+  # Creates a docker build directory in /var/tmp/tmp.XXXXXXXX
+  # No args expected
 
   DOCKERBUILDTMPDIR=$(mktemp -d --tmpdir=/var/tmp) || {
     echo "ERROR: mktmp failed."
@@ -739,13 +743,13 @@ create_docker_build_dir() {
 
 # ---------------------------------------------------------------------------
 do_get_clusters_nomutate() {
-# ---------------------------------------------------------------------------
-# Mutate functions make system changes but this one doesn't and I don't
-#  know where to put it yet.
-# Gets cluster details
-# Globals: None
-# Args
-#   arg1 - cluster name, optional
+  # ---------------------------------------------------------------------------
+  # Mutate functions make system changes but this one doesn't and I don't
+  #  know where to put it yet.
+  # Gets cluster details
+  # Globals: None
+  # Args
+  #   arg1 - cluster name, optional
 
   local ids id info clustname=$1 output
   local containerhostname containerip
@@ -773,8 +777,8 @@ do_get_clusters_nomutate() {
   for id in "${nodes[@]}"; do
 
     # Output the header
-    [[ "$GET_CLUSTER_SHOW_HEADER" -eq $TRUE \
-       && "$shown" -eq $FALSE ]] && {
+    [[ $GET_CLUSTER_SHOW_HEADER -eq $TRUE && \
+    $shown -eq $FALSE ]] && {
       shown=$TRUE
       echo "MOK_Cluster Docker_ID Container_Name IP_Address"
     }
@@ -801,10 +805,10 @@ do_get_clusters_nomutate() {
 
 # ---------------------------------------------------------------------------
 get_mok_cluster_docker_ids() {
-# ---------------------------------------------------------------------------
-# Use 'docker ps .. label= ..' to get a list of mok clusters
-# Args
-#   arg1 - mok cluster name, optional
+  # ---------------------------------------------------------------------------
+  # Use 'docker ps .. label= ..' to get a list of mok clusters
+  # Args
+  #   arg1 - mok cluster name, optional
 
   docker ps -a -f label="$LABELKEY$1" -q || {
     echo -e "ERROR: docker failed\n" >/dev/stderr
@@ -814,10 +818,10 @@ get_mok_cluster_docker_ids() {
 
 # ---------------------------------------------------------------------------
 get_info_about_container_using_docker() {
-# ---------------------------------------------------------------------------
-# Use 'docker inspect $id' to get details about container $id
-# Args
-#   arg1 - docker container id
+  # ---------------------------------------------------------------------------
+  # Use 'docker inspect $id' to get details about container $id
+  # Args
+  #   arg1 - docker container id
 
   docker inspect "$1" || {
     echo "ERROR: docker failed" >/dev/stderr
@@ -831,13 +835,13 @@ get_info_about_container_using_docker() {
 
 # ---------------------------------------------------------------------------
 err() {
-# ---------------------------------------------------------------------------
-# In case of error print the function call stack
+  # ---------------------------------------------------------------------------
+  # In case of error print the function call stack
 
   local frame=0
   echo >/dev/stderr
   while caller $frame; do
-    ((frame++));
+    ((frame++))
   done | tac >/dev/stderr
   echo >/dev/stderr
   return $ERROR
@@ -845,12 +849,12 @@ err() {
 
 # ---------------------------------------------------------------------------
 run_with_progress() {
-# ---------------------------------------------------------------------------
-# Display a progress spinner, display item text, display a tick or cross
-# based on the exit code.
-# Args:
-#   arg1 - the text to display
-#   argN - remaining args are the program and its arguments
+  # ---------------------------------------------------------------------------
+  # Display a progress spinner, display item text, display a tick or cross
+  # based on the exit code.
+  # Args:
+  #   arg1 - the text to display
+  #   argN - remaining args are the program and its arguments
 
   local displaytext=$1 retval i
 
@@ -859,22 +863,24 @@ run_with_progress() {
     err || return
   }
 
-
   shift
   # Run the command in the background
-  (sleep 1; "$@") &>"$RUNWITHPROGRESS_OUTPUT" &
+  (
+    sleep 1
+    "$@"
+  ) &>"$RUNWITHPROGRESS_OUTPUT" &
 
   # Turn the cursor off
   tput civis
 
   # Start the spin animation
   echo -n "$displaytext"
-  ( while true; do
+  (while true; do
     for i in {0..3}; do
       echo -en "\r  ${SPINNER[i]} "
       sleep .1
     done
-  done ) &
+  done) &
 
   # Wait for the command to finish
   wait %1
@@ -897,15 +903,15 @@ run_with_progress() {
 }
 
 # ---------------------------------------------------------------------------
-sanity_checks(){
-# ---------------------------------------------------------------------------
-# Check our environment
-# No args expected
+sanity_checks() {
+  # ---------------------------------------------------------------------------
+  # Check our environment
+  # No args expected
 
   local binary
 
   for binary in tac column tput docker grep sed; do
-    if ! command -v "$binary" >& /dev/null; then
+    if ! command -v "$binary" >&/dev/null; then
       echo "ERROR: $binary binary not found in path. Aborting."
       return 1
     fi
@@ -923,14 +929,26 @@ sanity_checks(){
 
 # ---------------------------------------------------------------------------
 usage() {
-# ---------------------------------------------------------------------------
-# Every tool, no matter how small, should have help text!
+  # ---------------------------------------------------------------------------
+  # Every tool, no matter how small, should have help text!
 
   case $COMMAND in
-    create) help_usage; return $OK ;;
-    delete) delete_usage; return $OK ;;
-    build) build_usage; return $OK ;;
-    get) get_usage; return $OK ;;
+  create)
+    help_usage
+    return $OK
+    ;;
+  delete)
+    delete_usage
+    return $OK
+    ;;
+  build)
+    build_usage
+    return $OK
+    ;;
+  get)
+    get_usage
+    return $OK
+    ;;
   esac
 
   echo
@@ -982,7 +1000,7 @@ usage() {
 
 # ---------------------------------------------------------------------------
 help_usage() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
   echo "create SUBCOMMANDs are:"
   echo
   echo "  cluster - Create a local kubernetes cluster."
@@ -1011,7 +1029,7 @@ help_usage() {
 
 # ---------------------------------------------------------------------------
 delete_usage() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
   echo "delete SUBCOMMANDs are:"
   echo
   echo "  cluster - Delete a local kubernetes cluster."
@@ -1026,7 +1044,7 @@ delete_usage() {
 
 # ---------------------------------------------------------------------------
 build_usage() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
   echo "build SUBCOMMANDs are:"
   echo
   echo "  image - Creates the $BASEIMAGENAME base image."
@@ -1040,7 +1058,7 @@ build_usage() {
 
 # ---------------------------------------------------------------------------
 get_usage() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
   echo "get SUBCOMMANDs are:"
   echo
   echo "  cluster(s) - list all mokctl managed clusters."
@@ -1056,12 +1074,12 @@ get_usage() {
 
 # ---------------------------------------------------------------------------
 cleanup() {
-# ---------------------------------------------------------------------------
-# Called when the script exits.
+  # ---------------------------------------------------------------------------
+  # Called when the script exits.
 
   local i
 
-  [[ -e "$DOCKERBUILDTMPDIR" ]] && \
+  [[ -e $DOCKERBUILDTMPDIR ]] &&
     [[ $DOCKERBUILDTMPDIR == "/var/tmp/"* ]] && {
     rm -rf "$DOCKERBUILDTMPDIR"
   }
@@ -1070,9 +1088,9 @@ cleanup() {
   [ -t 1 ] && tput cnorm
 
   # Kill the spinny, and anything else, if they're running
-  [[ -n $(jobs -p) ]] &&  echo -e "$colred\r  ✕$colreset"
+  [[ -n $(jobs -p) ]] && echo -e "$colred\r  ✕$colreset"
   for i in $(jobs -p); do kill "$i"; done
-  
+
   return $OK
 }
 
@@ -1082,87 +1100,100 @@ cleanup() {
 
 # ---------------------------------------------------------------------------
 parse_options() {
-# ---------------------------------------------------------------------------
-# Uses a state machine to check all command line arguments
-# Args:
-#   arg1 - The arguments given to mokctl by the user on the command line
+  # ---------------------------------------------------------------------------
+  # Uses a state machine to check all command line arguments
+  # Args:
+  #   arg1 - The arguments given to mokctl by the user on the command line
 
   set -- "$@"
   local ARGN=$#
-  while [ "$ARGN" -ne 0 ]
-  do
+  while [ "$ARGN" -ne 0 ]; do
     case $1 in
-      --skipmastersetup) verify_option '--skipmastersetup' || return $ERROR
-                         CREATE_CLUSTER_SKIPMASTERSETUP=$TRUE
-                         ;;
-      --skipworkersetup) verify_option '--skipworkersetup' || return $ERROR
-                         CREATE_CLUSTER_SKIPWORKERSETUP=$TRUE
-                         ;;
-      --k8sver) verify_option '--k8sver' || return $ERROR
-                         # enable later -> CREATE_CLUSTER_K8SVER="$1"
-                         shift
-                         ;;
-      --help) ;&
-      -h) usage
-          return $STOP
+    --skipmastersetup)
+      verify_option '--skipmastersetup' || return $ERROR
+      CREATE_CLUSTER_SKIPMASTERSETUP=$TRUE
       ;;
-      --?*) usage
-            echo "Invalid option: '$1'"
-            return $ERROR
+    --skipworkersetup)
+      verify_option '--skipworkersetup' || return $ERROR
+      CREATE_CLUSTER_SKIPWORKERSETUP=$TRUE
       ;;
-      ?*) case "$STATE" in
-            COMMAND) check_command_token "$1"
-                   [[ $? -eq $ERROR ]] && {
-                     usage
-                     echo "Invalid COMMAND, '$1'."
-                     echo
-                     return $ERROR
-                   }
-                 ;;
-            SUBCOMMAND) check_subcommand_token "$1"
-                   [[ $? -eq $ERROR ]] && {
-                     usage
-                     echo "Invalid SUBCOMMAND for $COMMAND, '$1'."
-                     echo
-                     return $ERROR
-                   }
-                 ;;
-            OPTION) check_option_token "$1"
-                   [[ $? -eq $ERROR ]] && {
-                     usage
-                     echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
-                     echo
-                     return $ERROR
-                   }
-                 ;;
-            OPTION2) check_option2_token "$1"
-                   [[ $? -eq $ERROR ]] && {
-                     usage
-                     echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
-                     echo
-                     return $ERROR
-                   }
-                 ;;
-            OPTION3) check_option3_token "$1"
-                   [[ $? -eq $ERROR ]] && {
-                     usage
-                     echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
-                     echo
-                     return $ERROR
-                   }
-                 ;;
-            END) usage
-                 echo -n "ERROR No more options expected, '$1' is unexpected"
-                 echo " for '$COMMAND $SUBCOMMAND'"
-                 return $ERROR
-                 ;;
-            ?*) echo "Internal ERROR. Invalid state '$STATE'"
-                return $ERROR
-          esac
+    --k8sver)
+      verify_option '--k8sver' || return $ERROR
+      # enable later -> CREATE_CLUSTER_K8SVER="$1"
+      shift
+      ;;
+    --help) ;&
+    -h)
+      usage
+      return $STOP
+      ;;
+    --?*)
+      usage
+      echo "Invalid option: '$1'"
+      return $ERROR
+      ;;
+    ?*)
+      case "$STATE" in
+      COMMAND)
+        check_command_token "$1"
+        [[ $? -eq $ERROR ]] && {
+          usage
+          echo "Invalid COMMAND, '$1'."
+          echo
+          return $ERROR
+        }
+        ;;
+      SUBCOMMAND)
+        check_subcommand_token "$1"
+        [[ $? -eq $ERROR ]] && {
+          usage
+          echo "Invalid SUBCOMMAND for $COMMAND, '$1'."
+          echo
+          return $ERROR
+        }
+        ;;
+      OPTION)
+        check_option_token "$1"
+        [[ $? -eq $ERROR ]] && {
+          usage
+          echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
+          echo
+          return $ERROR
+        }
+        ;;
+      OPTION2)
+        check_option2_token "$1"
+        [[ $? -eq $ERROR ]] && {
+          usage
+          echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
+          echo
+          return $ERROR
+        }
+        ;;
+      OPTION3)
+        check_option3_token "$1"
+        [[ $? -eq $ERROR ]] && {
+          usage
+          echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
+          echo
+          return $ERROR
+        }
+        ;;
+      END)
+        usage
+        echo -n "ERROR No more options expected, '$1' is unexpected"
+        echo " for '$COMMAND $SUBCOMMAND'"
+        return $ERROR
+        ;;
+      ?*)
+        echo "Internal ERROR. Invalid state '$STATE'"
+        return $ERROR
+        ;;
+      esac
       ;;
     esac
     shift 1
-    ARGN=$((ARGN-1))
+    ARGN=$((ARGN - 1))
   done
 
   [[ -z $COMMAND ]] && {
@@ -1185,46 +1216,46 @@ parse_options() {
 
 # ---------------------------------------------------------------------------
 check_command_token() {
-# ---------------------------------------------------------------------------
-# Check for a valid token in command state
-# Args:
-#   arg1 - token
+  # ---------------------------------------------------------------------------
+  # Check for a valid token in command state
+  # Args:
+  #   arg1 - token
 
   case $1 in
-    create) COMMAND="create" ;;
-    delete) COMMAND="delete" ;;
-    build)  COMMAND="build"  ;;
-    get)    COMMAND="get"    ;;
-    ?*)     return $ERROR  ;;
+  create) COMMAND="create" ;;
+  delete) COMMAND="delete" ;;
+  build) COMMAND="build" ;;
+  get) COMMAND="get" ;;
+  ?*) return $ERROR ;;
   esac
   STATE="SUBCOMMAND"
 }
 
 # ---------------------------------------------------------------------------
 check_subcommand_token() {
-# ---------------------------------------------------------------------------
-# Check for a valid token in subcommand state
-# Args:
-#   arg1 - token
+  # ---------------------------------------------------------------------------
+  # Check for a valid token in subcommand state
+  # Args:
+  #   arg1 - token
 
   case $COMMAND in
-    create) check_create_subcommand_token "$1" ;;
-    delete) check_delete_subcommand_token "$1" ;;
-    build)  check_build_subcommand_token "$1"  ;;
-    get)    check_get_subcommand_token "$1"    ;;
+  create) check_create_subcommand_token "$1" ;;
+  delete) check_delete_subcommand_token "$1" ;;
+  build) check_build_subcommand_token "$1" ;;
+  get) check_get_subcommand_token "$1" ;;
   esac
 }
 
 # ---------------------------------------------------------------------------
 check_create_subcommand_token() {
-# ---------------------------------------------------------------------------
-# Check for a valid token in subcommand state
-# Args:
-#   arg1 - token
+  # ---------------------------------------------------------------------------
+  # Check for a valid token in subcommand state
+  # Args:
+  #   arg1 - token
 
   case $1 in
-    cluster) SUBCOMMAND="cluster" ;;
-    ?*) return $ERROR ;;
+  cluster) SUBCOMMAND="cluster" ;;
+  ?*) return $ERROR ;;
   esac
 
   STATE="OPTION"
@@ -1234,14 +1265,14 @@ check_create_subcommand_token() {
 
 # ---------------------------------------------------------------------------
 check_delete_subcommand_token() {
-# ---------------------------------------------------------------------------
-# Check for a valid token in subcommand state
-# Args:
-#   arg1 - token
+  # ---------------------------------------------------------------------------
+  # Check for a valid token in subcommand state
+  # Args:
+  #   arg1 - token
 
   case $1 in
-    cluster) SUBCOMMAND="cluster" ;;
-    ?*) return $ERROR ;;
+  cluster) SUBCOMMAND="cluster" ;;
+  ?*) return $ERROR ;;
   esac
 
   STATE=OPTION
@@ -1249,14 +1280,14 @@ check_delete_subcommand_token() {
 
 # ---------------------------------------------------------------------------
 check_build_subcommand_token() {
-# ---------------------------------------------------------------------------
-# Check for a valid token in subcommand state
-# Args:
-#   arg1 - token
+  # ---------------------------------------------------------------------------
+  # Check for a valid token in subcommand state
+  # Args:
+  #   arg1 - token
 
   case $1 in
-    image) SUBCOMMAND="image" ;;
-    ?*) return $ERROR ;;
+  image) SUBCOMMAND="image" ;;
+  ?*) return $ERROR ;;
   esac
 
   STATE=END
@@ -1264,15 +1295,15 @@ check_build_subcommand_token() {
 
 # ---------------------------------------------------------------------------
 check_get_subcommand_token() {
-# ---------------------------------------------------------------------------
-# Check for a valid token in subcommand state
-# Args:
-#   arg1 - token
+  # ---------------------------------------------------------------------------
+  # Check for a valid token in subcommand state
+  # Args:
+  #   arg1 - token
 
   case $1 in
-    clusters) ;&
-    cluster) SUBCOMMAND="cluster" ;;
-    ?*) return $ERROR ;;
+  clusters) ;&
+  cluster) SUBCOMMAND="cluster" ;;
+  ?*) return $ERROR ;;
   esac
 
   STATE=OPTION
@@ -1280,81 +1311,88 @@ check_get_subcommand_token() {
 
 # ---------------------------------------------------------------------------
 check_option_token() {
-# ---------------------------------------------------------------------------
-# Check for a valid token in option state
-# Args:
-#   arg1 - token
+  # ---------------------------------------------------------------------------
+  # Check for a valid token in option state
+  # Args:
+  #   arg1 - token
 
   case $COMMAND in
-    create)
-      case $SUBCOMMAND in
-        cluster) CREATE_CLUSTER_NAME="$1"
-          STATE="OPTION2"
-          ;;
-      esac
+  create)
+    case $SUBCOMMAND in
+    cluster)
+      CREATE_CLUSTER_NAME="$1"
+      STATE="OPTION2"
       ;;
-    delete)
-      case $SUBCOMMAND in
-        cluster) DELETE_CLUSTER_NAME="$1"
-          STATE="END"
-          ;;
-      esac
+    esac
+    ;;
+  delete)
+    case $SUBCOMMAND in
+    cluster)
+      DELETE_CLUSTER_NAME="$1"
+      STATE="END"
       ;;
-    get)
-      case $SUBCOMMAND in
-        cluster) GET_CLUSTER_NAME="$1"
-          STATE="END"
-          ;;
-      esac
+    esac
+    ;;
+  get)
+    case $SUBCOMMAND in
+    cluster)
+      GET_CLUSTER_NAME="$1"
+      STATE="END"
       ;;
+    esac
+    ;;
   esac
 }
 
 # ---------------------------------------------------------------------------
 check_option2_token() {
-# ---------------------------------------------------------------------------
-# Check for a valid token in option2 state
-# Args:
-#   arg1 - token
+  # ---------------------------------------------------------------------------
+  # Check for a valid token in option2 state
+  # Args:
+  #   arg1 - token
 
   case $COMMAND in
-    create)
-      case $SUBCOMMAND in
-        cluster) CREATE_CLUSTER_NUM_MASTERS="$1"
-          STATE="OPTION3"
-          ;;
-      esac
+  create)
+    case $SUBCOMMAND in
+    cluster)
+      CREATE_CLUSTER_NUM_MASTERS="$1"
+      STATE="OPTION3"
       ;;
-    delete)
-      case $SUBCOMMAND in
-        cluster) return $ERROR
-          ;;
-      esac
+    esac
+    ;;
+  delete)
+    case $SUBCOMMAND in
+    cluster)
+      return $ERROR
       ;;
+    esac
+    ;;
   esac
 }
 
 # ---------------------------------------------------------------------------
 check_option3_token() {
-# ---------------------------------------------------------------------------
-# Check for a valid token in option3 state
-# Args:
-#   arg1 - token
+  # ---------------------------------------------------------------------------
+  # Check for a valid token in option3 state
+  # Args:
+  #   arg1 - token
 
   case $COMMAND in
-    create)
-      case $SUBCOMMAND in
-        cluster) CREATE_CLUSTER_NUM_WORKERS="$1"
-          STATE="END"
-          ;;
-      esac
+  create)
+    case $SUBCOMMAND in
+    cluster)
+      CREATE_CLUSTER_NUM_WORKERS="$1"
+      STATE="END"
       ;;
-    delete)
-      case $SUBCOMMAND in
-        cluster) return $ERROR
-          ;;
-      esac
+    esac
+    ;;
+  delete)
+    case $SUBCOMMAND in
+    cluster)
+      return $ERROR
       ;;
+    esac
+    ;;
   esac
 }
 
@@ -1364,27 +1402,32 @@ check_option3_token() {
 
 # ---------------------------------------------------------------------------
 verify_option() {
-# ---------------------------------------------------------------------------
-# Check that the sent option is valid for the command-subcommand or global
-# options.
-# Args:
-#   arg1 - The option to check.
+  # ---------------------------------------------------------------------------
+  # Check that the sent option is valid for the command-subcommand or global
+  # options.
+  # Args:
+  #   arg1 - The option to check.
 
   case "$COMMAND$SUBCOMMAND" in
-    create) ;& # Treat flags located just before
-    delete) ;& # or just after COMMAND
-    build) ;&  # as global options.
-    get) ;&
-    '') check_valid_global_opts "$1"
-      ;;
-    createcluster) check_valid_create_cluster_opts "$1"
-      ;;
-    deletecluster) check_valid_delete_cluster_opts "$1"
-      ;;
-    buildimage) check_valid_build_image_opts "$1"
-      ;;
-    getcluster) check_valid_get_cluster_opts "$1"
-      ;;
+  create) ;& # Treat flags located just before
+  delete) ;& # or just after COMMAND
+  build) ;&  # as global options.
+  get) ;&
+  '')
+    check_valid_global_opts "$1"
+    ;;
+  createcluster)
+    check_valid_create_cluster_opts "$1"
+    ;;
+  deletecluster)
+    check_valid_delete_cluster_opts "$1"
+    ;;
+  buildimage)
+    check_valid_build_image_opts "$1"
+    ;;
+  getcluster)
+    check_valid_get_cluster_opts "$1"
+    ;;
   esac && return $OK
 
   return $ERROR
@@ -1392,9 +1435,9 @@ verify_option() {
 
 # ---------------------------------------------------------------------------
 check_valid_global_opts() {
-# ---------------------------------------------------------------------------
-# Args:
-#   arg1 - The option to check.
+  # ---------------------------------------------------------------------------
+  # Args:
+  #   arg1 - The option to check.
 
   local i validopts=(
     "--help"
@@ -1402,7 +1445,7 @@ check_valid_global_opts() {
   )
 
   for i in "${validopts[@]}"; do
-    [[ "$1" == "$i" ]] && return $OK
+    [[ $1 == "$i" ]] && return $OK
   done
 
   usage
@@ -1412,9 +1455,9 @@ check_valid_global_opts() {
 
 # ---------------------------------------------------------------------------
 check_valid_create_cluster_opts() {
-# ---------------------------------------------------------------------------
-# Args:
-#   arg1 - The option to check.
+  # ---------------------------------------------------------------------------
+  # Args:
+  #   arg1 - The option to check.
 
   local i validopts=(
     "--help"
@@ -1425,7 +1468,7 @@ check_valid_create_cluster_opts() {
   )
 
   for i in "${validopts[@]}"; do
-    [[ "$1" == "$i" ]] && return $OK
+    [[ $1 == "$i" ]] && return $OK
   done
 
   usage
@@ -1435,9 +1478,9 @@ check_valid_create_cluster_opts() {
 
 # ---------------------------------------------------------------------------
 check_valid_delete_cluster_opts() {
-# ---------------------------------------------------------------------------
-# Args:
-#   arg1 - The option to check.
+  # ---------------------------------------------------------------------------
+  # Args:
+  #   arg1 - The option to check.
 
   local i validopts=(
     "--help"
@@ -1445,7 +1488,7 @@ check_valid_delete_cluster_opts() {
   )
 
   for i in "${validopts[@]}"; do
-    [[ "$1" == "$i" ]] && return $OK
+    [[ $1 == "$i" ]] && return $OK
   done
 
   usage
@@ -1455,9 +1498,9 @@ check_valid_delete_cluster_opts() {
 
 # ---------------------------------------------------------------------------
 check_valid_build_image_opts() {
-# ---------------------------------------------------------------------------
-# Args:
-#   arg1 - The option to check.
+  # ---------------------------------------------------------------------------
+  # Args:
+  #   arg1 - The option to check.
 
   local i validopts=(
     "--help"
@@ -1465,7 +1508,7 @@ check_valid_build_image_opts() {
   )
 
   for i in "${validopts[@]}"; do
-    [[ "$1" == "$i" ]] && return $OK
+    [[ $1 == "$i" ]] && return $OK
   done
 
   usage
@@ -1475,9 +1518,9 @@ check_valid_build_image_opts() {
 
 # ---------------------------------------------------------------------------
 check_valid_get_cluster_opts() {
-# ---------------------------------------------------------------------------
-# Args:
-#   arg1 - The option to check.
+  # ---------------------------------------------------------------------------
+  # Args:
+  #   arg1 - The option to check.
 
   local i validopts=(
     "--help"
@@ -1485,7 +1528,7 @@ check_valid_get_cluster_opts() {
   )
 
   for i in "${validopts[@]}"; do
-    [[ "$1" == "$i" ]] && return $OK
+    [[ $1 == "$i" ]] && return $OK
   done
 
   usage
@@ -1494,8 +1537,7 @@ check_valid_get_cluster_opts() {
 }
 
 # Calls main() if we're called from the command line
-if [ "$0" = "${BASH_SOURCE[0]}" ] || [ -z "${BASH_SOURCE[0]}" ];
-then
+if [ "$0" = "${BASH_SOURCE[0]}" ] || [ -z "${BASH_SOURCE[0]}" ]; then
   main "$@"
 fi
 

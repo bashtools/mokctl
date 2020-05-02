@@ -204,11 +204,11 @@ That's it! We now have an image suitable for running containers. I chose CentOS 
 
 We will start a single node, naming it 'master-1', where this name will be seen in `docker ps`, and saving its container ID in the variable, `id`, to be used in the next section.
 
-If we don't mount the `/lib/modules` then `kubeadm init` will fail. `kubeadm` inspects the kernel configuration in `/lib/modules/config` (take a look - it's a text file) to see what Operating System features are available, and, of course, the container uses the host's kernel, unlike a fully virtualised VM (such as VirtualBox), so that's the kernel that needs inspecting, hence the bind mount.
+If we don't mount the `/lib/modules` directory then `kubeadm init` will fail. Kubeadm inspects the kernel configuration in `/lib/modules/<KERNEL VERSION>/config` (take a look - it's a text file) to see what Operating System features it can use. Don't forget, containers don't have their own kernels running, hence the bind mount.
 
 We also set the host name otherwise we get some random ID as the host name and it's confusing when looking at the journal logs.
 
-The container also needs to be 'privileged' since it does many things an application container wouldn't normally do. For example, mounting filesystems - seen above in `entrypoint`, running `iptables` for firewalling and network address translation (NAT/MASQUERADE), creating bridges and network interfaces, and starting containers.
+The container also needs to be ‘privileged’ since it does many things an application container wouldn't normally do. For example, mounting filesystems - seen above in `entrypoint`, running `iptables` for firewalling and network address translation (NAT/MASQUERADE), creating bridges and network interfaces, and starting containers.
 
 ```bash
 {

@@ -38,9 +38,11 @@ We will create a docker container image based on Centos 7 to use as a base image
 - Unique hostname, MAC address, and product_uuid for every node. See [here](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#verify-the-mac-address-and-product-uuid-are-unique-for-every-node) for more details.
 - Swap disabled. You **MUST** disable swap in order for the kubelet to work properly.
 
-Unfortunately [swap](https://www.linux.com/news/all-about-linux-swap-space/) shouldn't be disabled on your laptop/desktop machine, so we work around it. On production clusters swap must be disabled as a they degrade performance when used.
+Unfortunately [swap](https://www.linux.com/news/all-about-linux-swap-space/) shouldn't be disabled on your laptop/desktop machine, so we work around it. On production clusters swap must be disabled as a it degrades performance when used.
 
-A [Dockerfile](https://docs.docker.com/engine/reference/builder/) is written to create a [Docker CentOS 7 Image](https://hub.docker.com/_/centos/#!) (note this [GitHub Issue](https://github.com/CentOS/sig-cloud-instance-images/issues/152)) and adjusted slightly to include some [fixes taken from Kind](https://github.com/kubernetes-sigs/kind/blob/master/images/base/Dockerfile).
+Lets go ahead and write a [Dockerfile](https://docs.docker.com/engine/reference/builder/) that will be our base image for all the ‘nodes’ of the cluster. Copy and paste the next block of code. It will make a directory `mok-centos-7` and put some files in it.
+
+The big block of base64 encoding is the entrypoint script, taken directly from the [kind source code repository](https://github.com/kubernetes-sigs/kind/blob/master/images/base/Dockerfile), encoded so we can start just by copy/pasting.
 
 ```bash
 {
@@ -193,6 +195,8 @@ EnD
   docker build --rm -t local/mok-centos-7 .
 }
 ```
+
+That's it! We now have an image suitable for running containers. I chose CentOS 7 because it includes native support for running systemd inside containers, gives example command arguments to run it, and is a fully ‘supported’ use case.
 
 ## Create a Single Node Kubernetes Cluster
 

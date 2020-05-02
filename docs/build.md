@@ -196,7 +196,7 @@ EnD
 }
 ```
 
-That's it! We now have an image suitable for creating containers. I chose CentOS 7 because it includes native support for running systemd inside containers, gives example command arguments to run it, and is a fully ‘supported’ use case.
+That's it! We now have an image suitable for running containers. I chose CentOS 7 because it includes native support for running systemd inside containers, gives example command arguments to run it, and is a fully ‘supported’ use case.
 
 ## Create a Single Node Kubernetes Cluster
 

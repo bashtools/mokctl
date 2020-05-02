@@ -92,21 +92,14 @@ I started this project to improve my understanding of [kubernetes](https://kuber
 
 I wanted something quite particular to my own needs/wants:
 
-* To set up a kubernetes cluster on my under-powered laptop.
-  
-  My laptop is small and light with no internal fans. This means it's also not particularly powerful and it only has 8GB of RAM. Running Mumshad's kubernetes-the-hard-way has not been possible on my machine.
-  I use Fedora and Gnome, and have done so for years since moving from Debian. So, this document is **meant specifically for Fedora**, but any modern Linux should be fine.
-
 * To set up a full kubernetes cluster inside containers.
   
-  The Kind project builds kubernetes nodes as containers. Containers are native on Linux, unlike Mac and Windows, and so use very little resources. I can have a 3-node kind cluster running on my laptop with ease.
+  So it works on my under-powered laptop.
 
-* To use [cri-o](https://cri-o.io/) instead of docker.
+* To use [cri-o](https://cri-o.io/) instead of docker/containerd.
   
-  CRI-O is a **C**ontainer **R**untime **I**nterface that is **O**CI Compliant. This follows Unix philosophy well, where a program is supposed to do one thing, and do that one thing well. All the things that docker does do have been broken out into individual parts and cri-o is one part created specifically for kubernetes. It starts and manages containers. It doesn't build images, or set up volumes, or networking.`kind` uses containerd but cri-o is used here instead.
+  It looks like CRI-O is the future.
 
 * To use [kubeadm](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm/).
   
-  I managed to do most of kubernetes-the-hard-way using VirtualBox, but I could not play with it properly due to memory and CPU contstraints, but I did get to create a whole bunch of x509 certificates and keys. It's also important to understand how to install kubernetes the Kubeadm way, as this is how a production cluster should be set up and Kubeadm produces [a verifiably kubernetes conformant cluster](https://www.cncf.io/certification/software-conformance/) out-of-the-box.
-
-So, basically, I want to create my own clone of Kind. Then package it and make it easy to install any version of kubernetes and feel more confident as I learn how it all works!
+  To get a verifiably compliant kubernetes cluster running.

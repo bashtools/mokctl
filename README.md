@@ -43,7 +43,7 @@ In progress. `mokctl` is in a working state.
 
 6. [Upgrade](/docs/upgrade.md)
    
-   We can install any version of kubernetes. Let's try installing an older cluster and upgrading it. Not much hand-holding here though.
+   We can install any version of kubernetes. Let's try installing an older cluster and upgrading it.
 
 7. [Add-ons](/docs/addons.md)
    

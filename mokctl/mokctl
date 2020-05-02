@@ -28,6 +28,7 @@ STATE="COMMAND"
 COMMAND=
 SUBCOMMAND=
 CREATE_CLUSTER_NAME=
+BUILD_IMAGE_K8SVER=
 CREATE_CLUSTER_K8SVER=
 CREATE_CLUSTER_NUM_MASTERS=0
 CREATE_CLUSTER_NUM_WORKERS=0
@@ -78,6 +79,7 @@ set_globals() {
   COMMAND=
   SUBCOMMAND=
   CREATE_CLUSTER_NAME=
+  BUILD_IMAGE_K8SVER="1.18.2"
   CREATE_CLUSTER_K8SVER="1.18.2"
   CREATE_CLUSTER_NUM_MASTERS=
   CREATE_CLUSTER_NUM_WORKERS=
@@ -371,7 +373,7 @@ set_up_master_node() {
   # Args
   #   arg1 - the container ID to set up
 
-  case "$CREATE_CLUSTER_K8SVER" in
+  case "$BUILD_IMAGE_K8SVER" in
   "1.18.2")
     set_up_master_node_v1_18_2 "$@"
     ;;
@@ -394,7 +396,7 @@ create_docker_container() {
     --name "$1" \
     --hostname "$1" \
     --label "$2" \
-    local/$BASEIMAGENAME
+    local/"$BASEIMAGENAME-v$CREATE_CLUSTER_K8SVER"
 }
 
 # ---------------------------------------------------------------------------
@@ -465,7 +467,7 @@ set_up_worker_node() {
   # Args
   #   arg1 - the container ID to set up
 
-  case "$CREATE_CLUSTER_K8SVER" in
+  case "$BUILD_IMAGE_K8SVER" in
   "1.18.2")
     set_up_worker_node_v1_18_2 "$@"
     ;;
@@ -611,13 +613,19 @@ build_container_image() {
   # docker build to build the image.
   # No args expected.
 
-  local retval
+  local retval TAGNAME buildargs
 
   create_docker_build_dir || return
 
+  buildargs=$(get_build_args_for_k8s_ver $BUILD_IMAGE_K8SVER) || return
+  TAGNAME="$BASEIMAGENAME-v$BUILD_IMAGE_K8SVER"
+  cmd="docker build \
+    -t local/$TAGNAME \
+    $buildargs \
+    $DOCKERBUILDTMPDIR/$BASEIMAGENAME"
+
   run_with_progress \
-    "    Creating base image, '$BASEIMAGENAME'" \
-    docker build -t "local/$BASEIMAGENAME" "$DOCKERBUILDTMPDIR/$BASEIMAGENAME"
+    "    Creating base image, '$TAGNAME'" "$cmd"
 
   retval=$?
   [[ $retval -ne 0 ]] && {
@@ -629,6 +637,25 @@ build_container_image() {
   }
 
   return $retval
+}
+
+# ---------------------------------------------------------------------------
+get_build_args_for_k8s_ver() {
+
+  local buildargs
+
+  case "$BUILD_IMAGE_K8SVER" in
+  "1.18.2")
+    buildargs="--build-arg"
+    buildargs="$buildargs CRIO_VERSION=1.17"
+    buildargs="$buildargs --build-arg"
+    buildargs="$buildargs CRICTL_VERSION=v1.17.0"
+    buildargs="$buildargs --build-arg"
+    buildargs="$buildargs K8SBINVER=-1.18.2"
+    ;;
+  esac
+
+  echo "$buildargs"
 }
 
 # ---------------------------------------------------------------------------
@@ -775,12 +802,12 @@ run_with_progress() {
     echo "ERROR: mktmp failed."
     err || return
   }
-
   shift
+
   # Run the command in the background
   (
     sleep 1
-    "$@"
+    eval "$*"
   ) &>"$RUNWITHPROGRESS_OUTPUT" &
 
   # Turn the cursor off
@@ -1032,7 +1059,7 @@ parse_options() {
       ;;
     --k8sver)
       verify_option '--k8sver' || return $ERROR
-      # enable later -> CREATE_CLUSTER_K8SVER="$1"
+      # enable later -> BUILD_IMAGE_K8SVER="$1"
       shift
       ;;
     --help) ;&

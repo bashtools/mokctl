@@ -45,7 +45,7 @@ RUNWITHPROGRESS_OUTPUT=
 
 # ===========================================================================
 main() {
-  # ===========================================================================
+
   # Execution begins here
 
   local r=$OK
@@ -74,7 +74,6 @@ main() {
 
 # ---------------------------------------------------------------------------
 set_globals() {
-  # ---------------------------------------------------------------------------
 
   COMMAND=
   SUBCOMMAND=
@@ -95,7 +94,7 @@ set_globals() {
 
 # ---------------------------------------------------------------------------
 do_get() {
-  # ---------------------------------------------------------------------------
+
   # Calls the correct command/subcommand function
 
   case $SUBCOMMAND in
@@ -108,7 +107,7 @@ do_get() {
 
 # ---------------------------------------------------------------------------
 do_get_clusters_sanity_checks() {
-  # ---------------------------------------------------------------------------
+
   # No sanity checks required.
   # Globals: None
   # No args expected
@@ -122,7 +121,7 @@ do_get_clusters_sanity_checks() {
 
 # ---------------------------------------------------------------------------
 do_build() {
-  # ---------------------------------------------------------------------------
+
   # Calls the correct command/subcommand function
 
   case $SUBCOMMAND in
@@ -135,7 +134,7 @@ do_build() {
 
 # ---------------------------------------------------------------------------
 do_build_image_sanity_checks() {
-  # ---------------------------------------------------------------------------
+
   # No sanity checks required.
   # Globals: None
   # No args expected
@@ -149,7 +148,7 @@ do_build_image_sanity_checks() {
 
 # ---------------------------------------------------------------------------
 do_create() {
-  # ---------------------------------------------------------------------------
+
   # Calls the correct command/subcommand function
 
   case $SUBCOMMAND in
@@ -162,7 +161,7 @@ do_create() {
 
 # ---------------------------------------------------------------------------
 do_create_cluster_sanity_checks() {
-  # ---------------------------------------------------------------------------
+
   # Creates a mok cluster. All user vars have been parsed and saved.
   # Globals: CREATE_CLUSTER_NAME CREATE_CLUSTER_NUM_MASTERS
   #          CREATE_CLUSTER_NUM_WORKERS
@@ -193,7 +192,7 @@ do_create_cluster_sanity_checks() {
 
 # ---------------------------------------------------------------------------
 do_delete() {
-  # ---------------------------------------------------------------------------
+
   # Calls the correct command/subcommand function
   # No args expected
 
@@ -207,7 +206,7 @@ do_delete() {
 
 # ---------------------------------------------------------------------------
 do_delete_cluster_sanity_checks() {
-  # ---------------------------------------------------------------------------
+
   # Deletes a mok cluster. All user vars have been parsed and saved.
   # Globals: DELETE_CLUSTER_NAME
   # No args expected
@@ -226,7 +225,7 @@ do_delete_cluster_sanity_checks() {
 
 # ---------------------------------------------------------------------------
 do_create_cluster_mutate() {
-  # ---------------------------------------------------------------------------
+
   # Mutate functions make system changes.
   # Global variables:
   #   CREATE_CLUSTER_NAME        - (string) cluster name
@@ -272,7 +271,7 @@ do_create_cluster_mutate() {
 
 # ---------------------------------------------------------------------------
 get_cluster_size() {
-  # ---------------------------------------------------------------------------
+
   # Search for an existing cluster using labels. All cluster nodes are
   # labelled with $LABELKEY=$CREATE_CLUSTER_NAME
   # Args:
@@ -291,7 +290,7 @@ get_cluster_size() {
 
 # ---------------------------------------------------------------------------
 get_docker_ids_for_cluster() {
-  # ---------------------------------------------------------------------------
+
   # Get all cluster ids for labelled containers
   # Args:
   #   arg1 - Cluster name
@@ -312,7 +311,7 @@ get_docker_ids_for_cluster() {
 
 # ---------------------------------------------------------------------------
 create_master_nodes() {
-  # ---------------------------------------------------------------------------
+
   # Create the master nodes
   # Args:
   #   arg1 - number of master nodes to create
@@ -367,7 +366,7 @@ create_master_nodes() {
 
 # ---------------------------------------------------------------------------
 create_docker_container() {
-  # ---------------------------------------------------------------------------
+
   # Runs a new container with docker run.
   # Args:
   #   arg1 - name to use as the name and hostname.
@@ -386,7 +385,7 @@ create_docker_container() {
 
 # ---------------------------------------------------------------------------
 create_worker_nodes() {
-  # ---------------------------------------------------------------------------
+
   # Create the master nodes
   # Args:
   #   arg1 - number of master nodes to create
@@ -447,7 +446,7 @@ create_worker_nodes() {
 
 # ---------------------------------------------------------------------------
 get_master_join_details() {
-  # ---------------------------------------------------------------------------
+
   # 'docker exec' into the master to get CA hash, a token, and the master IP.
   # The caller can eval the output of this function to set the variables:
   # cahash, token, and masterip.
@@ -486,7 +485,7 @@ EnD
 
 # ---------------------------------------------------------------------------
 set_up_master_node() {
-  # ---------------------------------------------------------------------------
+
   # Use kubeadm to set up the master node.
   # Args:
   #   arg1 - the container to set up.
@@ -543,7 +542,7 @@ EnD
 
 # ---------------------------------------------------------------------------
 set_up_worker_node() {
-  # ---------------------------------------------------------------------------
+
   # Use kubeadm to set up the master node
   # Args:
   #   arg1 - the container to set up.
@@ -600,7 +599,7 @@ EnD
 
 # ---------------------------------------------------------------------------
 do_delete_cluster_mutate() {
-  # ---------------------------------------------------------------------------
+
   # Mutate functions make system changes.
 
   declare -i numnodes=0
@@ -618,7 +617,7 @@ do_delete_cluster_mutate() {
 
 # ---------------------------------------------------------------------------
 delete_cluster_nodes() {
-  # ---------------------------------------------------------------------------
+
   # Delete all cluster nodes.
   # Args:
   #   arg1 - Name of the cluster to delete
@@ -660,7 +659,7 @@ delete_cluster_nodes() {
 
 # ---------------------------------------------------------------------------
 delete_docker_container() {
-  # ---------------------------------------------------------------------------
+
   # Stops and removes docker container.
   # Args:
   #   arg1 - docker id to delete
@@ -671,7 +670,7 @@ delete_docker_container() {
 
 # ---------------------------------------------------------------------------
 do_build_image_mutate() {
-  # ---------------------------------------------------------------------------
+
   # Mutate functions make system changes.
   # Builds the $BASEIMAGENAME base image used for masters and workers.
   # Globals: None
@@ -693,7 +692,7 @@ do_build_image_mutate() {
 
 # ---------------------------------------------------------------------------
 build_container_image() {
-  # ---------------------------------------------------------------------------
+
   # Creates the docker build directory in $DOCKERBUILDTMPDIR then calls
   # docker build to build the image.
   # No args expected.
@@ -720,7 +719,7 @@ build_container_image() {
 
 # ---------------------------------------------------------------------------
 create_docker_build_dir() {
-  # ---------------------------------------------------------------------------
+
   # Creates a docker build directory in /var/tmp/tmp.XXXXXXXX
   # No args expected
 
@@ -743,7 +742,7 @@ create_docker_build_dir() {
 
 # ---------------------------------------------------------------------------
 do_get_clusters_nomutate() {
-  # ---------------------------------------------------------------------------
+
   # Mutate functions make system changes but this one doesn't and I don't
   #  know where to put it yet.
   # Gets cluster details
@@ -805,7 +804,7 @@ do_get_clusters_nomutate() {
 
 # ---------------------------------------------------------------------------
 get_mok_cluster_docker_ids() {
-  # ---------------------------------------------------------------------------
+
   # Use 'docker ps .. label= ..' to get a list of mok clusters
   # Args
   #   arg1 - mok cluster name, optional
@@ -818,7 +817,7 @@ get_mok_cluster_docker_ids() {
 
 # ---------------------------------------------------------------------------
 get_info_about_container_using_docker() {
-  # ---------------------------------------------------------------------------
+
   # Use 'docker inspect $id' to get details about container $id
   # Args
   #   arg1 - docker container id
@@ -835,7 +834,7 @@ get_info_about_container_using_docker() {
 
 # ---------------------------------------------------------------------------
 err() {
-  # ---------------------------------------------------------------------------
+
   # In case of error print the function call stack
 
   local frame=0
@@ -849,7 +848,7 @@ err() {
 
 # ---------------------------------------------------------------------------
 run_with_progress() {
-  # ---------------------------------------------------------------------------
+
   # Display a progress spinner, display item text, display a tick or cross
   # based on the exit code.
   # Args:
@@ -904,7 +903,7 @@ run_with_progress() {
 
 # ---------------------------------------------------------------------------
 sanity_checks() {
-  # ---------------------------------------------------------------------------
+
   # Check our environment
   # No args expected
 
@@ -929,7 +928,7 @@ sanity_checks() {
 
 # ---------------------------------------------------------------------------
 usage() {
-  # ---------------------------------------------------------------------------
+
   # Every tool, no matter how small, should have help text!
 
   case $COMMAND in
@@ -1000,7 +999,7 @@ usage() {
 
 # ---------------------------------------------------------------------------
 help_usage() {
-  # ---------------------------------------------------------------------------
+
   echo "create SUBCOMMANDs are:"
   echo
   echo "  cluster - Create a local kubernetes cluster."
@@ -1029,7 +1028,7 @@ help_usage() {
 
 # ---------------------------------------------------------------------------
 delete_usage() {
-  # ---------------------------------------------------------------------------
+
   echo "delete SUBCOMMANDs are:"
   echo
   echo "  cluster - Delete a local kubernetes cluster."
@@ -1044,7 +1043,7 @@ delete_usage() {
 
 # ---------------------------------------------------------------------------
 build_usage() {
-  # ---------------------------------------------------------------------------
+
   echo "build SUBCOMMANDs are:"
   echo
   echo "  image - Creates the $BASEIMAGENAME base image."
@@ -1058,7 +1057,7 @@ build_usage() {
 
 # ---------------------------------------------------------------------------
 get_usage() {
-  # ---------------------------------------------------------------------------
+
   echo "get SUBCOMMANDs are:"
   echo
   echo "  cluster(s) - list all mokctl managed clusters."
@@ -1074,7 +1073,7 @@ get_usage() {
 
 # ---------------------------------------------------------------------------
 cleanup() {
-  # ---------------------------------------------------------------------------
+
   # Called when the script exits.
 
   local i
@@ -1100,7 +1099,7 @@ cleanup() {
 
 # ---------------------------------------------------------------------------
 parse_options() {
-  # ---------------------------------------------------------------------------
+
   # Uses a state machine to check all command line arguments
   # Args:
   #   arg1 - The arguments given to mokctl by the user on the command line
@@ -1216,7 +1215,7 @@ parse_options() {
 
 # ---------------------------------------------------------------------------
 check_command_token() {
-  # ---------------------------------------------------------------------------
+
   # Check for a valid token in command state
   # Args:
   #   arg1 - token
@@ -1233,7 +1232,7 @@ check_command_token() {
 
 # ---------------------------------------------------------------------------
 check_subcommand_token() {
-  # ---------------------------------------------------------------------------
+
   # Check for a valid token in subcommand state
   # Args:
   #   arg1 - token
@@ -1248,7 +1247,7 @@ check_subcommand_token() {
 
 # ---------------------------------------------------------------------------
 check_create_subcommand_token() {
-  # ---------------------------------------------------------------------------
+
   # Check for a valid token in subcommand state
   # Args:
   #   arg1 - token
@@ -1265,7 +1264,7 @@ check_create_subcommand_token() {
 
 # ---------------------------------------------------------------------------
 check_delete_subcommand_token() {
-  # ---------------------------------------------------------------------------
+
   # Check for a valid token in subcommand state
   # Args:
   #   arg1 - token
@@ -1280,7 +1279,7 @@ check_delete_subcommand_token() {
 
 # ---------------------------------------------------------------------------
 check_build_subcommand_token() {
-  # ---------------------------------------------------------------------------
+
   # Check for a valid token in subcommand state
   # Args:
   #   arg1 - token
@@ -1295,7 +1294,7 @@ check_build_subcommand_token() {
 
 # ---------------------------------------------------------------------------
 check_get_subcommand_token() {
-  # ---------------------------------------------------------------------------
+
   # Check for a valid token in subcommand state
   # Args:
   #   arg1 - token
@@ -1311,7 +1310,7 @@ check_get_subcommand_token() {
 
 # ---------------------------------------------------------------------------
 check_option_token() {
-  # ---------------------------------------------------------------------------
+
   # Check for a valid token in option state
   # Args:
   #   arg1 - token
@@ -1346,7 +1345,7 @@ check_option_token() {
 
 # ---------------------------------------------------------------------------
 check_option2_token() {
-  # ---------------------------------------------------------------------------
+
   # Check for a valid token in option2 state
   # Args:
   #   arg1 - token
@@ -1372,7 +1371,7 @@ check_option2_token() {
 
 # ---------------------------------------------------------------------------
 check_option3_token() {
-  # ---------------------------------------------------------------------------
+
   # Check for a valid token in option3 state
   # Args:
   #   arg1 - token
@@ -1402,7 +1401,7 @@ check_option3_token() {
 
 # ---------------------------------------------------------------------------
 verify_option() {
-  # ---------------------------------------------------------------------------
+
   # Check that the sent option is valid for the command-subcommand or global
   # options.
   # Args:
@@ -1435,7 +1434,7 @@ verify_option() {
 
 # ---------------------------------------------------------------------------
 check_valid_global_opts() {
-  # ---------------------------------------------------------------------------
+
   # Args:
   #   arg1 - The option to check.
 
@@ -1455,7 +1454,7 @@ check_valid_global_opts() {
 
 # ---------------------------------------------------------------------------
 check_valid_create_cluster_opts() {
-  # ---------------------------------------------------------------------------
+
   # Args:
   #   arg1 - The option to check.
 
@@ -1478,7 +1477,7 @@ check_valid_create_cluster_opts() {
 
 # ---------------------------------------------------------------------------
 check_valid_delete_cluster_opts() {
-  # ---------------------------------------------------------------------------
+
   # Args:
   #   arg1 - The option to check.
 
@@ -1498,7 +1497,7 @@ check_valid_delete_cluster_opts() {
 
 # ---------------------------------------------------------------------------
 check_valid_build_image_opts() {
-  # ---------------------------------------------------------------------------
+
   # Args:
   #   arg1 - The option to check.
 
@@ -1518,7 +1517,7 @@ check_valid_build_image_opts() {
 
 # ---------------------------------------------------------------------------
 check_valid_get_cluster_opts() {
-  # ---------------------------------------------------------------------------
+
   # Args:
   #   arg1 - The option to check.
 

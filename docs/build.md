@@ -42,7 +42,7 @@ Unfortunately [swap](https://www.linux.com/news/all-about-linux-swap-space/) sho
 
 Lets go ahead and write a [Dockerfile](https://docs.docker.com/engine/reference/builder/) that will be our base image for all the ‘nodes’ of the cluster. Copy and paste the next block of code. It will make a directory `mok-centos-7` and put some files in it.
 
-The big block of base64 encoding is the entrypoint script, taken directly from the [kind source code repository](https://github.com/kubernetes-sigs/kind/blob/master/images/base/Dockerfile), encoded so we can start on this journey just by copy/pasting.
+The big block of base64 encoding is the entrypoint script, taken directly from the [kind source code repository](https://github.com/kubernetes-sigs/kind/blob/master/images/base/Dockerfile), encoded so we can start off just by copy/pasting.
 
 ```bash
 {

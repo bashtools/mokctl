@@ -20,6 +20,7 @@ clean:
 
 test: clean mokctl.deploy
 	./tests/unit-tests.sh
+	shellcheck mokctl/mokctl
 
 buildtest: clean mokctl.deploy
 	./tests/build-tests.sh

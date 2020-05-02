@@ -10,14 +10,14 @@ declare -r LABELKEY="MokCluster"
 declare -r BASEIMAGENAME="mok-centos-7"
 declare -r OK=0
 declare -r ERROR=1
-declare -r FALSE=0
+#declare -r FALSE=0
 declare -r TRUE=1
 declare -r STOP=2
 declare -r SPINNER=('◐' '◓' '◑' '◒')
 
-colgreen=`tput setaf 2`
-colred=`tput setaf 1`
-colreset=`tput sgr0`
+colgreen=$(tput setaf 2)
+colred=$(tput setaf 1)
+colreset=$(tput sgr0)
 success="$colgreen✓$colreset"
 failure="$colred✕$colreset"
 
@@ -28,13 +28,14 @@ STATE="COMMAND"
 COMMAND=
 SUBCOMMAND=
 CREATE_CLUSTER_NAME=
-CREATE_CLUSTER_K8SVER=
+# Enable later -> CREATE_CLUSTER_K8SVER=
 CREATE_CLUSTER_NUM_MASTERS=0
 CREATE_CLUSTER_NUM_WORKERS=0
 CREATE_CLUSTER_SKIPMASTERSETUP=
 CREATE_CLUSTER_SKIPWORKERSETUP=
 DELETE_CLUSTER_NAME=
 GET_CLUSTER_NAME=
+GET_CLUSTER_SHOW_HEADER=
 
 # Directory to unpack the build files
 DOCKERBUILDTMPDIR=
@@ -78,13 +79,14 @@ set_globals() {
   COMMAND=
   SUBCOMMAND=
   CREATE_CLUSTER_NAME=
-  CREATE_CLUSTER_K8SVER=
+  # Enable later -> CREATE_CLUSTER_K8SVER=
   CREATE_CLUSTER_NUM_MASTERS=
   CREATE_CLUSTER_NUM_WORKERS=
   CREATE_CLUSTER_SKIPMASTERSETUP=
   CREATE_CLUSTER_SKIPWORKERSETUP=
   DELETE_CLUSTER_NAME=
   GET_CLUSTER_NAME=
+  GET_CLUSTER_SHOW_HEADER=$TRUE
 }
 
 # ===========================================================================
@@ -275,7 +277,7 @@ get_cluster_size() {
   local output
   declare -a nodes
 
-  output=$(get_docker_ids_for_cluster $1) || return
+  output=$(get_docker_ids_for_cluster "$1") || err || return
 
   # read the nodes array and delete blank lines
   readarray nodes < <(echo "$output" | sed '/^$/d')
@@ -294,9 +296,9 @@ get_docker_ids_for_cluster() {
 
   [[ -n $1 ]] && value="=$1"
 
-  output=$(docker ps -a -f label=$LABELKEY$value -q) || {
+  output=$(docker ps -a -f label="$LABELKEY$value" -q) || {
     echo -e "ERROR: Docker command failed\n" >/dev/stderr
-    return $ERROR
+    err || return
   }
 
   echo "$output"
@@ -311,16 +313,17 @@ create_master_nodes() {
 # Args:
 #   arg1 - number of master nodes to create
 
-  declare -i i=0
+  declare -i i=0 r
 
-  for i in $(seq 1 $1); do
+  for i in $(seq 1 "$1"); do
     run_with_progress \
       "    Creating base container, '$CREATE_CLUSTER_NAME-master-$i'" \
       create_docker_container \
         "$CREATE_CLUSTER_NAME-master-$i" \
         "$LABELKEY=$CREATE_CLUSTER_NAME"
+    r=$?
 
-    [[ $? -ne 0 ]] && {
+    [[ "$r" -ne 0 ]] && {
       echo
       cat $RUNWITHPROGRESS_OUTPUT
       rm $RUNWITHPROGRESS_OUTPUT
@@ -333,8 +336,9 @@ create_master_nodes() {
       run_with_progress \
         "    Setting up '$CREATE_CLUSTER_NAME-master-$i'" \
         set_up_master_node "$CREATE_CLUSTER_NAME-master-$i"
+    r=$?
 
-      [[ $? -ne 0 ]] && {
+      [[ "$r" -ne 0 ]] && {
         echo
         cat $RUNWITHPROGRESS_OUTPUT
         echo
@@ -370,9 +374,9 @@ create_docker_container() {
       -v /lib/modules:/lib/modules:ro \
       --tmpfs /run --tmpfs /tmp \
       --detach \
-      --name $1 \
-      --hostname $1 \
-      --label $2 \
+      --name "$1" \
+      --hostname "$1" \
+      --label "$2" \
       local/$BASEIMAGENAME
 }
 
@@ -395,17 +399,18 @@ create_worker_nodes() {
     }
 
     # Sets cahash, token, and masterip:
-    eval $t
+    eval "$t"
   }
 
-  for i in $(seq 1 $1); do
+  for i in $(seq 1 "$1"); do
     run_with_progress \
       "    Creating base container, '$CREATE_CLUSTER_NAME-worker-$i'" \
       create_docker_container \
         "$CREATE_CLUSTER_NAME-worker-$i" \
         "$LABELKEY=$CREATE_CLUSTER_NAME"
+    r=$?
 
-    [[ $? -ne 0 ]] && {
+    [[ "$r" -ne 0 ]] && {
       echo
       cat $RUNWITHPROGRESS_OUTPUT
       rm $RUNWITHPROGRESS_OUTPUT
@@ -420,8 +425,9 @@ create_worker_nodes() {
         "    Setting up '$CREATE_CLUSTER_NAME-worker-$i'" \
         set_up_worker_node "$CREATE_CLUSTER_NAME-worker-$i" \
           "$cahash" "$token" "$masterip"
+      r=$?
 
-      [[ $? -ne 0 ]] && {
+      [[ "$r" -ne 0 ]] && {
         echo
         cat $RUNWITHPROGRESS_OUTPUT
         echo
@@ -444,9 +450,14 @@ get_master_join_details(){
 # Args:
 #   arg1 - id/name of master container
 
-  local joinvarsfile=`mktemp --tmpdir=/var/tmp`
+  local joinvarsfile
 
-  cat <<'EnD' >$joinvarsfile
+  joinvarsfile=$(mktemp --tmpdir=/var/tmp) || {
+    echo "ERROR: mktmp failed."
+    return $ERROR
+  }
+
+  cat <<'EnD' >"$joinvarsfile"
 #!/bin/bash
 set -e
 
@@ -463,10 +474,10 @@ echo "masterip=$ip"
 exit 0
 EnD
 
-  docker cp $joinvarsfile $1:/root/joinvars.sh || return
-  rm -f $joinvarsfile
+  docker cp "$joinvarsfile" "$1":/root/joinvars.sh || err || return
+  rm -f "$joinvarsfile" || err || return
 
-  docker exec $1 bash /root/joinvars.sh
+  docker exec "$1" bash /root/joinvars.sh
 }
 
 # ---------------------------------------------------------------------------
@@ -476,9 +487,14 @@ set_up_master_node() {
 # Args:
 #   arg1 - the container to set up.
 
-  local setupfile=`mktemp --tmpdir=/var/tmp`
+  local setupfile
 
-  cat <<'EnD' >$setupfile
+  setupfile=$(mktemp --tmpdir=/var/tmp) || {
+    echo "ERROR: mktmp failed."
+    return $ERROR
+  }
+
+  cat <<'EnD' >"$setupfile"
 # Disable ipv6
 sysctl -w net.ipv6.conf.all.disable_ipv6=1
 sysctl -w net.ipv6.conf.default.disable_ipv6=1
@@ -513,10 +529,12 @@ export KUBECONFIG=/etc/kubernetes/admin.conf
 kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
 EnD
 
-  docker cp $setupfile $1:/root/setup.sh
-  rm -f $setupfile
+  docker cp "$setupfile" "$1":/root/setup.sh || err || {
+    rm -f "$setupfile"
+    return $ERROR
+  }
 
-  docker exec $1 bash /root/setup.sh
+  docker exec "$1" bash /root/setup.sh || err
 }
 
 # ---------------------------------------------------------------------------
@@ -526,10 +544,14 @@ set_up_worker_node() {
 # Args:
 #   arg1 - the container to set up.
 
-  local setupfile=`mktemp --tmpdir=/var/tmp`
-  local cahash=$2 token=$3 masterip=$4
+  local setupfile cahash="$2" token="$3" masterip="$4"
 
-  cat <<EnD >$setupfile
+  setupfile=$(mktemp --tmpdir=/var/tmp) || {
+    echo "ERROR: mktmp failed."
+    return $ERROR
+  }
+
+  cat <<EnD >"$setupfile"
 # Wait for the master API to become ready
 while true; do
   curl -k https://$masterip:6443/
@@ -564,10 +586,12 @@ systemctl enable kubelet
 systemctl restart kubelet
 EnD
 
-  docker cp $setupfile $1:/root/setup.sh
-  rm -f $setupfile
+  docker cp "$setupfile" "$1":/root/setup.sh || err || {
+    rm -f "$setupfile"
+    return $ERROR
+  }
 
-  docker exec $1 bash /root/setup.sh
+  docker exec "$1" bash /root/setup.sh || err
 }
 
 # ---------------------------------------------------------------------------
@@ -597,15 +621,15 @@ delete_cluster_nodes() {
 
   local id ids r
 
-  ids=$(get_docker_ids_for_cluster $1) || return
+  ids=$(get_docker_ids_for_cluster "$1") || return
 
   echo -e "The following containers will be deleted:\n"
 
-  do_get_clusters_nomutate $1
+  do_get_clusters_nomutate "$1" || return
 
   echo -en "\nAre you sure you want to delete the cluster? (y/N) >"
 
-  read ans
+  read -r ans
 
   [[ "$ans" != "y" ]] && {
     echo -e "\nCancelling by user request."
@@ -617,11 +641,12 @@ delete_cluster_nodes() {
   for id in $ids; do
     run_with_progress \
       "    Deleting id, '$id' from cluster '$1'." \
-      delete_docker_container $id
+      delete_docker_container "$id"
       r=$?
       [[ $r -ne 0 ]] && {
         cat "$RUNWITHPROGRESS_OUTPUT"
         echo -e "\nERROR: Docker failed.\n"
+        err
         return $r
       }
   done
@@ -636,8 +661,8 @@ delete_docker_container() {
 # Args:
 #   arg1 - docker id to delete
 
-  docker stop $id || return
-  docker rm $id || return
+  docker stop "$id" || err || return
+  docker rm "$id" || err
 }
 
 # ---------------------------------------------------------------------------
@@ -671,7 +696,7 @@ build_container_image() {
 
   local retval
 
-  create_docker_build_dir
+  create_docker_build_dir || return
 
   run_with_progress \
       "    Creating base image, '$BASEIMAGENAME'" \
@@ -695,7 +720,10 @@ create_docker_build_dir() {
 # Creates a docker build directory in /var/tmp/tmp.XXXXXXXX
 # No args expected
 
-  DOCKERBUILDTMPDIR=`mktemp -d --tmpdir=/var/tmp`
+  DOCKERBUILDTMPDIR=$(mktemp -d --tmpdir=/var/tmp) || {
+    echo "ERROR: mktmp failed."
+    err || return
+  }
 
   # The following comments should not be removed or changed.
   # embed-dockerfile.sh adds a base64 encoded tarball and
@@ -719,7 +747,7 @@ do_get_clusters_nomutate() {
 # Args
 #   arg1 - cluster name, optional
 
-  local ids id info clustname=$1
+  local ids id info clustname=$1 output
   local containerhostname containerip
 
   declare -a nodes
@@ -732,24 +760,43 @@ do_get_clusters_nomutate() {
     return $OK
   fi
 
-  readarray nodes <<<$ids
+  readarray -t nodes <<<"$ids"
 
   # Use 'docker inspect' to get the value of the label $LABELKEY
 
-  ( echo "MOK_Cluster Docker_ID Container_Name IP_Address"
-  for id in ${nodes[@]}; do
-    info=$(get_info_about_container_using_docker $id) || return
+  output=$(mktemp --tmpdir=/var/tmp) || {
+    echo "ERROR: mktmp failed."
+    return $ERROR
+  }
+
+  shown=$FALSE
+  for id in "${nodes[@]}"; do
+
+    # Output the header
+    [[ "$GET_CLUSTER_SHOW_HEADER" -eq $TRUE \
+       && "$shown" -eq $FALSE ]] && {
+      shown=$TRUE
+      echo "MOK_Cluster Docker_ID Container_Name IP_Address"
+    }
+
+    info=$(get_info_about_container_using_docker "$id") || return
+
     clustname=$(sed -rn \
       '/Labels/,/}/ {s/[":,]//g; s/^ *'"$LABELKEY"' ([^ ]*).*/\1/p }' \
-      <<<$info)
+      <<<"$info") || err || return
+
     containerhostname=$(sed -rn \
       '/"Config"/,/}/ {s/[":,]//g; s/^ *Hostname ([^ ]*).*/\1/p }' \
-      <<<$info)
+      <<<"$info") || err || return
+
     containerip=$(sed -rn \
       '/NetworkSettings/,/Networks/ {s/[":,]//g; s/^ *IPAddress ([^ ]*).*/\1/p }' \
-      <<<$info)
+      <<<"$info") || err || return
+
     echo "$clustname $id $containerhostname $containerip"
-  done ) | column -t
+  done >"$output"
+
+  column -t "$output" || err
 }
 
 # ---------------------------------------------------------------------------
@@ -759,9 +806,9 @@ get_mok_cluster_docker_ids() {
 # Args
 #   arg1 - mok cluster name, optional
 
-  docker ps -a -f label=$LABELKEY$1 -q || {
-    echo "ERROR: docker failed\n" >/dev/stderr
-    return $ERROR
+  docker ps -a -f label="$LABELKEY$1" -q || {
+    echo -e "ERROR: docker failed\n" >/dev/stderr
+    err || return
   }
 }
 
@@ -772,15 +819,29 @@ get_info_about_container_using_docker() {
 # Args
 #   arg1 - docker container id
 
-  docker inspect $1 || {
-    echo -e "\nERROR: docker failed\n" >/dev/stderr
-    return $ERROR
+  docker inspect "$1" || {
+    echo "ERROR: docker failed" >/dev/stderr
+    err || return
   }
 }
 
 # ===========================================================================
 #                                 HELPERS
 # ===========================================================================
+
+# ---------------------------------------------------------------------------
+err() {
+# ---------------------------------------------------------------------------
+# In case of error print the function call stack
+
+  local frame=0
+  echo >/dev/stderr
+  while caller $frame; do
+    ((frame++));
+  done | tac >/dev/stderr
+  echo >/dev/stderr
+  return $ERROR
+}
 
 # ---------------------------------------------------------------------------
 run_with_progress() {
@@ -793,11 +854,15 @@ run_with_progress() {
 
   local displaytext=$1 retval i
 
-  RUNWITHPROGRESS_OUTPUT=`mktemp --tmpdir=/var/tmp`
+  RUNWITHPROGRESS_OUTPUT=$(mktemp --tmpdir=/var/tmp) || {
+    echo "ERROR: mktmp failed."
+    err || return
+  }
+
 
   shift
   # Run the command in the background
-  (sleep 1; $@) &>$RUNWITHPROGRESS_OUTPUT &
+  (sleep 1; "$@") &>"$RUNWITHPROGRESS_OUTPUT" &
 
   # Turn the cursor off
   tput civis
@@ -839,8 +904,8 @@ sanity_checks(){
 
   local binary
 
-  for binary in column tput docker grep sed; do
-    if ! which $binary >& /dev/null; then
+  for binary in tac column tput docker grep sed; do
+    if ! command -v "$binary" >& /dev/null; then
       echo "ERROR: $binary binary not found in path. Aborting."
       return 1
     fi
@@ -1005,8 +1070,8 @@ cleanup() {
   [ -t 1 ] && tput cnorm
 
   # Kill the spinny, and anything else, if they're running
-  [[ -n `jobs -p` ]] &&  echo -e "$colred\r  ✕$colreset"
-  for i in `jobs -p`; do kill $i; done
+  [[ -n $(jobs -p) ]] &&  echo -e "$colred\r  ✕$colreset"
+  for i in $(jobs -p); do kill "$i"; done
   
   return $OK
 }
@@ -1034,7 +1099,7 @@ parse_options() {
                          CREATE_CLUSTER_SKIPWORKERSETUP=$TRUE
                          ;;
       --k8sver) verify_option '--k8sver' || return $ERROR
-                         CREATE_CLUSTER_K8SVER=$1
+                         # enable later -> CREATE_CLUSTER_K8SVER="$1"
                          shift
                          ;;
       --help) ;&
@@ -1046,7 +1111,7 @@ parse_options() {
             return $ERROR
       ;;
       ?*) case "$STATE" in
-            COMMAND) check_command_token $1
+            COMMAND) check_command_token "$1"
                    [[ $? -eq $ERROR ]] && {
                      usage
                      echo "Invalid COMMAND, '$1'."
@@ -1054,7 +1119,7 @@ parse_options() {
                      return $ERROR
                    }
                  ;;
-            SUBCOMMAND) check_subcommand_token $1
+            SUBCOMMAND) check_subcommand_token "$1"
                    [[ $? -eq $ERROR ]] && {
                      usage
                      echo "Invalid SUBCOMMAND for $COMMAND, '$1'."
@@ -1062,7 +1127,7 @@ parse_options() {
                      return $ERROR
                    }
                  ;;
-            OPTION) check_option_token $1
+            OPTION) check_option_token "$1"
                    [[ $? -eq $ERROR ]] && {
                      usage
                      echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
@@ -1070,7 +1135,7 @@ parse_options() {
                      return $ERROR
                    }
                  ;;
-            OPTION2) check_option2_token $1
+            OPTION2) check_option2_token "$1"
                    [[ $? -eq $ERROR ]] && {
                      usage
                      echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
@@ -1078,7 +1143,7 @@ parse_options() {
                      return $ERROR
                    }
                  ;;
-            OPTION3) check_option3_token $1
+            OPTION3) check_option3_token "$1"
                    [[ $? -eq $ERROR ]] && {
                      usage
                      echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
@@ -1126,10 +1191,10 @@ check_command_token() {
 #   arg1 - token
 
   case $1 in
-    create) COMMAND=create ;;
-    delete) COMMAND=delete ;;
-    build)  COMMAND=build  ;;
-    get)    COMMAND=get    ;;
+    create) COMMAND="create" ;;
+    delete) COMMAND="delete" ;;
+    build)  COMMAND="build"  ;;
+    get)    COMMAND="get"    ;;
     ?*)     return $ERROR  ;;
   esac
   STATE="SUBCOMMAND"
@@ -1143,10 +1208,10 @@ check_subcommand_token() {
 #   arg1 - token
 
   case $COMMAND in
-    create) check_create_subcommand_token $1 ;;
-    delete) check_delete_subcommand_token $1 ;;
-    build)  check_build_subcommand_token $1  ;;
-    get)    check_get_subcommand_token $1    ;;
+    create) check_create_subcommand_token "$1" ;;
+    delete) check_delete_subcommand_token "$1" ;;
+    build)  check_build_subcommand_token "$1"  ;;
+    get)    check_get_subcommand_token "$1"    ;;
   esac
 }
 
@@ -1310,15 +1375,15 @@ verify_option() {
     delete) ;& # or just after COMMAND
     build) ;&  # as global options.
     get) ;&
-    '') check_valid_global_opts $1
+    '') check_valid_global_opts "$1"
       ;;
-    createcluster) check_valid_create_cluster_opts $1
+    createcluster) check_valid_create_cluster_opts "$1"
       ;;
-    deletecluster) check_valid_delete_cluster_opts $1
+    deletecluster) check_valid_delete_cluster_opts "$1"
       ;;
-    buildimage) check_valid_build_image_opts $1
+    buildimage) check_valid_build_image_opts "$1"
       ;;
-    getcluster) check_valid_get_cluster_opts $1
+    getcluster) check_valid_get_cluster_opts "$1"
       ;;
   esac && return $OK
 
@@ -1336,7 +1401,7 @@ check_valid_global_opts() {
     "-h"
   )
 
-  for i in ${validopts[@]}; do
+  for i in "${validopts[@]}"; do
     [[ "$1" == "$i" ]] && return $OK
   done
 
@@ -1359,7 +1424,7 @@ check_valid_create_cluster_opts() {
     "--k8sver"
   )
 
-  for i in ${validopts[@]}; do
+  for i in "${validopts[@]}"; do
     [[ "$1" == "$i" ]] && return $OK
   done
 
@@ -1379,7 +1444,7 @@ check_valid_delete_cluster_opts() {
     "-h"
   )
 
-  for i in ${validopts[@]}; do
+  for i in "${validopts[@]}"; do
     [[ "$1" == "$i" ]] && return $OK
   done
 
@@ -1399,7 +1464,7 @@ check_valid_build_image_opts() {
     "-h"
   )
 
-  for i in ${validopts[@]}; do
+  for i in "${validopts[@]}"; do
     [[ "$1" == "$i" ]] && return $OK
   done
 
@@ -1419,7 +1484,7 @@ check_valid_get_cluster_opts() {
     "-h"
   )
 
-  for i in ${validopts[@]}; do
+  for i in "${validopts[@]}"; do
     [[ "$1" == "$i" ]] && return $OK
   done
 
@@ -1429,9 +1494,9 @@ check_valid_get_cluster_opts() {
 }
 
 # Calls main() if we're called from the command line
-if ([ "$0" = "$BASH_SOURCE" ] || ! [ -n "$BASH_SOURCE" ]);
+if [ "$0" = "${BASH_SOURCE[0]}" ] || [ -z "${BASH_SOURCE[0]}" ];
 then
   main "$@"
 fi
 
-# vim:ft=bash:sw=2:et:ts=2:
+# vim:ft=sh:sw=2:et:ts=2:

@@ -17,7 +17,7 @@ Send a Pull Request to add to this list.
 
 ## Status
 
-In progress. Browse, contribute, but don't use!
+In progress. `mokctl` is in a working state.
 
 ## Let's get started
 

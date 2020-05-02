@@ -28,7 +28,7 @@ STATE="COMMAND"
 COMMAND=
 SUBCOMMAND=
 CREATE_CLUSTER_NAME=
-# Enable later -> CREATE_CLUSTER_K8SVER=
+CREATE_CLUSTER_K8SVER=
 CREATE_CLUSTER_NUM_MASTERS=0
 CREATE_CLUSTER_NUM_WORKERS=0
 CREATE_CLUSTER_SKIPMASTERSETUP=
@@ -78,7 +78,7 @@ set_globals() {
   COMMAND=
   SUBCOMMAND=
   CREATE_CLUSTER_NAME=
-  # Enable later -> CREATE_CLUSTER_K8SVER=
+  CREATE_CLUSTER_K8SVER="1.18.2"
   CREATE_CLUSTER_NUM_MASTERS=
   CREATE_CLUSTER_NUM_WORKERS=
   CREATE_CLUSTER_SKIPMASTERSETUP=
@@ -365,6 +365,20 @@ create_master_nodes() {
 }
 
 # ---------------------------------------------------------------------------
+set_up_master_node() {
+
+  # Call the correct set up function based on the version
+  # Args
+  #   arg1 - the container ID to set up
+
+  case "$CREATE_CLUSTER_K8SVER" in
+  "1.18.2")
+    set_up_master_node_v1_18_2 "$@"
+    ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
 create_docker_container() {
 
   # Runs a new container with docker run.
@@ -445,6 +459,20 @@ create_worker_nodes() {
 }
 
 # ---------------------------------------------------------------------------
+set_up_worker_node() {
+
+  # Call the correct set up function based on the version
+  # Args
+  #   arg1 - the container ID to set up
+
+  case "$CREATE_CLUSTER_K8SVER" in
+  "1.18.2")
+    set_up_worker_node_v1_18_2 "$@"
+    ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
 get_master_join_details() {
 
   # 'docker exec' into the master to get CA hash, a token, and the master IP.
@@ -481,120 +509,6 @@ EnD
   rm -f "$joinvarsfile" || err || return
 
   docker exec "$1" bash /root/joinvars.sh
-}
-
-# ---------------------------------------------------------------------------
-set_up_master_node() {
-
-  # Use kubeadm to set up the master node.
-  # Args:
-  #   arg1 - the container to set up.
-
-  local setupfile
-
-  setupfile=$(mktemp --tmpdir=/var/tmp) || {
-    echo "ERROR: mktmp failed."
-    return $ERROR
-  }
-
-  cat <<'EnD' >"$setupfile"
-# Disable ipv6
-sysctl -w net.ipv6.conf.all.disable_ipv6=1
-sysctl -w net.ipv6.conf.default.disable_ipv6=1
-
-# Run the preflight phase
-kubeadm init \
-  --ignore-preflight-errors Swap \
-  phase preflight
-
-# Set up the kubelet
-kubeadm init phase kubelet-start
-
-# Edit the kubelet configuration file
-echo "failSwapOn: false" >>/var/lib/kubelet/config.yaml
-
-# Tell kubeadm to carry on from here
-kubeadm init \
-  --pod-network-cidr=10.244.0.0/16 \
-  --ignore-preflight-errors Swap \
-  --skip-phases=preflight,kubelet-start
-
-declare -i i=120
-while [[ $((i--)) -gt 0 ]]; do
-  curl -k https://localhost:6443/api/ && break
-  sleep 1
-done
-
-systemctl enable kubelet
-
-export KUBECONFIG=/etc/kubernetes/admin.conf
-
-kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
-EnD
-
-  docker cp "$setupfile" "$1":/root/setup.sh || err || {
-    rm -f "$setupfile"
-    return $ERROR
-  }
-
-  docker exec "$1" bash /root/setup.sh || err
-}
-
-# ---------------------------------------------------------------------------
-set_up_worker_node() {
-
-  # Use kubeadm to set up the master node
-  # Args:
-  #   arg1 - the container to set up.
-
-  local setupfile cahash="$2" token="$3" masterip="$4"
-
-  setupfile=$(mktemp --tmpdir=/var/tmp) || {
-    echo "ERROR: mktmp failed."
-    return $ERROR
-  }
-
-  cat <<EnD >"$setupfile"
-# Wait for the master API to become ready
-while true; do
-  curl -k https://$masterip:6443/
-  [[ \$? -eq 0 ]] && break
-  sleep 1
-done
-
-# Do the preflight tests (ignoring swap error)
-kubeadm join \
-  phase preflight \
-    --token $token \
-      --discovery-token-ca-cert-hash sha256:$cahash \
-        --ignore-preflight-errors Swap \
-          $masterip:6443
-
-# Set up the kubelet
-kubeadm join \
-  phase kubelet-start \
-    --token $token \
-      --discovery-token-ca-cert-hash sha256:$cahash \
-        $masterip:6443 &
-
-while true; do
-  [[ -e /var/lib/kubelet/config.yaml ]] && break
-    sleep 1
-  done
-
-# Edit the kubelet configuration file
-echo "failSwapOn: false" >>/var/lib/kubelet/config.yaml
-
-systemctl enable kubelet
-systemctl restart kubelet
-EnD
-
-  docker cp "$setupfile" "$1":/root/setup.sh || err || {
-    rm -f "$setupfile"
-    return $ERROR
-  }
-
-  docker exec "$1" bash /root/setup.sh || err
 }
 
 # ---------------------------------------------------------------------------
@@ -1534,6 +1448,126 @@ check_valid_get_cluster_opts() {
   echo "ERROR: '$1' is not a valid 'get cluster' option."
   return $ERROR
 }
+
+# ===========================================================================
+# Funtions for installing specific vesions of kubernetes
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+set_up_master_node_v1_18_2() {
+
+  # Use kubeadm to set up the master node.
+  # Args:
+  #   arg1 - the container to set up.
+
+  local setupfile
+
+  setupfile=$(mktemp --tmpdir=/var/tmp) || {
+    echo "ERROR: mktmp failed."
+    return $ERROR
+  }
+
+  cat <<'EnD' >"$setupfile"
+# Disable ipv6
+sysctl -w net.ipv6.conf.all.disable_ipv6=1
+sysctl -w net.ipv6.conf.default.disable_ipv6=1
+
+# Run the preflight phase
+kubeadm init \
+  --ignore-preflight-errors Swap \
+  phase preflight
+
+# Set up the kubelet
+kubeadm init phase kubelet-start
+
+# Edit the kubelet configuration file
+echo "failSwapOn: false" >>/var/lib/kubelet/config.yaml
+
+# Tell kubeadm to carry on from here
+kubeadm init \
+  --pod-network-cidr=10.244.0.0/16 \
+  --ignore-preflight-errors Swap \
+  --skip-phases=preflight,kubelet-start
+
+declare -i i=120
+while [[ $((i--)) -gt 0 ]]; do
+  curl -k https://localhost:6443/api/ && break
+  sleep 1
+done
+
+systemctl enable kubelet
+
+export KUBECONFIG=/etc/kubernetes/admin.conf
+
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+EnD
+
+  docker cp "$setupfile" "$1":/root/setup.sh || err || {
+    rm -f "$setupfile"
+    return $ERROR
+  }
+
+  docker exec "$1" bash /root/setup.sh || err
+}
+
+# ---------------------------------------------------------------------------
+set_up_worker_node_v1_18_2() {
+
+  # Use kubeadm to set up the master node
+  # Args:
+  #   arg1 - the container to set up.
+
+  local setupfile cahash="$2" token="$3" masterip="$4"
+
+  setupfile=$(mktemp --tmpdir=/var/tmp) || {
+    echo "ERROR: mktmp failed."
+    return $ERROR
+  }
+
+  cat <<EnD >"$setupfile"
+# Wait for the master API to become ready
+while true; do
+  curl -k https://$masterip:6443/
+  [[ \$? -eq 0 ]] && break
+  sleep 1
+done
+
+# Do the preflight tests (ignoring swap error)
+kubeadm join \
+  phase preflight \
+    --token $token \
+      --discovery-token-ca-cert-hash sha256:$cahash \
+        --ignore-preflight-errors Swap \
+          $masterip:6443
+
+# Set up the kubelet
+kubeadm join \
+  phase kubelet-start \
+    --token $token \
+      --discovery-token-ca-cert-hash sha256:$cahash \
+        $masterip:6443 &
+
+while true; do
+  [[ -e /var/lib/kubelet/config.yaml ]] && break
+    sleep 1
+  done
+
+# Edit the kubelet configuration file
+echo "failSwapOn: false" >>/var/lib/kubelet/config.yaml
+
+systemctl enable kubelet
+systemctl restart kubelet
+EnD
+
+  docker cp "$setupfile" "$1":/root/setup.sh || err || {
+    rm -f "$setupfile"
+    return $ERROR
+  }
+
+  docker exec "$1" bash /root/setup.sh || err
+}
+
+# ---------------------------------------------------------------------------
 
 # Calls main() if we're called from the command line
 if [ "$0" = "${BASH_SOURCE[0]}" ] || [ -z "${BASH_SOURCE[0]}" ]; then

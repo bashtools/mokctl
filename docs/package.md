@@ -43,7 +43,7 @@ To build our own cluster we don't want to type all of those commands again so in
 
 When the RPMs were installed with `yum`, the containernetwork-plugins rpm was automatically installed as a dependency for cri-o, which copied a whole set of CNI networking plugins into `/usr/libexec/cni`, so we didn't need to build them after all.
 
-The plugin directory is referenced by the file `/etc/crio/crio.conf` and it already has the correct location, `/usr/libexec/cni`. It's interesting to note that nothing else uses these CNI plugins, only the container runtime does, which in our case is cri-o. Kubernetes will set up docker to use CNI if docker is used instead of cri-o.
+The plugin directory is referenced by the file `/etc/crio/crio.conf` and it already has the correct location: `/usr/libexec/cni`, which differs to the widely known, `/opt/cni/bin/`. It's interesting to note that nothing else uses these CNI plugins, only the container runtime does, which in our case is cri-o. Kubernetes will set docker up to use CNI if docker is used instead of cri-o.
 
 This excellent blog post, [Understanding CNI (Container Networking Interface) Das Blinken Lichten](https://www.dasblinkenlichten.com/understanding-cni-container-networking-interface/), helped me to understand CNI better. It‘s also explained well in ‘Kubernetes in Action’, section 11.4 Interpod Networking.
 
@@ -793,7 +793,7 @@ fi
 
 ```
 
-The command line parser, starting in `parse_options()` above, implements a state machine, which will allow new functionality to be added in a scalable way. I thought I would put the work in right now to code a state machine just in case we need more commands later in. It's surprising how long scripts intended for limited use hang around so it's good to start off well, and indeed, kubernetes was initially a large set of shell scripts!
+The command line parser, starting in `parse_options()` above, implements a state machine, which will allow new functionality to be added in a scalable way. I thought I would put the work in right now to code a state machine just in case we need more commands later on. It's surprising how long scripts intended for limited use hang around so it's good to start off well, and indeed, kubernetes was initially a large set of shell scripts!
 
 The code makes sure that valid commands, their sub-commands and their options are supplied in the right order for the parent context.
 

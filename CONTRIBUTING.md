@@ -20,6 +20,7 @@ When `make test` is run it will:
    `-i 2` = indention using two spaces
 
 Get `shfmt` from https://github.com/mvdan/sh.
+
 I use the vim-shfmt plugin from https://github.com/z0mbix/vim-shfmt,
 with the following lines added to `~/.vimrc`:
 

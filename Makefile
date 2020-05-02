@@ -21,6 +21,7 @@ clean:
 test: clean mokctl.deploy
 	./tests/unit-tests.sh
 	shellcheck mokctl/mokctl
+	shfmt -s -i 2 -d mokctl/mokctl
 
 buildtest: clean mokctl.deploy
 	./tests/build-tests.sh

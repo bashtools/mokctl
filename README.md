@@ -82,7 +82,7 @@ sudo make uninstall
 sudo make purge
 ```
 
-Take note of the [Status](#status) above.
+Take note of the [Status](#status) above and the [Releases](https://github.com/mclarkson/my-own-kind/releases) page.
 
 ## Contributing
 

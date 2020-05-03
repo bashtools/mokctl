@@ -6,14 +6,14 @@
 # Don't change any globals
 
 # Constants
-declare -r LABELKEY="MokCluster"
-declare -r BASEIMAGENAME="mok-centos-7"
-declare -r OK=0
-declare -r ERROR=1
-#declare -r FALSE=0
-declare -r TRUE=1
-declare -r STOP=2
-declare -r SPINNER=('◐' '◓' '◑' '◒')
+readonly LABELKEY="MokCluster"
+readonly BASEIMAGENAME="mok-centos-7"
+readonly OK=0
+readonly ERROR=1
+readonly FALSE=0
+readonly TRUE=1
+readonly STOP=2
+readonly SPINNER=('◐' '◓' '◑' '◒')
 
 colgreen=$(tput setaf 2)
 colred=$(tput setaf 1)
@@ -320,13 +320,13 @@ create_master_nodes() {
   # Args:
   #   arg1 - number of master nodes to create
 
-  declare -i i=0 r
+  declare -i int=0 r
 
-  for i in $(seq 1 "$1"); do
+  for int in $(seq 1 "$1"); do
     run_with_progress \
-      "    Creating base container, '$CREATE_CLUSTER_NAME-master-$i'" \
+      "    Creating base container, '$CREATE_CLUSTER_NAME-master-$int'" \
       create_docker_container \
-      "$CREATE_CLUSTER_NAME-master-$i" \
+      "$CREATE_CLUSTER_NAME-master-$int" \
       "$LABELKEY=$CREATE_CLUSTER_NAME"
     r=$?
 
@@ -341,8 +341,8 @@ create_master_nodes() {
 
     [[ -z $CREATE_CLUSTER_SKIPMASTERSETUP ]] && {
       run_with_progress \
-        "    Setting up '$CREATE_CLUSTER_NAME-master-$i'" \
-        set_up_master_node "$CREATE_CLUSTER_NAME-master-$i"
+        "    Setting up '$CREATE_CLUSTER_NAME-master-$int'" \
+        set_up_master_node "$CREATE_CLUSTER_NAME-master-$int"
       r=$?
 
       [[ $r -ne 0 ]] && {
@@ -361,7 +361,7 @@ create_master_nodes() {
   mkdir -p ~/.mok/
 
   [[ -z $CREATE_CLUSTER_SKIPMASTERSETUP ]] && {
-    docker cp "$CREATE_CLUSTER_NAME-master-$i":/etc/kubernetes/admin.conf \
+    docker cp "$CREATE_CLUSTER_NAME-master-$int":/etc/kubernetes/admin.conf \
       ~/.mok/admin.conf
   }
 
@@ -409,7 +409,7 @@ create_worker_nodes() {
   #   arg1 - number of master nodes to create
 
   local cahash token t
-  declare -i i=0
+  declare -i int=0
 
   [[ -n $CREATE_CLUSTER_SKIPWORKERSETUP || -n \
   $CREATE_CLUSTER_SKIPMASTERSETUP ]] || {
@@ -423,11 +423,11 @@ create_worker_nodes() {
     eval "$t"
   }
 
-  for i in $(seq 1 "$1"); do
+  for int in $(seq 1 "$1"); do
     run_with_progress \
-      "    Creating base container, '$CREATE_CLUSTER_NAME-worker-$i'" \
+      "    Creating base container, '$CREATE_CLUSTER_NAME-worker-$int'" \
       create_docker_container \
-      "$CREATE_CLUSTER_NAME-worker-$i" \
+      "$CREATE_CLUSTER_NAME-worker-$int" \
       "$LABELKEY=$CREATE_CLUSTER_NAME"
     r=$?
 
@@ -443,8 +443,8 @@ create_worker_nodes() {
     [[ -n $CREATE_CLUSTER_SKIPWORKERSETUP || -n \
     $CREATE_CLUSTER_SKIPMASTERSETUP ]] || {
       run_with_progress \
-        "    Setting up '$CREATE_CLUSTER_NAME-worker-$i'" \
-        set_up_worker_node "$CREATE_CLUSTER_NAME-worker-$i" \
+        "    Setting up '$CREATE_CLUSTER_NAME-worker-$int'" \
+        set_up_worker_node "$CREATE_CLUSTER_NAME-worker-$int" \
         "$cahash" "$token" "$masterip"
       r=$?
 
@@ -798,7 +798,7 @@ run_with_progress() {
   #   arg1 - the text to display
   #   argN - remaining args are the program and its arguments
 
-  local displaytext=$1 retval i
+  local displaytext=$1 retval int
 
   RUNWITHPROGRESS_OUTPUT=$(mktemp --tmpdir=/var/tmp) || {
     echo "ERROR: mktmp failed."
@@ -818,8 +818,8 @@ run_with_progress() {
   # Start the spin animation
   echo -n "$displaytext"
   (while true; do
-    for i in {0..3}; do
-      echo -en "\r  ${SPINNER[i]} "
+    for int in {0..3}; do
+      echo -en "\r  ${SPINNER[int]} "
       sleep .1
     done
   done) &
@@ -893,125 +893,137 @@ usage() {
     ;;
   esac
 
-  echo
-  echo "Usage: mokctl [-h] <COMMAND> <SUBCOMMAND> [SUBCOMMAND_OPTIONS...]"
-  echo
-  echo "Global options:"
-  echo
-  echo "  --help"
-  echo "  -h     - This help text"
-  echo
-  echo "Where COMMAND can be one of:"
-  echo
-  echo "  create - Add item(s) to the system."
-  echo "  delete - Delete item(s) from the system."
-  echo "  build  - Build item(s) used by the system."
-  echo "  get    - Get details about items in the system."
-  echo
+  cat <<'EOF'
+
+Usage: mokctl [-h] <command> <subcommand> [subcommand_OPTIONS...]"
+ 
+Global options:"
+ 
+  --help"
+  -h     - This help text"
+ 
+Where command can be one of:"
+ 
+  create - Add item(s) to the system."
+  delete - Delete item(s) from the system."
+  build  - Build item(s) used by the system."
+  get    - Get details about items in the system."
+
+EOF
 
   help_usage
   delete_usage
   build_usage
   get_usage
 
-  echo "EXAMPLES"
-  echo
-  echo "Get a list of mok clusters"
-  echo
-  echo "  mokctl get clusters"
-  echo
-  echo "Build the image used for masters and workers:"
-  echo
-  echo "  mokctl build image"
-  echo
-  echo "Create a single node cluster:"
-  echo "Note that the master node will be made schedulable for pods."
-  echo
-  echo "  mokctl create cluster mycluster 1 0"
-  echo
-  echo "Create a single master and single node cluster:"
-  echo "Note that the master node will NOT be schedulable for pods."
-  echo
-  echo "  mokctl create cluster mycluster 1 1"
-  echo
-  echo "Delete a cluster:"
-  echo
-  echo "  mokctl delete cluster mycluster"
-  echo
+  cat <<'EOF'
+EXAMPLES"
+ 
+Get a list of mok clusters"
+ 
+  mokctl get clusters"
+ 
+Build the image used for masters and workers:"
+ 
+  mokctl build image"
+ 
+Create a single node cluster:"
+Note that the master node will be made schedulable for pods."
+ 
+  mokctl create cluster mycluster 1 0"
+ 
+Create a single master and single node cluster:"
+Note that the master node will NOT be schedulable for pods."
+ 
+  mokctl create cluster mycluster 1 1"
+ 
+Delete a cluster:"
+ 
+  mokctl delete cluster mycluster"
+
+EOF
 }
 
 # ---------------------------------------------------------------------------
 help_usage() {
 
-  echo "create SUBCOMMANDs are:"
-  echo
-  echo "  cluster - Create a local kubernetes cluster."
-  echo
-  echo "create cluster [flags] options:"
-  echo
-  echo " Format:"
-  echo "  create cluster NAME NUM_MASTERS NUM_WORKERS"
-  echo "  NAME        - The name of the cluster. This will be used as"
-  echo "                the prefix in the name for newly created"
-  echo "                docker containers."
-  echo "  NUM_MASTERS - The number of master containers."
-  echo "  NUM_WORKERS - The number of worker containers."
-  echo
-  echo " Flags:"
-  echo "  --skipmastersetup - Create the master container but don't set it"
-  echo "         up. Useful for manually installing kubernetes. Kubeadm, "
-  echo "         kubelet and kubectl will be installed at the requested "
-  echo "         version. With this option the worker will also be skipped."
-  echo "         See also '--k8sver' flag."
-  echo "  --skipworkersetup - The same as '--skipmastersetup', but skips"
-  echo "         setting up the worker only."
-  echo "  --k8sver VERSION - Unimplemented."
-  echo
+  cat <<'EOF'
+create subcommands are:"
+ 
+  cluster - Create a local kubernetes cluster."
+ 
+create cluster [flags] options:"
+ 
+ Format:"
+  create cluster NAME NUM_MASTERS NUM_WORKERS"
+  NAME        - The name of the cluster. This will be used as"
+                the prefix in the name for newly created"
+                docker containers."
+  NUM_MASTERS - The number of master containers."
+  NUM_WORKERS - The number of worker containers."
+ 
+ Flags:"
+  --skipmastersetup - Create the master container but don't set it"
+         up. Useful for manually installing kubernetes. Kubeadm, "
+         kubelet and kubectl will be installed at the requested "
+         version. With this option the worker will also be skipped."
+         See also '--k8sver' flag."
+  --skipworkersetup - The same as '--skipmastersetup', but skips"
+         setting up the worker only."
+  --k8sver VERSION - Unimplemented."
+
+EOF
 }
 
 # ---------------------------------------------------------------------------
 delete_usage() {
 
-  echo "delete SUBCOMMANDs are:"
-  echo
-  echo "  cluster - Delete a local kubernetes cluster."
-  echo
-  echo "delete cluster options:"
-  echo
-  echo " Format:"
-  echo "  delete cluster NAME"
-  echo "  NAME        - The name of the cluster to delete"
-  echo
+  cat <<'EOF'
+delete subcommands are:"
+ 
+  cluster - Delete a local kubernetes cluster."
+ 
+delete cluster options:"
+ 
+ Format:"
+  delete cluster NAME"
+  NAME        - The name of the cluster to delete"
+
+EOF
 }
 
 # ---------------------------------------------------------------------------
 build_usage() {
 
-  echo "build SUBCOMMANDs are:"
-  echo
-  echo "  image - Creates the $BASEIMAGENAME base image."
-  echo
-  echo "build image options:"
-  echo
-  echo " Format:"
-  echo "  build image"
-  echo
+  cat <<'EOF'
+build subcommands are:"
+ 
+  image - Creates the ${baseimagename} base image."
+ 
+build image options:"
+ 
+ Format:"
+  build image"
+
+EOF
 }
 
 # ---------------------------------------------------------------------------
 get_usage() {
 
-  echo "get SUBCOMMANDs are:"
-  echo
-  echo "  cluster(s) - list all mokctl managed clusters."
-  echo
-  echo "get cluster(s) options:"
-  echo
-  echo " Format:"
-  echo "  get cluster(s) [NAME]"
-  echo "  NAME        - (optional) The name of the cluster to get"
-  echo "                details about."
-  echo
+  cat <<'EOF'
+get subcommands are:"
+ 
+  cluster(s) - list all mokctl managed clusters."
+ 
+get cluster(s) options:"
+ 
+ Format:"
+  get cluster(s) [NAME]"
+  NAME        - (optional) The name of the cluster to get"
+                details about."
+
+EOF
 }
 
 # ---------------------------------------------------------------------------
@@ -1019,7 +1031,7 @@ cleanup() {
 
   # Called when the script exits.
 
-  local i
+  local int
 
   [[ -e $DOCKERBUILDTMPDIR ]] &&
     [[ $DOCKERBUILDTMPDIR == "/var/tmp/"* ]] && {
@@ -1031,7 +1043,7 @@ cleanup() {
 
   # Kill the spinny, and anything else, if they're running
   [[ -n $(jobs -p) ]] && echo -e "$colred\r  ✕$colreset"
-  for i in $(jobs -p); do kill "$i"; done
+  for int in $(jobs -p); do kill "$int"; done
 
   return $OK
 }
@@ -1381,13 +1393,13 @@ check_valid_global_opts() {
   # Args:
   #   arg1 - The option to check.
 
-  local i validopts=(
+  local int validopts=(
     "--help"
     "-h"
   )
 
-  for i in "${validopts[@]}"; do
-    [[ $1 == "$i" ]] && return $OK
+  for int in "${validopts[@]}"; do
+    [[ $1 == "$int" ]] && return $OK
   done
 
   usage
@@ -1401,7 +1413,7 @@ check_valid_create_cluster_opts() {
   # Args:
   #   arg1 - The option to check.
 
-  local i validopts=(
+  local opt validopts=(
     "--help"
     "-h"
     "--skipmastersetup"
@@ -1409,8 +1421,8 @@ check_valid_create_cluster_opts() {
     "--k8sver"
   )
 
-  for i in "${validopts[@]}"; do
-    [[ $1 == "$i" ]] && return $OK
+  for opt in "${validopts[@]}"; do
+    [[ $1 == "$opt" ]] && return $OK
   done
 
   usage
@@ -1424,13 +1436,13 @@ check_valid_delete_cluster_opts() {
   # Args:
   #   arg1 - The option to check.
 
-  local i validopts=(
+  local opt validopts=(
     "--help"
     "-h"
   )
 
-  for i in "${validopts[@]}"; do
-    [[ $1 == "$i" ]] && return $OK
+  for opt in "${validopts[@]}"; do
+    [[ $1 == "$opt" ]] && return $OK
   done
 
   usage
@@ -1444,13 +1456,13 @@ check_valid_build_image_opts() {
   # Args:
   #   arg1 - The option to check.
 
-  local i validopts=(
+  local opt validopts=(
     "--help"
     "-h"
   )
 
-  for i in "${validopts[@]}"; do
-    [[ $1 == "$i" ]] && return $OK
+  for opt in "${validopts[@]}"; do
+    [[ $1 == "$opt" ]] && return $OK
   done
 
   usage
@@ -1464,13 +1476,13 @@ check_valid_get_cluster_opts() {
   # Args:
   #   arg1 - The option to check.
 
-  local i validopts=(
+  local opt validopts=(
     "--help"
     "-h"
   )
 
-  for i in "${validopts[@]}"; do
-    [[ $1 == "$i" ]] && return $OK
+  for opt in "${validopts[@]}"; do
+    [[ $1 == "$opt" ]] && return $OK
   done
 
   usage

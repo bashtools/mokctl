@@ -11,8 +11,8 @@
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
-testMakeCreatesMokctlDeploy(){
-# ---------------------------------------------------------------------------
+testMakeCreatesMokctlDeploy() {
+  # ---------------------------------------------------------------------------
 
   make &>/dev/null
   assertTrue \
@@ -25,9 +25,9 @@ testMakeCreatesMokctlDeploy(){
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
-testBuildDirectoryCreation(){
-# ---------------------------------------------------------------------------
-# Check that all the files are created in the docker build dir
+testBuildDirectoryCreation() {
+  # ---------------------------------------------------------------------------
+  # Check that all the files are created in the docker build dir
 
   local dir
   create_docker_build_dir >/dev/null
@@ -43,9 +43,9 @@ testBuildDirectoryCreation(){
 }
 
 # ---------------------------------------------------------------------------
-testBuildDirectoryDeletion(){
-# ---------------------------------------------------------------------------
-# Check that the docker build dir is deleted
+testBuildDirectoryDeletion() {
+  # ---------------------------------------------------------------------------
+  # Check that the docker build dir is deleted
 
   local dir
   create_docker_build_dir >/dev/null
@@ -55,8 +55,8 @@ testBuildDirectoryDeletion(){
 }
 
 # ---------------------------------------------------------------------------
-testBuildwithNoSubcommand(){
-# ---------------------------------------------------------------------------
+testBuildwithNoSubcommand() {
+  # ---------------------------------------------------------------------------
 
   main build >/dev/null
   assertEquals \
@@ -65,8 +65,8 @@ testBuildwithNoSubcommand(){
 }
 
 # ---------------------------------------------------------------------------
-testBuildwithNoSubcommandOutput(){
-# ---------------------------------------------------------------------------
+testBuildwithNoSubcommandOutput() {
+  # ---------------------------------------------------------------------------
 
   grabMainOutput build
 
@@ -76,9 +76,9 @@ testBuildwithNoSubcommandOutput(){
 }
 
 # ---------------------------------------------------------------------------
-testBuildwithOption(){
-# ---------------------------------------------------------------------------
-# There are no options for 'build image'
+testBuildwithOption() {
+  # ---------------------------------------------------------------------------
+  # There are no options for 'build image'
 
   main build image 1 >/dev/null
   assertEquals \
@@ -87,9 +87,9 @@ testBuildwithOption(){
 }
 
 # ---------------------------------------------------------------------------
-testBuildwithOptionOutput(){
-# ---------------------------------------------------------------------------
-# There are no options for 'build image'
+testBuildwithOptionOutput() {
+  # ---------------------------------------------------------------------------
+  # There are no options for 'build image'
 
   grabMainOutput build image 1
 
@@ -100,11 +100,11 @@ testBuildwithOptionOutput(){
 }
 
 # ---------------------------------------------------------------------------
-testBuildWouldBeStarted(){
-# ---------------------------------------------------------------------------
-# Override do_build_image_mutate to return an arbitrary number
-# then check for that number to make sure it would have been called.
-# build_container_image is tested separately so no need to test here.
+testBuildWouldBeStarted() {
+  # ---------------------------------------------------------------------------
+  # Override do_build_image_mutate to return an arbitrary number
+  # then check for that number to make sure it would have been called.
+  # build_container_image is tested separately so no need to test here.
 
   build_container_image() { return 59; }
 
@@ -120,7 +120,7 @@ testBuildWouldBeStarted(){
 
 # ---------------------------------------------------------------------------
 testRunWithNoArgsShouldFail() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   main >/dev/null
   assertTrue \
@@ -130,7 +130,7 @@ testRunWithNoArgsShouldFail() {
 
 # ---------------------------------------------------------------------------
 testRunWithNoArgsShouldFailOutput() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
   do_delete_cluster_mutate() { :; }
@@ -144,7 +144,7 @@ testRunWithNoArgsShouldFailOutput() {
 
 # ---------------------------------------------------------------------------
 testInvalidFlagGlobalFlag() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -160,7 +160,7 @@ testInvalidFlagGlobalFlag() {
 
 # ---------------------------------------------------------------------------
 testCreateClusterInvalidFlag() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -173,7 +173,7 @@ testCreateClusterInvalidFlag() {
 
 # ---------------------------------------------------------------------------
 testCreateClusterValidFlag2() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   local r
 
@@ -189,7 +189,7 @@ testCreateClusterValidFlag2() {
 
 # ---------------------------------------------------------------------------
 testCreateClusterInvalidLocalAsGlobalFlag() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -201,7 +201,7 @@ testCreateClusterInvalidLocalAsGlobalFlag() {
 
 # ---------------------------------------------------------------------------
 testRunWithOneArgShouldFail() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -213,7 +213,7 @@ testRunWithOneArgShouldFail() {
 
 # ---------------------------------------------------------------------------
 testRunWithOneArgShouldFailOutput() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -226,7 +226,7 @@ testRunWithOneArgShouldFailOutput() {
 
 # ---------------------------------------------------------------------------
 testNotEnoughOptionsToCreateCluster() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -238,7 +238,7 @@ testNotEnoughOptionsToCreateCluster() {
 
 # ---------------------------------------------------------------------------
 testNotEnoughOptionsToCreateClusterOutput() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -249,10 +249,9 @@ testNotEnoughOptionsToCreateClusterOutput() {
     "Please provide the Cluster NAME to create." "${LINES[0]}"
 }
 
-
 # ---------------------------------------------------------------------------
 testNotEnoughOptionsToCreateClusterName() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   local r
 
@@ -268,7 +267,7 @@ testNotEnoughOptionsToCreateClusterName() {
 
 # ---------------------------------------------------------------------------
 testNotEnoughOptionsToCreateClusterNameOutput() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -282,7 +281,7 @@ testNotEnoughOptionsToCreateClusterNameOutput() {
 
 # ---------------------------------------------------------------------------
 testNotEnoughOptionsToCreateClusterName1() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -296,7 +295,7 @@ testNotEnoughOptionsToCreateClusterName1() {
 
 # ---------------------------------------------------------------------------
 testNotEnoughOptionsToCreateClusterName1Output() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -310,8 +309,8 @@ testNotEnoughOptionsToCreateClusterName1Output() {
 
 # ---------------------------------------------------------------------------
 testZeroMastersShouldFail() {
-# ---------------------------------------------------------------------------
-# Can't create a cluster with 0 masters
+  # ---------------------------------------------------------------------------
+  # Can't create a cluster with 0 masters
 
   do_create_cluster_mutate() { :; }
 
@@ -323,7 +322,7 @@ testZeroMastersShouldFail() {
 
 # ---------------------------------------------------------------------------
 testZeroMastersShouldFailOutput() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -337,8 +336,8 @@ testZeroMastersShouldFailOutput() {
 
 # ---------------------------------------------------------------------------
 testZeroMastersShouldFail2() {
-# ---------------------------------------------------------------------------
-# Can't create a cluster with 0 masters and >0 workers
+  # ---------------------------------------------------------------------------
+  # Can't create a cluster with 0 masters and >0 workers
 
   do_create_cluster_mutate() { :; }
 
@@ -350,7 +349,7 @@ testZeroMastersShouldFail2() {
 
 # ---------------------------------------------------------------------------
 testZeroMastersShouldFail2Output() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -364,7 +363,7 @@ testZeroMastersShouldFail2Output() {
 
 # ---------------------------------------------------------------------------
 testValidCreateClusterCommand() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   # Check that all the create cluster vars are set
 
@@ -380,7 +379,7 @@ testValidCreateClusterCommand() {
 
 # ---------------------------------------------------------------------------
 testValidCreateClusterCommand2() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   # Check that all the create cluster vars are set
 
@@ -396,7 +395,7 @@ testValidCreateClusterCommand2() {
 
 # ---------------------------------------------------------------------------
 testValidCreateClusterCommand3() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   # Check that all the create cluster vars are set
 
@@ -412,8 +411,8 @@ testValidCreateClusterCommand3() {
 
 # ---------------------------------------------------------------------------
 testCreateClusterExtraOptions() {
-# ---------------------------------------------------------------------------
-# Can't create a cluster with 0 masters and >0 workers
+  # ---------------------------------------------------------------------------
+  # Can't create a cluster with 0 masters and >0 workers
 
   do_create_cluster_mutate() { :; }
 
@@ -425,7 +424,7 @@ testCreateClusterExtraOptions() {
 
 # ---------------------------------------------------------------------------
 testCreateClusterExtraOptionsOutput() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -438,12 +437,15 @@ testCreateClusterExtraOptionsOutput() {
 }
 
 # ---------------------------------------------------------------------------
-testCreateClusterMutateReturnCode(){
-# ---------------------------------------------------------------------------
-# Override get_cluster_size to return an arbitrary number which would
-# be the 'docker ps' return code
+testCreateClusterMutateReturnCode() {
+  # ---------------------------------------------------------------------------
+  # Override get_cluster_size to return an arbitrary number which would
+  # be the 'docker ps' return code
 
-  get_cluster_size() { echo "error"; return 22; }
+  get_cluster_size() {
+    echo "error"
+    return 22
+  }
 
   do_create_cluster_mutate >/dev/null
   assertEquals \
@@ -452,12 +454,15 @@ testCreateClusterMutateReturnCode(){
 }
 
 # ---------------------------------------------------------------------------
-testGetClusterSizeReturnSize(){
-# ---------------------------------------------------------------------------
-# Override get_cluster_size to return an arbitrary number which would
-# be the 'docker ps' return code
+testGetClusterSizeReturnSize() {
+  # ---------------------------------------------------------------------------
+  # Override get_cluster_size to return an arbitrary number which would
+  # be the 'docker ps' return code
 
-  docker() { echo -e "123\n234\n345\n456"; return 0; }
+  docker() {
+    echo -e "123\n234\n345\n456"
+    return 0
+  }
 
   numnodes=$(get_cluster_size)
   assertEquals \
@@ -466,14 +471,17 @@ testGetClusterSizeReturnSize(){
 }
 
 # ---------------------------------------------------------------------------
-testCreateClusterMutateFailsOnClusterExistence(){
-# ---------------------------------------------------------------------------
-# Override get_cluster_size to return an arbitrary number which would
-# be the 'docker ps' return code
+testCreateClusterMutateFailsOnClusterExistence() {
+  # ---------------------------------------------------------------------------
+  # Override get_cluster_size to return an arbitrary number which would
+  # be the 'docker ps' return code
 
   create_master_nodes() { :; }
   create_worker_nodes() { :; }
-  get_cluster_size() { echo "2"; return 0; }
+  get_cluster_size() {
+    echo "2"
+    return 0
+  }
 
   do_create_cluster_mutate >/dev/null
   assertEquals \
@@ -482,15 +490,18 @@ testCreateClusterMutateFailsOnClusterExistence(){
 }
 
 # ---------------------------------------------------------------------------
-testCreateClusterMasterNodesWithSuccess(){
-# ---------------------------------------------------------------------------
-# Override get_cluster_size to return an arbitrary number which would
-# be the 'docker ps' return code
+testCreateClusterMasterNodesWithSuccess() {
+  # ---------------------------------------------------------------------------
+  # Override get_cluster_size to return an arbitrary number which would
+  # be the 'docker ps' return code
 
   local r
 
   do_create_cluster_mutate() { return $OK; }
-  get_cluster_size() { echo "0"; return 0; }
+  get_cluster_size() {
+    echo "0"
+    return 0
+  }
 
   main create cluster myclust 1 0 >/dev/null
   r=$?
@@ -501,18 +512,24 @@ testCreateClusterMasterNodesWithSuccess(){
 }
 
 # ---------------------------------------------------------------------------
-testCreateClusterMasterNodesWithFailure(){
-# ---------------------------------------------------------------------------
-# Override get_cluster_size to return an arbitrary number which would
-# be the 'docker ps' return code
+testCreateClusterMasterNodesWithFailure() {
+  # ---------------------------------------------------------------------------
+  # Override get_cluster_size to return an arbitrary number which would
+  # be the 'docker ps' return code
 
   local r
 
-  docker() { sleep 1; return 0; }
+  docker() {
+    sleep 1
+    return 0
+  }
 
   # echo "1" below means that a node exists already which means
   # the cluster can't be created
-  get_cluster_size() { echo "1"; return 0; }
+  get_cluster_size() {
+    echo "1"
+    return 0
+  }
 
   main create cluster myclust 1 0 >/dev/null
   r=$?
@@ -523,16 +540,22 @@ testCreateClusterMasterNodesWithFailure(){
 }
 
 # ---------------------------------------------------------------------------
-testCreateClusterMasterNodesWithFailure2(){
-# ---------------------------------------------------------------------------
-# Override get_cluster_size to return an arbitrary number which would
-# be the 'docker ps' return code
+testCreateClusterMasterNodesWithFailure2() {
+  # ---------------------------------------------------------------------------
+  # Override get_cluster_size to return an arbitrary number which would
+  # be the 'docker ps' return code
 
   local r
 
   # return 1 below means that docker failed
-  docker() { sleep 1; return 1; }
-  get_cluster_size() { echo "0"; return 0; }
+  docker() {
+    sleep 1
+    return 1
+  }
+  get_cluster_size() {
+    echo "0"
+    return 0
+  }
 
   main create cluster myclust 1 0 >/dev/null
   r=$?
@@ -548,7 +571,7 @@ testCreateClusterMasterNodesWithFailure2(){
 
 # ---------------------------------------------------------------------------
 testDeleteRunWithOneArgShouldFail() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   main delete >/dev/null
   assertTrue \
@@ -558,7 +581,7 @@ testDeleteRunWithOneArgShouldFail() {
 
 # ---------------------------------------------------------------------------
 testDeleteRunWithOneArgShouldFailOutput() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   grabMainOutput delete
 
@@ -569,7 +592,7 @@ testDeleteRunWithOneArgShouldFailOutput() {
 
 # ---------------------------------------------------------------------------
 testNotEnoughOptionsToDeleteCluster() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   main delete cluster >/dev/null
   assertTrue \
@@ -579,7 +602,7 @@ testNotEnoughOptionsToDeleteCluster() {
 
 # ---------------------------------------------------------------------------
 testNotEnoughOptionsToDeleteClusterOutput() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   grabMainOutput delete cluster
 
@@ -590,7 +613,7 @@ testNotEnoughOptionsToDeleteClusterOutput() {
 
 # ---------------------------------------------------------------------------
 testNotEnoughOptionsToDeleteClusterName() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   main delete mycluster mycluster >/dev/null
   assertTrue \
@@ -600,7 +623,7 @@ testNotEnoughOptionsToDeleteClusterName() {
 
 # ---------------------------------------------------------------------------
 testNotEnoughOptionsToDeleteClusterNameOutput() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   grabMainOutput delete mycluster mycluster
 
@@ -612,11 +635,11 @@ testNotEnoughOptionsToDeleteClusterNameOutput() {
 
 # ---------------------------------------------------------------------------
 testValidDeleteClusterCommand() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   # Check that all the create cluster vars are set
 
-  do_delete_cluster_mutate(){ :; }
+  do_delete_cluster_mutate() { :; }
 
   parse_options delete cluster mycluster
   assertEquals \
@@ -626,12 +649,15 @@ testValidDeleteClusterCommand() {
 
 # ---------------------------------------------------------------------------
 testValidDeleteClusterCommandWithNonexistentName() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   # Check that all the create cluster vars are set
 
-  delete_cluster_nodes(){ :; }
-  get_cluster_size() { echo -n ""; return $OK; }
+  delete_cluster_nodes() { :; }
+  get_cluster_size() {
+    echo -n ""
+    return $OK
+  }
 
   grabMainOutput delete cluster mycluster
 
@@ -647,7 +673,7 @@ testValidDeleteClusterCommandWithNonexistentName() {
 
 # ---------------------------------------------------------------------------
 testGetRunWithOneArgShouldFail() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   main get >/dev/null
   assertTrue \
@@ -657,7 +683,7 @@ testGetRunWithOneArgShouldFail() {
 
 # ---------------------------------------------------------------------------
 testGetRunWithOneArgShouldFailOutput() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   grabMainOutput get
 
@@ -667,9 +693,9 @@ testGetRunWithOneArgShouldFailOutput() {
 }
 
 # ---------------------------------------------------------------------------
-testGetWith2Options(){
-# ---------------------------------------------------------------------------
-# There are no options for 'get clusters'
+testGetWith2Options() {
+  # ---------------------------------------------------------------------------
+  # There are no options for 'get clusters'
 
   main get clusters mycluster 1 >/dev/null
   assertEquals \
@@ -678,9 +704,9 @@ testGetWith2Options(){
 }
 
 # ---------------------------------------------------------------------------
-testGetWith2OptionsOutput(){
-# ---------------------------------------------------------------------------
-# There are no options for 'get cluster'
+testGetWith2OptionsOutput() {
+  # ---------------------------------------------------------------------------
+  # There are no options for 'get cluster'
 
   grabMainOutput get cluster mycluster 1
 
@@ -691,8 +717,8 @@ testGetWith2OptionsOutput(){
 }
 
 # ---------------------------------------------------------------------------
-testGetWith2OptionOutput2(){
-# ---------------------------------------------------------------------------
+testGetWith2OptionOutput2() {
+  # ---------------------------------------------------------------------------
 
   grabMainOutput get clusters mycluster 1
 
@@ -703,10 +729,10 @@ testGetWith2OptionOutput2(){
 }
 
 # ---------------------------------------------------------------------------
-testGetClustersOutputsClusterNames(){
-# ---------------------------------------------------------------------------
-# There are no options for 'get clusters'. Checks that 'get clusters' works
-# as well as 'get cluster' which was tried above.
+testGetClustersOutputsClusterNames() {
+  # ---------------------------------------------------------------------------
+  # There are no options for 'get clusters'. Checks that 'get clusters' works
+  # as well as 'get cluster' which was tried above.
 
   get_mok_cluster_docker_ids() { echo "5c844b362d2a"; }
   get_info_about_container_using_docker() {
@@ -721,10 +747,13 @@ testGetClustersOutputsClusterNames(){
 }
 
 # ---------------------------------------------------------------------------
-testGetClustersReturnsOKForNamedCluster(){
-# ---------------------------------------------------------------------------
+testGetClustersReturnsOKForNamedCluster() {
+  # ---------------------------------------------------------------------------
 
-  get_mok_cluster_docker_ids() { echo "123456"; return $OK; }
+  get_mok_cluster_docker_ids() {
+    echo "123456"
+    return $OK
+  }
   get_info_about_container_using_docker() {
     cat tests/testfiles/docker_inspect_container.txt
   }
@@ -738,8 +767,8 @@ testGetClustersReturnsOKForNamedCluster(){
 }
 
 # ---------------------------------------------------------------------------
-testGetClustersOutputsNothing(){
-# ---------------------------------------------------------------------------
+testGetClustersOutputsNothing() {
+  # ---------------------------------------------------------------------------
 
   get_mok_cluster_docker_ids() { return $OK; }
   get_info_about_container_using_docker() {
@@ -754,8 +783,8 @@ testGetClustersOutputsNothing(){
 }
 
 # ---------------------------------------------------------------------------
-testGetClustersReturnsOKForZeroClusters(){
-# ---------------------------------------------------------------------------
+testGetClustersReturnsOKForZeroClusters() {
+  # ---------------------------------------------------------------------------
 
   local r
 
@@ -773,7 +802,7 @@ testGetClustersReturnsOKForZeroClusters(){
 
 # ---------------------------------------------------------------------------
 testVerifyGlobalOptionValid() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -787,7 +816,7 @@ testVerifyGlobalOptionValid() {
 
 # ---------------------------------------------------------------------------
 testVerifyGlobalOptionValid1() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -801,7 +830,7 @@ testVerifyGlobalOptionValid1() {
 
 # ---------------------------------------------------------------------------
 testVerifyGlobalOptionValid2() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -815,7 +844,7 @@ testVerifyGlobalOptionValid2() {
 
 # ---------------------------------------------------------------------------
 testVerifyGlobalOptionValid3() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -829,7 +858,7 @@ testVerifyGlobalOptionValid3() {
 
 # ---------------------------------------------------------------------------
 testVerifyGlobalOptionValid4() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -843,7 +872,7 @@ testVerifyGlobalOptionValid4() {
 
 # ---------------------------------------------------------------------------
 testVerifyCreateClusterOptionValid1() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -857,7 +886,7 @@ testVerifyCreateClusterOptionValid1() {
 
 # ---------------------------------------------------------------------------
 testVerifyCreateClusterOptionValid2() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -871,7 +900,7 @@ testVerifyCreateClusterOptionValid2() {
 
 # ---------------------------------------------------------------------------
 testVerifyCreateClusterOptionValid3() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -885,7 +914,7 @@ testVerifyCreateClusterOptionValid3() {
 
 # ---------------------------------------------------------------------------
 testVerifyCreateClusterOptionValid4() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -899,7 +928,7 @@ testVerifyCreateClusterOptionValid4() {
 
 # ---------------------------------------------------------------------------
 testVerifyCreateClusterOptionValid5() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -913,7 +942,7 @@ testVerifyCreateClusterOptionValid5() {
 
 # ---------------------------------------------------------------------------
 testVerifyCreateClusterOptionValid6() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -927,7 +956,7 @@ testVerifyCreateClusterOptionValid6() {
 
 # ---------------------------------------------------------------------------
 testVerifyCreateClusterOptionValid7() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -941,7 +970,7 @@ testVerifyCreateClusterOptionValid7() {
 
 # ---------------------------------------------------------------------------
 testVerifyCreateClusterOptionValid8() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   do_create_cluster_mutate() { :; }
 
@@ -959,17 +988,17 @@ testVerifyCreateClusterOptionValid8() {
 
 # ---------------------------------------------------------------------------
 oneTimeSetUp() {
-# ---------------------------------------------------------------------------
-# 'sed' is used to remove 'declare -r' - readonly variables.
-#   Readonly variables cannot be deleted without using 'gdb'!
+  # ---------------------------------------------------------------------------
+  # 'sed' is used to remove 'readonly' variables.
+  #   Readonly variables cannot be deleted without using 'gdb'!
 
-  sed 's/^ *declare -r \(.*\)/\1/' mokctl.deploy >mokctl.deploy.noconst
+  sed 's/^ *readonly \(.*\)/\1/' mokctl.deploy >mokctl.deploy.noconst
 }
 
 # ---------------------------------------------------------------------------
 setUp() {
-# ---------------------------------------------------------------------------
-# source mokctl.deploy and disable output of usage().
+  # ---------------------------------------------------------------------------
+  # source mokctl.deploy and disable output of usage().
 
   . ./mokctl.deploy.noconst
   set_globals
@@ -977,23 +1006,23 @@ setUp() {
 }
 
 # ---------------------------------------------------------------------------
-tearDown(){
-# ---------------------------------------------------------------------------
+tearDown() {
+  # ---------------------------------------------------------------------------
   cleanup
 }
 
 # ---------------------------------------------------------------------------
 oneTimeTearDown() {
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
   rm -rf /var/tmp/mokctl-unit-tests.*
 }
 
 # ---------------------------------------------------------------------------
 grabMainOutput() {
-# ---------------------------------------------------------------------------
-# Helper function. Sets LINES array to script output.
+  # ---------------------------------------------------------------------------
+  # Helper function. Sets LINES array to script output.
 
-  local tmpname=`mktemp --tmpdir=/var/tmp mokctl-unit-tests.XXXXXXXX`
+  local tmpname=$(mktemp --tmpdir=/var/tmp mokctl-unit-tests.XXXXXXXX)
   main "$@" &>$tmpname
   readarray -t LINES <$tmpname
 }

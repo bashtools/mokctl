@@ -17,9 +17,17 @@ Send a Pull Request to add to this list.
 
 ## Status
 
-In progress. `mokctl` is in a working state on Fedora 31.
+**`mokctl`**
 
-Whether it will work on Mac/Windows is unkown.
+| OS        | Termnal          | Status |
+| --------- | ---------------- | ------ |
+| Fedora 31 | Gnome Terminal   | Works  |
+| Mac OS    | Default terminal | ?      |
+| Windows   | Cygwin           | ?      |
+
+**Documentation**
+
+In progress.
 
 ## Let's get started
 

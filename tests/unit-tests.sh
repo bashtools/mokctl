@@ -95,7 +95,7 @@ testBuildwithOptionOutput() {
 
   assertEquals \
     "'mokctl build image 1' should fail with correct output" \
-    "ERROR No more options expected, '1' is unexpected for 'build image'" \
+    'ERROR No more options expected, "1" is unexpected for "build image"' \
     "${LINES[0]}"
 }
 
@@ -110,7 +110,7 @@ testBuildWouldBeStarted() {
 
   main build image >/dev/null
   assertEquals \
-    "'mokctl build image' should call do_build_image_mutate" \
+    '"mokctl build image" should call do_build_image_mutate' \
     "59" "$?"
 }
 
@@ -151,7 +151,8 @@ testInvalidFlagGlobalFlag() {
   grabMainOutput --asdf >/dev/null
   assertEquals \
     "'mokctl --asdf' should fail" \
-    "Invalid option: '--asdf'" "${LINES[0]}"
+    'Invalid option: "--asdf"' \
+    "${LINES[0]}"
 }
 
 # ===========================================================================
@@ -168,7 +169,8 @@ testCreateClusterInvalidFlag() {
 
   assertEquals \
     "'mokctl create cluster --fdsa' should fail" \
-    "Invalid option: '--fdsa'" "${LINES[0]}"
+    'Invalid option: "--fdsa"' \
+    "${LINES[0]}"
 }
 
 # ---------------------------------------------------------------------------
@@ -196,7 +198,8 @@ testCreateClusterInvalidLocalAsGlobalFlag() {
   grabMainOutput --skipmastersetup create cluster 1 0 >/dev/null
   assertEquals \
     "'mokctl --asdf' should fail" \
-    "ERROR: '--skipmastersetup' is not a valid global option." "${LINES[0]}"
+    'ERROR: "--skipmastersetup" is not a valid global option.' \
+    "${LINES[0]}"
 }
 
 # ---------------------------------------------------------------------------
@@ -432,7 +435,7 @@ testCreateClusterExtraOptionsOutput() {
 
   assertEquals \
     "'create cluster mycluster 1 1 2' should fail with correct output" \
-    "ERROR No more options expected, '2' is unexpected for 'create cluster'" \
+    'ERROR No more options expected, "2" is unexpected for "create cluster"' \
     "${LINES[0]}"
 }
 
@@ -460,7 +463,7 @@ testGetClusterSizeReturnSize() {
   # be the 'docker ps' return code
 
   docker() {
-    echo -e "123\n234\n345\n456"
+    echo -e "123\n234\n345\n456\n"
     return 0
   }
 
@@ -629,7 +632,7 @@ testNotEnoughOptionsToDeleteClusterNameOutput() {
 
   assertEquals \
     "'delete cluster mycluster' should fail with correct output" \
-    "Invalid SUBCOMMAND for delete, 'mycluster'." \
+    'Invalid SUBCOMMAND for delete, "mycluster".' \
     "${LINES[0]}"
 }
 
@@ -663,7 +666,7 @@ testValidDeleteClusterCommandWithNonexistentName() {
 
   assertEquals \
     "Valid command: 'mokctl delete cluster mycluster'" \
-    "ERROR: No cluster exists with name, 'mycluster'. Aborting." \
+    'ERROR: No cluster exists with name, "mycluster". Aborting.' \
     "${LINES[1]}"
 }
 
@@ -712,7 +715,7 @@ testGetWith2OptionsOutput() {
 
   assertEquals \
     "'mokctl get cluster mycluster 1' should fail with correct output" \
-    "ERROR No more options expected, '1' is unexpected for 'get cluster'" \
+    'ERROR No more options expected, "1" is unexpected for "get cluster"' \
     "${LINES[0]}"
 }
 
@@ -724,7 +727,7 @@ testGetWith2OptionOutput2() {
 
   assertEquals \
     "'mokctl get clusters mycluster 1' should fail with correct output" \
-    "ERROR No more options expected, '1' is unexpected for 'get cluster'" \
+    'ERROR No more options expected, "1" is unexpected for "get cluster"' \
     "${LINES[0]}"
 }
 

@@ -209,9 +209,9 @@ For, MOK this is run in `set_up_master_nodes` in `mokctl`. Changing and retrying
 
 #### Summary
 
-1. Trying systemd earlier on the worker, but seemed not to so I changed it back.
+1. Trying systemd earlier on the worker, but this time it didn't so I changed it back.
    
-   Reading [cgroups(7) - Linux manual page](http://man7.org/linux/man-pages/man7/cgroups.7.html) and the fix_cgroup function comments in [entrypoint](/mok-centos-7/entrypoint).
+   I'm going to read the [cgroups(7) - Linux manual page](http://man7.org/linux/man-pages/man7/cgroups.7.html) again and the ‘fix_cgroup’ function comments in Kind's [entrypoint](/mok-centos-7/entrypoint) file.
 
 2. The incorrect Flannel version was installed.
 
@@ -230,6 +230,8 @@ The CPU usage still seems quite high and I'm not sure if we will get 3 masters, 
 kind 4-node cluster uses around 20% CPU
 
 mok 4-node cluster uses around 50% CPU
+
+Not good. It still needs fixing...
 
 ## Finding the root cause
 
@@ -259,9 +261,9 @@ It mostly does.
 
 After reading [cgroups(7) - Linux manual page](http://man7.org/linux/man-pages/man7/cgroups.7.html) and the fix_cgroup function comments in [entrypoint](/mok-centos-7/entrypoint), and an earlier observation that `/sys/fs/cgroups` in our container is just like the host's `/sys/fs/cgroup`, I checked Kind and it has much less in it's cgroup filesystem.
 
-In the comment the Kind authors say that Docker remaps the cgroup hierarchy which confuses kubelet and cri-o due to `/proc/$PID/cgroup` not matching `/sys/fs/cgroup`. The source of this information is actually on [this systemd documentation page](https://systemd.io/CONTAINER_INTERFACE/) - see point 6.
+In the comment the Kind authors say that Docker remaps the cgroup hierarchy which confuses kubelet and cri-o due to `/proc/$PID/cgroup` not matching `/sys/fs/cgroup`. The source of this information is on [this systemd documentation page](https://systemd.io/CONTAINER_INTERFACE/) - see point 6.
 
-The Kind fix does not remap any cgroups because in our case Docker does not remap and cgroups either. So, I added the following function to the `entrypoint` file:
+The Kind fix does not remap any cgroups because in our case Docker does not remap the cgroups either. So, I added the following function to the `entrypoint` file:
 
 ```bash
 centos7_fix_cgroup() {
@@ -286,11 +288,13 @@ configure_proxy
 
 ```
 
+The `centos7_fix_cgroup` function first gets the cgroup that `/sbin/init` is in - `init` is always PID 1 and the numbers in the root of `/proc` relate to process IDs. It then looks for those IDs in the cgroups pseudo-filesystem and mounts them in the places that the original code expects to find them. The original code, `fix_cgroup` runs and does it's thing copying them back.
+
 The commit for this fix is [Fix performance issue · mclarkson/my-own-kind@b8676e3 · GitHub](https://github.com/mclarkson/my-own-kind/commit/b8676e36ae255ad7d5ba4dd55d5bee039b1ea542). To view the output created by `entrypoint` use `docker logs <container id>`.
 
 I kept the cgroup driver set to systemd, as this produced the lowest CPU in the first tests at the top of this page and rebuilt the image and built a four node cluster.
 
-It's now using about the same CPU usage as Kind! Great!
+It's now using about the same CPU as Kind, that's less than 30%! Great!
 
 Trying a seven node cluster, as that was the goal, so that's 1 master and 6 workers...
 
@@ -298,6 +302,26 @@ Trying a seven node cluster, as that was the goal, so that's 1 master and 6 work
 
 It would be nice to also be able to `mokctl edit cluster myclust add worker 1` to test adding nodes slowly. I've added this to the ‘Help Wanted’ Project in this repository, but I'm happy with this right now.
 
+## Summary
+
+So the answers were all to be found in official documentation:
+
+* [Running CRI-O with kubeadm tutorial](https://github.com/cri-o/cri-o/blob/master/tutorials/kubeadm.md)
+
+* [Configuring each kubelet in your cluster using kubeadm - Kubernetes](https://v1-16.docs.kubernetes.io/docs/setup/production-environment/tools/kubeadm/kubelet-integration/#the-kubelet-drop-in-file-for-systemd)
+
+* [cgroups(7) - Linux manual page](http://man7.org/linux/man-pages/man7/cgroups.7.html)
+
+* [entrypoint](/mok-centos-7/entrypoint)
+
+* [this systemd documentation page](https://systemd.io/CONTAINER_INTERFACE/)
+
+The performance issue was solved, and was exactly the first thing I thought it wasn't! It became clearer after reading the listed information.
+
+The network problem was also fixed, so we're in great shape!
+
 ## What's next
 
 It's taken 9 days to get this far with documentation and a working tool with 60+ tests. Not too bad!
+
+Now it's time to do [Kubernetes the Hard Way](/docs/k8shardway.md)...

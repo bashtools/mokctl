@@ -171,19 +171,19 @@ do_create_cluster_sanity_checks() {
 
   if [[ -z $CREATE_CLUSTER_NAME ]]; then
     usage
-    echo "Please provide the Cluster NAME to create."
+    printf 'Please provide the Cluster NAME to create.\n'
     return $ERROR
   fi
 
   if [[ -z $CREATE_CLUSTER_NUM_MASTERS || $CREATE_CLUSTER_NUM_MASTERS -le 0 ]]; then
     usage
-    echo "Please provide the number of Masters to create. Must be 1 or more."
+    printf 'Please provide the number of Masters to create. Must be 1 or more.\n'
     return $ERROR
   fi
 
   if [[ -z $CREATE_CLUSTER_NUM_WORKERS ]]; then
     usage
-    echo "Please provide the number of Workers to create."
+    printf 'Please provide the number of Workers to create.\n'
     return $ERROR
   fi
 }
@@ -215,7 +215,7 @@ do_delete_cluster_sanity_checks() {
 
   if [[ -z $DELETE_CLUSTER_NAME ]]; then
     usage
-    echo "Please provide the Cluster NAME to delete."
+    printf 'Please provide the Cluster NAME to delete.\n'
     return $ERROR
   fi
 }
@@ -239,13 +239,11 @@ do_create_cluster_mutate() {
   numnodes=$(get_cluster_size $CREATE_CLUSTER_NAME) || return
 
   [[ $numnodes -gt 0 ]] && {
-    echo
-    echo "ERROR: Cluster, '$CREATE_CLUSTER_NAME', exists! Aborting."
-    echo
+    printf 'ERROR: Cluster, "%s", exists! Aborting.\n\n' "$CREATE_CLUSTER_NAME"
     return $ERROR
   }
 
-  echo
+  printf '\n'
 
   [[ $CREATE_CLUSTER_NUM_MASTERS -gt 0 ]] && {
     create_master_nodes $CREATE_CLUSTER_NUM_MASTERS || return
@@ -262,12 +260,11 @@ do_create_cluster_mutate() {
     create_worker_nodes "$CREATE_CLUSTER_NUM_WORKERS" || return
   }
 
-  echo
+  printf '\n'
+
   [[ -z $CREATE_CLUSTER_SKIPMASTERSETUP ]] && {
-    echo "Cluster, '$CREATE_CLUSTER_NAME', can be accessed using:"
-    echo
-    echo "export KUBECONFIG=~/.mok/admin.conf"
-    echo
+    printf 'Cluster, "%s", can be accessed using:\n\n' "$CREATE_CLUSTER_NAME"
+    printf 'export KUBECONFIG=~/.mok/admin.conf\n\n'
   }
 
   return $OK
@@ -286,10 +283,17 @@ get_cluster_size() {
 
   output=$(get_docker_ids_for_cluster "$1") || err || return
 
-  # read the nodes array and delete blank lines
-  readarray nodes < <(echo "$output" | sed '/^$/d')
+  # readarray will read null as an array item so don't run
+  # through readarray if it's null
+  [[ -z $output ]] && {
+    printf '0'
+    return $OK
+  }
 
-  echo "${#nodes[*]}"
+  # read the nodes array and delete blank lines
+  readarray -t nodes <<<"$output"
+
+  printf '%d' "${#nodes[*]}"
 }
 
 # ---------------------------------------------------------------------------
@@ -304,11 +308,13 @@ get_docker_ids_for_cluster() {
   [[ -n $1 ]] && value="=$1"
 
   output=$(docker ps -a -f label="$LABELKEY$value" -q) || {
-    echo -e "ERROR: Docker command failed\n" >/dev/stderr
+    printf 'ERROR: Docker command failed\n\n' >/dev/stderr
     err || return
   }
 
-  echo "$output"
+  output=$(printf '%s' "$output" | sed 's/$//')
+
+  printf '%s' "$output"
 
   return $OK
 }
@@ -331,11 +337,10 @@ create_master_nodes() {
     r=$?
 
     [[ $r -ne 0 ]] && {
-      echo
+      printf '\n'
       cat $RUNWITHPROGRESS_OUTPUT
       rm $RUNWITHPROGRESS_OUTPUT
-      echo
-      echo "ERROR: Docker failed."
+      printf '\nERROR: Docker failed.\n'
       return $ERROR
     }
 
@@ -346,11 +351,10 @@ create_master_nodes() {
       r=$?
 
       [[ $r -ne 0 ]] && {
-        echo
+        printf '\n'
         cat $RUNWITHPROGRESS_OUTPUT
-        echo
-        echo "ERROR: Set up failed. See above, and also in the file:"
-        echo "$RUNWITHPROGRESS_OUTPUT"
+        printf '\nERROR: Set up failed. See above, and also in the file:'
+        printf '%s\n' "$RUNWITHPROGRESS_OUTPUT"
         return $ERROR
       }
     }
@@ -415,7 +419,7 @@ create_worker_nodes() {
   $CREATE_CLUSTER_SKIPMASTERSETUP ]] || {
     # Runs a script on master node to get details
     t=$(get_master_join_details $CREATE_CLUSTER_NAME-master-1) || {
-      echo -e "\nERROR: Problem with 'get_master_join_details'.\n"
+      printf '\nERROR: Problem with "get_master_join_details".\n\n'
       return $ERROR
     }
 
@@ -432,11 +436,10 @@ create_worker_nodes() {
     r=$?
 
     [[ $r -ne 0 ]] && {
-      echo
+      printf '\n'
       cat $RUNWITHPROGRESS_OUTPUT
       rm $RUNWITHPROGRESS_OUTPUT
-      echo
-      echo "ERROR: Docker failed."
+      printf '\nERROR: Docker failed.\n'
       return $ERROR
     }
 
@@ -449,11 +452,10 @@ create_worker_nodes() {
       r=$?
 
       [[ $r -ne 0 ]] && {
-        echo
+        printf '\n'
         cat $RUNWITHPROGRESS_OUTPUT
-        echo
-        echo "ERROR: Set up failed. See above, and also in the file:"
-        echo "$RUNWITHPROGRESS_OUTPUT"
+        printf '\nERROR: Set up failed. See above, and also in the file:\n'
+        printf '%s\n' "$RUNWITHPROGRESS_OUTPUT"
         return $ERROR
       }
     }
@@ -488,7 +490,7 @@ get_master_join_details() {
   local joinvarsfile
 
   joinvarsfile=$(mktemp --tmpdir=/var/tmp) || {
-    echo "ERROR: mktmp failed."
+    printf 'ERROR: mktmp failed.\n'
     return $ERROR
   }
 
@@ -502,9 +504,7 @@ cahash=$(openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | \
 token=$(kubeadm token create --kubeconfig=/etc/kubernetes/admin.conf 2>/dev/null)
 ip=$(ip ro get 8.8.8.8 | cut -d" " -f 7)
 
-echo "cahash=$cahash"
-echo "token=$token"
-echo "masterip=$ip"
+printf 'cahash=%s\ntoken=%s\nmasterip=%s' "$cahash" "$token" "$ip"
 
 exit 0
 EnD
@@ -522,15 +522,15 @@ do_delete_cluster_mutate() {
 
   declare -i numnodes=0
 
-  numnodes=$(get_cluster_size $DELETE_CLUSTER_NAME) || return
+  numnodes=$(get_cluster_size "$DELETE_CLUSTER_NAME") || return
 
   [[ $numnodes -eq 0 ]] && {
-    echo -en "\nERROR: No cluster exists with name, '$DELETE_CLUSTER_NAME'."
-    echo -e " Aborting.\n"
+    printf '\nERROR: No cluster exists with name, "%s".' "$DELETE_CLUSTER_NAME"
+    printf ' Aborting.\n\n'
     return $ERROR
   }
 
-  delete_cluster_nodes $DELETE_CLUSTER_NAME
+  delete_cluster_nodes "$DELETE_CLUSTER_NAME"
 }
 
 # ---------------------------------------------------------------------------
@@ -544,20 +544,20 @@ delete_cluster_nodes() {
 
   ids=$(get_docker_ids_for_cluster "$1") || return
 
-  echo -e "The following containers will be deleted:\n"
+  printf 'The following containers will be deleted:\n\n'
 
   do_get_clusters_nomutate "$1" || return
 
-  echo -en "\nAre you sure you want to delete the cluster? (y/N) >"
+  printf "\nAre you sure you want to delete the cluster? (y/N) >"
 
   read -r ans
 
   [[ $ans != "y" ]] && {
-    echo -e "\nCancelling by user request."
+    printf '\nCancelling by user request.\n'
     return $OK
   }
 
-  echo
+  printf '\n'
 
   for id in $ids; do
     run_with_progress \
@@ -566,13 +566,13 @@ delete_cluster_nodes() {
     r=$?
     [[ $r -ne 0 ]] && {
       cat "$RUNWITHPROGRESS_OUTPUT"
-      echo -e "\nERROR: Docker failed.\n"
+      printf '\nERROR: Docker failed.\n'
       err
       return $r
     }
   done
 
-  echo
+  printf '\n'
 }
 
 # ---------------------------------------------------------------------------
@@ -602,7 +602,7 @@ do_build_image_mutate() {
   if [[ $retval -eq 0 ]]; then
     : # We only need the tick - no text
   else
-    echo "Image build failed"
+    printf 'Image build failed\n'
   fi
 
   return $retval
@@ -631,10 +631,9 @@ build_container_image() {
 
   retval=$?
   [[ $retval -ne 0 ]] && {
-    echo "ERROR: Docker returned an error, shown below"
-    echo
+    printf 'ERROR: Docker returned an error, shown below\n\n'
     cat $RUNWITHPROGRESS_OUTPUT
-    echo
+    printf '\n'
     return $ERROR
   }
 
@@ -657,7 +656,7 @@ get_build_args_for_k8s_ver() {
     ;;
   esac
 
-  echo "$buildargs"
+  printf '%s\n' "$buildargs"
 }
 
 # ---------------------------------------------------------------------------
@@ -667,7 +666,7 @@ create_docker_build_dir() {
   # No args expected
 
   DOCKERBUILDTMPDIR=$(mktemp -d --tmpdir=/var/tmp) || {
-    echo "ERROR: mktmp failed."
+    printf 'ERROR: mktmp failed.\n'
     err || return
   }
 
@@ -711,7 +710,7 @@ do_get_clusters_nomutate() {
   # Use 'docker inspect' to get the value of the label $LABELKEY
 
   output=$(mktemp --tmpdir=/var/tmp) || {
-    echo "ERROR: mktmp failed."
+    printf 'ERROR: mktmp failed.\n'
     return $ERROR
   }
 
@@ -722,7 +721,7 @@ do_get_clusters_nomutate() {
     [[ $GET_CLUSTER_SHOW_HEADER -eq $TRUE && \
     $shown -eq $FALSE ]] && {
       shown=$TRUE
-      echo "MOK_Cluster Docker_ID Container_Name IP_Address"
+      printf 'MOK_Cluster Docker_ID Container_Name IP_Address\n'
     }
 
     info=$(get_info_about_container_using_docker "$id") || return
@@ -739,7 +738,7 @@ do_get_clusters_nomutate() {
       '/NetworkSettings/,/Networks/ {s/[":,]//g; s/^ *IPAddress ([^ ]*).*/\1/p }' \
       <<<"$info") || err || return
 
-    echo "$clustname $id $containerhostname $containerip"
+    printf '%s %s %s %s\n' "$clustname" "$id" "$containerhostname" "$containerip"
   done >"$output"
 
   column -t "$output" || err
@@ -753,7 +752,7 @@ get_mok_cluster_docker_ids() {
   #   arg1 - mok cluster name, optional
 
   docker ps -a -f label="$LABELKEY$1" -q || {
-    echo -e "ERROR: docker failed\n" >/dev/stderr
+    printf 'ERROR: docker failed\n\n' >/dev/stderr
     err || return
   }
 }
@@ -766,7 +765,7 @@ get_info_about_container_using_docker() {
   #   arg1 - docker container id
 
   docker inspect "$1" || {
-    echo "ERROR: docker failed" >/dev/stderr
+    printf 'ERROR: docker failed\n' >/dev/stderr
     err || return
   }
 }
@@ -781,11 +780,11 @@ err() {
   # In case of error print the function call stack
 
   local frame=0
-  echo >/dev/stderr
+  printf '\n' >/dev/stderr
   while caller $frame; do
     ((frame++))
   done | tac >/dev/stderr
-  echo >/dev/stderr
+  printf '\n' >/dev/stderr
   return $ERROR
 }
 
@@ -801,7 +800,7 @@ run_with_progress() {
   local displaytext=$1 retval int
 
   RUNWITHPROGRESS_OUTPUT=$(mktemp --tmpdir=/var/tmp) || {
-    echo "ERROR: mktmp failed."
+    printf 'ERROR: mktmp failed.\n'
     err || return
   }
   shift
@@ -816,10 +815,10 @@ run_with_progress() {
   tput civis
 
   # Start the spin animation
-  echo -n "$displaytext"
+  printf "%s" "$displaytext"
   (while true; do
     for int in {0..3}; do
-      echo -en "\r  ${SPINNER[int]} "
+      printf '\r  %s ' "${SPINNER[int]}"
       sleep .1
     done
   done) &
@@ -833,9 +832,9 @@ run_with_progress() {
 
   # Mark success/fail
   if [[ $retval -eq 0 ]]; then
-    echo -e "\r  $success"
+    printf '\r  %s\n' "$success"
   else
-    echo -e "\r  $failure"
+    printf '\r  %s\n' "$failure"
   fi
 
   # Restore the cursor
@@ -854,7 +853,7 @@ sanity_checks() {
 
   for binary in tac column tput docker grep sed; do
     if ! command -v "$binary" >&/dev/null; then
-      echo "ERROR: $binary binary not found in path. Aborting."
+      printf 'ERROR: "%s" binary not found in path. Aborting.' "$binary"
       return 1
     fi
   done
@@ -1042,7 +1041,7 @@ cleanup() {
   [ -t 1 ] && tput cnorm
 
   # Kill the spinny, and anything else, if they're running
-  [[ -n $(jobs -p) ]] && echo -e "$colred\r  ✕$colreset"
+  [[ -n $(jobs -p) ]] && printf '%s\r  ✕%s\n' "$colred" "$colreset"
   for int in $(jobs -p); do kill "$int"; done
 
   return $OK
@@ -1083,7 +1082,7 @@ parse_options() {
       ;;
     --?*)
       usage
-      echo "Invalid option: '$1'"
+      printf 'Invalid option: "%s"\n' "$1"
       return $ERROR
       ;;
     ?*)
@@ -1092,8 +1091,7 @@ parse_options() {
         check_command_token "$1"
         [[ $? -eq $ERROR ]] && {
           usage
-          echo "Invalid COMMAND, '$1'."
-          echo
+          printf 'Invalid COMMAND, "%s".\n\n' "$1"
           return $ERROR
         }
         ;;
@@ -1101,8 +1099,7 @@ parse_options() {
         check_subcommand_token "$1"
         [[ $? -eq $ERROR ]] && {
           usage
-          echo "Invalid SUBCOMMAND for $COMMAND, '$1'."
-          echo
+          printf 'Invalid SUBCOMMAND for %s, "%s".\n\n' "$COMMAND" "$1"
           return $ERROR
         }
         ;;
@@ -1110,8 +1107,7 @@ parse_options() {
         check_option_token "$1"
         [[ $? -eq $ERROR ]] && {
           usage
-          echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
-          echo
+          printf 'Invalid OPTION for %s %s, "%s".\n\n' "$COMMAND" "$SUBCOMMAND" "$1"
           return $ERROR
         }
         ;;
@@ -1119,8 +1115,7 @@ parse_options() {
         check_option2_token "$1"
         [[ $? -eq $ERROR ]] && {
           usage
-          echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
-          echo
+          printf 'Invalid OPTION for %s %s, "%s".\n\n' "$COMMAND" "$SUBCOMMAND" "$1"
           return $ERROR
         }
         ;;
@@ -1128,19 +1123,18 @@ parse_options() {
         check_option3_token "$1"
         [[ $? -eq $ERROR ]] && {
           usage
-          echo "Invalid OPTION for $COMMAND $SUBCOMMAND, '$1'."
-          echo
+          printf 'Invalid OPTION for %s %s, "%s".\n\n' "$COMMAND" "$SUBCOMMAND" "$1"
           return $ERROR
         }
         ;;
       END)
         usage
-        echo -n "ERROR No more options expected, '$1' is unexpected"
-        echo " for '$COMMAND $SUBCOMMAND'"
+        printf 'ERROR No more options expected, "%s" is unexpected' "$1"
+        printf ' for "%s %s"\n' "$COMMAND" "$SUBCOMMAND"
         return $ERROR
         ;;
       ?*)
-        echo "Internal ERROR. Invalid state '$STATE'"
+        printf 'Internal ERROR. Invalid state "%s"\n' "$STATE"
         return $ERROR
         ;;
       esac
@@ -1152,12 +1146,12 @@ parse_options() {
 
   [[ -z $COMMAND ]] && {
     usage
-    echo "No COMMAND supplied"
+    printf 'No COMMAND supplied\n'
     return $ERROR
   }
   [[ -z $SUBCOMMAND ]] && {
     usage
-    echo "No SUBCOMMAND supplied"
+    printf 'No SUBCOMMAND supplied\n'
     return $ERROR
   }
 
@@ -1403,7 +1397,7 @@ check_valid_global_opts() {
   done
 
   usage
-  echo "ERROR: '$1' is not a valid global option."
+  printf 'ERROR: "%s" is not a valid global option.\n' "$1"
   return $ERROR
 }
 
@@ -1426,7 +1420,7 @@ check_valid_create_cluster_opts() {
   done
 
   usage
-  echo "ERROR: '$1' is not a valid 'create cluster' option."
+  printf 'ERROR: "%s" is not a valid "create cluster" option.\n' "$1"
   return $ERROR
 }
 
@@ -1446,7 +1440,7 @@ check_valid_delete_cluster_opts() {
   done
 
   usage
-  echo "ERROR: '$1' is not a valid 'delete cluster' option."
+  printf 'ERROR: "%s" is not a valid "delete cluster" option.\n' "$1"
   return $ERROR
 }
 
@@ -1466,7 +1460,7 @@ check_valid_build_image_opts() {
   done
 
   usage
-  echo "ERROR: '$1' is not a valid 'build image' option."
+  printf 'ERROR: "%s" is not a valid "build image" option.\n' "$1"
   return $ERROR
 }
 
@@ -1486,7 +1480,7 @@ check_valid_get_cluster_opts() {
   done
 
   usage
-  echo "ERROR: '$1' is not a valid 'get cluster' option."
+  printf 'ERROR: "%s" is not a valid "get cluster" option.\n' "$1"
   return $ERROR
 }
 
@@ -1504,7 +1498,7 @@ set_up_master_node_v1_18_2() {
   local setupfile
 
   setupfile=$(mktemp --tmpdir=/var/tmp) || {
-    echo "ERROR: mktmp failed."
+    printf 'ERROR: mktmp failed.\n'
     return $ERROR
   }
 

@@ -17,7 +17,9 @@ Send a Pull Request to add to this list.
 
 ## Status
 
-In progress. `mokctl` is in a working state.
+In progress. `mokctl` is in a working state on Fedora 31.
+
+Whether it will work on Mac/Windows is unkown.
 
 ## Let's get started
 
@@ -73,6 +75,12 @@ sudo make purge
 ```
 
 Take note of the [Status](#status) above.
+
+## Contributing
+
+Please check the 'Help Wanted' issues if you fancy helping.
+
+All types of contributions are welcome, from bug reports, success stories, feature requests, fixing typppos, to coding. Also check the [CONTRIBUTING.md](/CONTRIBUTING.md) document.
 
 ## License
 

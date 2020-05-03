@@ -30,7 +30,7 @@ testBuildDirectoryCreation() {
   # Check that all the files are created in the docker build dir
 
   local dir
-  create_docker_build_dir >/dev/null
+  create_docker_build_dir &>/dev/null
   dir="$DOCKERBUILDTMPDIR/mok-centos-7"
   assertTrue \
     "Check that tmpdir is created with the correct files" \
@@ -48,7 +48,7 @@ testBuildDirectoryDeletion() {
   # Check that the docker build dir is deleted
 
   local dir
-  create_docker_build_dir >/dev/null
+  create_docker_build_dir &>/dev/null
   cleanup
   assertTrue \
     "Check that tmpdir is deleted" "[[ ! -e $DOCKERBUILDTMPDIR ]]"
@@ -58,7 +58,7 @@ testBuildDirectoryDeletion() {
 testBuildwithNoSubcommand() {
   # ---------------------------------------------------------------------------
 
-  main build >/dev/null
+  main build &>/dev/null
   assertEquals \
     "'mokctl build' should fail" \
     "1" "$?"
@@ -80,7 +80,7 @@ testBuildwithOption() {
   # ---------------------------------------------------------------------------
   # There are no options for 'build image'
 
-  main build image 1 >/dev/null
+  main build image 1 &>/dev/null
   assertEquals \
     "'mokctl build' should fail" \
     "1" "$?"
@@ -108,7 +108,7 @@ testBuildWouldBeStarted() {
 
   build_container_image() { return 59; }
 
-  main build image >/dev/null
+  main build image &>/dev/null
   assertEquals \
     '"mokctl build image" should call do_build_image_mutate' \
     "59" "$?"
@@ -122,7 +122,7 @@ testBuildWouldBeStarted() {
 testRunWithNoArgsShouldFail() {
   # ---------------------------------------------------------------------------
 
-  main >/dev/null
+  main &>/dev/null
   assertTrue \
     "Run with no arguments should fail" \
     "[[ $? -ge 1 ]]"
@@ -148,7 +148,7 @@ testInvalidFlagGlobalFlag() {
 
   do_create_cluster_mutate() { :; }
 
-  grabMainOutput --asdf >/dev/null
+  grabMainOutput --asdf &>/dev/null
   assertEquals \
     "'mokctl --asdf' should fail" \
     'Invalid option: "--asdf"' \
@@ -165,7 +165,7 @@ testCreateClusterInvalidFlag() {
 
   do_create_cluster_mutate() { :; }
 
-  grabMainOutput create cluster --fdsa >/dev/null
+  grabMainOutput create cluster --fdsa &>/dev/null
 
   assertEquals \
     "'mokctl create cluster --fdsa' should fail" \
@@ -195,7 +195,7 @@ testCreateClusterInvalidLocalAsGlobalFlag() {
 
   do_create_cluster_mutate() { :; }
 
-  grabMainOutput --skipmastersetup create cluster 1 0 >/dev/null
+  grabMainOutput --skipmastersetup create cluster 1 0 &>/dev/null
   assertEquals \
     "'mokctl --asdf' should fail" \
     'ERROR: "--skipmastersetup" is not a valid global option.' \
@@ -208,7 +208,7 @@ testRunWithOneArgShouldFail() {
 
   do_create_cluster_mutate() { :; }
 
-  main create >/dev/null
+  main create &>/dev/null
   assertTrue \
     "'mokctl create' should fail" \
     "[[ $? -ge 1 ]]"
@@ -233,7 +233,7 @@ testNotEnoughOptionsToCreateCluster() {
 
   do_create_cluster_mutate() { :; }
 
-  main create cluster >/dev/null
+  main create cluster &>/dev/null
   assertTrue \
     "'mokctl create cluster' should fail" \
     "[[ $? -ge 1 ]]"
@@ -260,7 +260,7 @@ testNotEnoughOptionsToCreateClusterName() {
 
   do_create_cluster_mutate() { :; }
 
-  main create cluster name >/dev/null
+  main create cluster name &>/dev/null
   r=$?
 
   assertEquals \
@@ -288,7 +288,7 @@ testNotEnoughOptionsToCreateClusterName1() {
 
   do_create_cluster_mutate() { :; }
 
-  main create cluster name 1 >/dev/null
+  main create cluster name 1 &>/dev/null
   r=$?
 
   assertEquals \
@@ -317,7 +317,7 @@ testZeroMastersShouldFail() {
 
   do_create_cluster_mutate() { :; }
 
-  main create cluster name 0 0 >/dev/null
+  main create cluster name 0 0 &>/dev/null
   assertTrue \
     "'create cluster name 0 0' should fail" \
     "[[ $? -ge 1 ]]"
@@ -344,7 +344,7 @@ testZeroMastersShouldFail2() {
 
   do_create_cluster_mutate() { :; }
 
-  main create cluster name 0 1 >/dev/null
+  main create cluster name 0 1 &>/dev/null
   assertTrue \
     "'create cluster name 0 0' should fail" \
     "[[ $? -ge 1 ]]"
@@ -419,7 +419,7 @@ testCreateClusterExtraOptions() {
 
   do_create_cluster_mutate() { :; }
 
-  main create cluster name 1 1 2 >/dev/null
+  main create cluster name 1 1 2 &>/dev/null
   assertTrue \
     "'create cluster name 1 1 2' should fail" \
     "[[ $? -ge 1 ]]"
@@ -450,7 +450,7 @@ testCreateClusterMutateReturnCode() {
     return 22
   }
 
-  do_create_cluster_mutate >/dev/null
+  do_create_cluster_mutate &>/dev/null
   assertEquals \
     "docker error code should be passed back to get_cluster_size " \
     "22" "$?"
@@ -486,7 +486,7 @@ testCreateClusterMutateFailsOnClusterExistence() {
     return 0
   }
 
-  do_create_cluster_mutate >/dev/null
+  do_create_cluster_mutate &>/dev/null
   assertEquals \
     "docker num nodes should be passed back to get_cluster_size " \
     "1" "$?"
@@ -506,7 +506,7 @@ testCreateClusterMasterNodesWithSuccess() {
     return 0
   }
 
-  main create cluster myclust 1 0 >/dev/null
+  main create cluster myclust 1 0 &>/dev/null
   r=$?
 
   assertEquals \
@@ -534,7 +534,7 @@ testCreateClusterMasterNodesWithFailure() {
     return 0
   }
 
-  main create cluster myclust 1 0 >/dev/null
+  main create cluster myclust 1 0 &>/dev/null
   r=$?
 
   assertEquals \
@@ -560,7 +560,7 @@ testCreateClusterMasterNodesWithFailure2() {
     return 0
   }
 
-  main create cluster myclust 1 0 >/dev/null
+  main create cluster myclust 1 0 &>/dev/null
   r=$?
 
   assertEquals \
@@ -576,7 +576,7 @@ testCreateClusterMasterNodesWithFailure2() {
 testDeleteRunWithOneArgShouldFail() {
   # ---------------------------------------------------------------------------
 
-  main delete >/dev/null
+  main delete &>/dev/null
   assertTrue \
     "Run with 'mokctl delete' should fail" \
     "[[ $? -ge 1 ]]"
@@ -597,7 +597,7 @@ testDeleteRunWithOneArgShouldFailOutput() {
 testNotEnoughOptionsToDeleteCluster() {
   # ---------------------------------------------------------------------------
 
-  main delete cluster >/dev/null
+  main delete cluster &>/dev/null
   assertTrue \
     "Run with 'mokctl delete cluster' should fail" \
     "[[ $? -ge 1 ]]"
@@ -618,7 +618,7 @@ testNotEnoughOptionsToDeleteClusterOutput() {
 testNotEnoughOptionsToDeleteClusterName() {
   # ---------------------------------------------------------------------------
 
-  main delete mycluster mycluster >/dev/null
+  main delete mycluster mycluster &>/dev/null
   assertTrue \
     "'delete cluster mycluster' should fail" \
     "[[ $? -ge 1 ]]"
@@ -678,7 +678,7 @@ testValidDeleteClusterCommandWithNonexistentName() {
 testGetRunWithOneArgShouldFail() {
   # ---------------------------------------------------------------------------
 
-  main get >/dev/null
+  main get &>/dev/null
   assertTrue \
     "Run with 'mokctl get' should fail" \
     "[[ $? -ge 1 ]]"
@@ -700,7 +700,7 @@ testGetWith2Options() {
   # ---------------------------------------------------------------------------
   # There are no options for 'get clusters'
 
-  main get clusters mycluster 1 >/dev/null
+  main get clusters mycluster 1 &>/dev/null
   assertEquals \
     "'mokctl get clusters mycluster 1' should fail" \
     "1" "$?"

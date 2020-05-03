@@ -38,7 +38,7 @@ DELETE_CLUSTER_NAME=
 GET_CLUSTER_NAME=
 GET_CLUSTER_SHOW_HEADER=
 
-# For /dev/stderr
+# For outputting errors
 E="/dev/stderr"
 
 # Directory to unpack the build files

@@ -33,13 +33,13 @@ In progress. `mokctl` is in a working state.
    
    This thing has bugs. Let's fix it.
 
-4. [Multi Node]()
-   
-   Build a bigger cluster using our package.
-
-5. [Kubernetes the Hard Way](/docs/k8shardway.md)
+4. [Kubernetes the Hard Way](/docs/k8shardway.md)
    
    The classic remade for MOK.
+
+5. [Multi Node]()
+   
+   Build a bigger cluster using our package.
 
 6. [Upgrade](/docs/upgrade.md)
    

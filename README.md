@@ -17,7 +17,7 @@ Send a Pull Request to add to this list.
 
 ## Status
 
-**`mokctl`**
+**Mokctl Utility**
 
 | OS        | Termnal          | Status |
 | --------- | ---------------- | ------ |
@@ -25,7 +25,7 @@ Send a Pull Request to add to this list.
 | Mac OS    | Default terminal | ?      |
 | Windows   | Cygwin           | ?      |
 
-**Documentation**
+**Documentation/Labs**
 
 In progress.
 

@@ -320,25 +320,27 @@ Trying a seven node cluster, as that was the goal, so that's 1 master and 6 work
 
 It would be nice to also be able to `mokctl edit cluster myclust add worker 1` to test adding nodes slowly. I've added this to the ‘Help Wanted’ Project in this repository, but I'm happy with this right now.
 
-## Summary
+### Code Tidy Ups
 
-So the answers were all to be found in official documentation:
+I put a note on a couple of groups on Reddit about `mokctl` and got some good feedback about the code. Some of it highlighted that I needed a linter and code formatter so I added that to our Makefile - look for `shellcheck` and `shfmt` and see [CONTRIBUTING.md](/CONTRIBUTING.md). The recommended changes were useful, some I had done already, but I'll list them next:
 
-* [Running CRI-O with kubeadm tutorial](https://github.com/cri-o/cri-o/blob/master/tutorials/kubeadm.md)
+* Only use UPPERCASE for globals.
+  
+  I always stick to this in shell scripts.
 
-* [Configuring each kubelet in your cluster using kubeadm - Kubernetes](https://v1-16.docs.kubernetes.io/docs/setup/production-environment/tools/kubeadm/kubelet-integration/#the-kubelet-drop-in-file-for-systemd)
+* Don't use backticks, '`', for running commands, use '$(' instead.
+  
+  `shellcheck` catches these.
 
-* [cgroups(7) - Linux manual page](http://man7.org/linux/man-pages/man7/cgroups.7.html)
+* 'declare -r' is not portable, use 'readonly' instead.
 
-* [entrypoint](/mok-centos-7/entrypoint)
+* 'echo' is not portable, use 'printf' instead.
 
-* [this systemd documentation page](https://systemd.io/CONTAINER_INTERFACE/)
+* Use heredocs instead of multiple 'echo' lines.
 
-The performance issue was solved, and was exactly the first thing I thought it wasn't! It became clearer after reading the listed information and `mokctl` helped quite a bit with all the testing and fixing.
+Never get precious about the code you've sweated over. Judge whether the suggestion is valid and implement it if it is. I really appreciated the comments and there's nothing us humans like doing more than pointing out mistakes in other's work (usually behind the persons back, but now with the Internet people just do it direct!).
 
-The network problem was also fixed, so we're in great shape!
-
-### Niggles
+### Niggles (skip this - in progress)
 
 I tried using cgroupfs and systemd as options to kubelet and crio. Some times cgroupfs worked and sometimes systemd worked.
 
@@ -347,6 +349,24 @@ The easiest thing would be for systemd or docker to create new cgroup hierarchie
 This can be tested. First see what a `systemd-nspawn` container looks like (might need to use febootstrap, which is the Fedora version of debootstrap, to get a small chroot system), then try using nsenter, and the same "chroot" files, and bind mounts to set it up. Then try to run kubelet and crio in it. So forget febootstrap and copy the linux container files out so it's easy to test crio and kubelet - will have to run the binaries directly without systemctl. <mark>Break this out</mark>
 
 A Systemd author said to either use systemd to run the container, or use some really tricky api over DBUS protocol, probably requiring a language that has glib and dbus bindings. You'll find that in the block of links above.
+
+## Summary
+
+So the answers were all to be found in official documentation:
+
+- [Running CRI-O with kubeadm tutorial](https://github.com/cri-o/cri-o/blob/master/tutorials/kubeadm.md)
+
+- [Configuring each kubelet in your cluster using kubeadm - Kubernetes](https://v1-16.docs.kubernetes.io/docs/setup/production-environment/tools/kubeadm/kubelet-integration/#the-kubelet-drop-in-file-for-systemd)
+
+- [cgroups(7) - Linux manual page](http://man7.org/linux/man-pages/man7/cgroups.7.html)
+
+- [entrypoint](/mok-centos-7/entrypoint)
+
+- [this systemd documentation page](https://systemd.io/CONTAINER_INTERFACE/)
+
+The performance issue was solved, and was exactly the first thing I thought it wasn't! It became clearer after reading the listed information and `mokctl` helped quite a bit with all the testing and fixing.
+
+The network problem was also fixed, so we're in great shape!
 
 ## What's next
 

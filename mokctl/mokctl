@@ -263,10 +263,12 @@ do_create_cluster_mutate() {
   }
 
   echo
-  echo "Cluster, '$CREATE_CLUSTER_NAME', can be accessed using:"
-  echo
-  echo "export KUBECONFIG=~/.mok/admin.conf"
-  echo
+  [[ -z $CREATE_CLUSTER_SKIPMASTERSETUP ]] && {
+    echo "Cluster, '$CREATE_CLUSTER_NAME', can be accessed using:"
+    echo
+    echo "export KUBECONFIG=~/.mok/admin.conf"
+    echo
+  }
 
   return $OK
 }

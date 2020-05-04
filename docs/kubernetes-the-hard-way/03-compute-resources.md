@@ -72,12 +72,14 @@ mokctl exec
 ```
 Choose the container to log in to:
 
-1) kthw         5a59e995ac7f  kthw-master-1   172.17.0.8
-2) kthw         5dee0c1ac0e0  kthw-master-2   172.17.0.9
-3) kthw         eeadd19fca3e  kthw-master-3   172.17.0.10
-4) kthw         0256ece9cdce  kthw-worker-1   172.17.0.11
-5) kthw         f00fedcdde5f  kthw-worker-2   172.17.0.12
-6) kthw         4f4d85da4750  kthw-worker-3   172.17.0.13
+   MOK_Cluster  Docker_ID     Container_Name  IP_Address
+1) kthw         8232e08b6a97  kthw-lb         172.17.0.5
+2) kthw         f6b9e8897082  kthw-master-1   172.17.0.2
+3) kthw         d0178800ca8a  kthw-master-2   172.17.0.3
+4) kthw         a5ca66a2ad58  kthw-master-3   172.17.0.4
+5) kthw         ff7bef1f967e  kthw-worker-1   172.17.0.6
+6) kthw         589e0af3e932  kthw-worker-2   172.17.0.7
+7) kthw         a529d0775c9e  kthw-worker-3   172.17.0.8
 
 Choose a number (Enter to cancel)> 4
 [root@kthw-worker-1 /]#

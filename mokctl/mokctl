@@ -810,7 +810,7 @@ do_exec_nomutate() {
     readarray -t containernames <<<"$names"
 
     # Print the header then print the items in the loop
-    #printf '   %s\n' "${lines[0]}"
+    printf '   %s\n' "${lines[0]}"
     for int in $(seq 1 $((${#lines[*]} - 1))); do
       printf '%00d) %s\n' "$int" "${lines[int]}"
     done | sort -k 4

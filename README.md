@@ -45,7 +45,7 @@ In progress.
 
 4. [Kubernetes the Hard Way](/docs/k8shardway.md)
    
-   The classic remade for MOK.
+   The classic remade for MOK. A 7 node cluster without blowing up your laptop!
 
 5. [Multi Node]()
    

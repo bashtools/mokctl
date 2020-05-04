@@ -37,6 +37,7 @@ CREATE_CLUSTER_SKIPWORKERSETUP=
 DELETE_CLUSTER_NAME=
 GET_CLUSTER_NAME=
 GET_CLUSTER_SHOW_HEADER=
+EXEC_CONTAINER_NAME=
 
 # For outputting errors
 E="/dev/stderr"
@@ -73,6 +74,7 @@ main() {
   delete) do_delete ;;
   build) do_build ;;
   get) do_get ;;
+  exec) do_exec ;;
   esac
 }
 
@@ -91,6 +93,27 @@ set_globals() {
   DELETE_CLUSTER_NAME=
   GET_CLUSTER_NAME=
   GET_CLUSTER_SHOW_HEADER=$TRUE
+}
+
+# ===========================================================================
+# MOKCTL EXEC
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+do_exec() {
+
+  do_exec_sanity_checks || return
+  do_exec_nomutate "$EXEC_CONTAINER_NAME"
+}
+
+# ---------------------------------------------------------------------------
+do_exec_sanity_checks() {
+
+  # No sanity checks required.
+  # Globals: None
+  # No args expected
+
+  :
 }
 
 # ===========================================================================
@@ -524,6 +547,7 @@ do_delete_cluster_mutate() {
   # Mutate functions make system changes.
 
   declare -i numnodes=0
+  local id ids r
 
   numnodes=$(get_cluster_size "$DELETE_CLUSTER_NAME") || return
 
@@ -533,23 +557,11 @@ do_delete_cluster_mutate() {
     return $ERROR
   }
 
-  delete_cluster_nodes "$DELETE_CLUSTER_NAME"
-}
-
-# ---------------------------------------------------------------------------
-delete_cluster_nodes() {
-
-  # Delete all cluster nodes.
-  # Args:
-  #   arg1 - Name of the cluster to delete
-
-  local id ids r
-
-  ids=$(get_docker_ids_for_cluster "$1") || return
+  ids=$(get_docker_ids_for_cluster "$DELETE_CLUSTER_NAME") || return
 
   printf 'The following containers will be deleted:\n\n'
 
-  do_get_clusters_nomutate "$1" || return
+  do_get_clusters_nomutate "$DELETE_CLUSTER_NAME" || return
 
   printf "\nAre you sure you want to delete the cluster? (y/N) >"
 
@@ -564,7 +576,7 @@ delete_cluster_nodes() {
 
   for id in $ids; do
     run_with_progress \
-      "    Deleting id, '$id' from cluster '$1'." \
+      "    Deleting id, '$id' from cluster '$DELETE_CLUSTER_NAME'." \
       delete_docker_container "$id"
     r=$?
     [[ $r -ne 0 ]] && {
@@ -684,6 +696,77 @@ create_docker_build_dir() {
 # ===========================================================================
 #                              NON-MUTATORS
 # ===========================================================================
+
+# ---------------------------------------------------------------------------
+do_exec_nomutate() {
+
+  # Execs into the container referenced by arg1. If just 'mokctl exec' is
+  # called without options then the user is offered a selection of existing
+  # clusters to exec into.
+  #
+  # Args
+  #  arg1 - Full name of container
+
+  local names int ans lines containernames
+
+  GET_CLUSTER_SHOW_HEADER=$FALSE
+  names=$(do_get_clusters_nomutate | awk '{ print $3; }')
+
+  if [[ -n $1 ]]; then
+
+    # The caller gave a specific name for exec
+    # Check if the container name exists
+
+    if grep -qs "^$1$" <<<"$names"; then
+      run_docker_exec "$1"
+      return $OK
+    else
+      printf 'ERROR: Cannot exec into non-existent container: "%s".\n' \
+        "$1"
+      return $ERROR
+    fi
+
+  else
+
+    # The caller supplied no container name
+    # Present some choices
+
+    printf 'Choose the container to log in to:\n\n'
+
+    GET_CLUSTER_SHOW_HEADER=$TRUE
+    readarray -t lines <<<"$(do_get_clusters_nomutate)" || return
+    readarray -t containernames <<<"$names"
+
+    # Print the header then print the items in the loop
+    printf '   %s\n' "${lines[0]}"
+    for int in $(seq 1 $((${#lines[*]} - 1))); do
+      printf '%00d) %s\n' "$int" "${lines[int]}"
+    done
+
+    printf "\nEnter the number >"
+    read -r ans
+
+    [[ -z $ans || $ans -lt 0 || $ans -gt $((${#lines[*]} - 1)) ]] && {
+      printf '\nInvalid choice. Aborting.\n'
+      return $OK
+    }
+
+    run_docker_exec "${containernames[ans - 1]}"
+  fi
+}
+
+# ---------------------------------------------------------------------------
+run_docker_exec() {
+
+  # Exec into the docker container
+  # Args:
+  #   arg1 - docker container name
+  #   arg2 - command to run
+
+  local cmd=${2:-bash}
+
+  docker exec -ti "$1" "$cmd"
+}
 
 # ---------------------------------------------------------------------------
 do_get_clusters_nomutate() {
@@ -893,23 +976,27 @@ usage() {
     get_usage
     return $OK
     ;;
+  exec)
+    exec_usage
+    return $OK
+    ;;
   esac
 
   cat <<'EOF'
 
-Usage: mokctl [-h] <command> <subcommand> [subcommand_OPTIONS...]"
+Usage: mokctl [-h] <command> <subcommand> [subcommand_OPTIONS...]
  
-Global options:"
+Global options:
  
-  --help"
-  -h     - This help text"
+  --help
+  -h     - This help text
  
-Where command can be one of:"
+Where command can be one of:
  
-  create - Add item(s) to the system."
-  delete - Delete item(s) from the system."
-  build  - Build item(s) used by the system."
-  get    - Get details about items in the system."
+  create - Add item(s) to the system.
+  delete - Delete item(s) from the system.
+  build  - Build item(s) used by the system.
+  get    - Get details about items in the system.
 
 EOF
 
@@ -919,29 +1006,29 @@ EOF
   get_usage
 
   cat <<'EOF'
-EXAMPLES"
+EXAMPLES
  
-Get a list of mok clusters"
+Get a list of mok clusters
  
-  mokctl get clusters"
+  mokctl get clusters
  
-Build the image used for masters and workers:"
+Build the image used for masters and workers:
  
-  mokctl build image"
+  mokctl build image
  
-Create a single node cluster:"
-Note that the master node will be made schedulable for pods."
+Create a single node cluster:
+Note that the master node will be made schedulable for pods.
  
-  mokctl create cluster mycluster 1 0"
+  mokctl create cluster mycluster 1 0
  
-Create a single master and single node cluster:"
-Note that the master node will NOT be schedulable for pods."
+Create a single master and single node cluster:
+Note that the master node will NOT be schedulable for pods.
  
-  mokctl create cluster mycluster 1 1"
+  mokctl create cluster mycluster 1 1
  
-Delete a cluster:"
+Delete a cluster:
  
-  mokctl delete cluster mycluster"
+  mokctl delete cluster mycluster
 
 EOF
 }
@@ -950,29 +1037,29 @@ EOF
 help_usage() {
 
   cat <<'EOF'
-create subcommands are:"
+create subcommands are:
  
-  cluster - Create a local kubernetes cluster."
+  cluster - Create a local kubernetes cluster.
  
-create cluster [flags] options:"
+create cluster [flags] options:
  
- Format:"
-  create cluster NAME NUM_MASTERS NUM_WORKERS"
-  NAME        - The name of the cluster. This will be used as"
-                the prefix in the name for newly created"
-                docker containers."
-  NUM_MASTERS - The number of master containers."
-  NUM_WORKERS - The number of worker containers."
+ Format:
+  create cluster NAME NUM_MASTERS NUM_WORKERS
+  NAME        - The name of the cluster. This will be used as
+                the prefix in the name for newly created
+                docker containers.
+  NUM_MASTERS - The number of master containers.
+  NUM_WORKERS - The number of worker containers.
  
- Flags:"
-  --skipmastersetup - Create the master container but don't set it"
-         up. Useful for manually installing kubernetes. Kubeadm, "
-         kubelet and kubectl will be installed at the requested "
-         version. With this option the worker will also be skipped."
-         See also '--k8sver' flag."
-  --skipworkersetup - The same as '--skipmastersetup', but skips"
-         setting up the worker only."
-  --k8sver VERSION - Unimplemented."
+ Flags:
+  --skipmastersetup - Create the master container but don't set it
+         up. Useful for manually installing kubernetes. Kubeadm, 
+         kubelet and kubectl will be installed at the requested 
+         version. With this option the worker will also be skipped.
+         See also '--k8sver' flag.
+  --skipworkersetup - The same as '--skipmastersetup', but skips
+         setting up the worker only.
+  --k8sver VERSION - Unimplemented.
 
 EOF
 }
@@ -981,15 +1068,15 @@ EOF
 delete_usage() {
 
   cat <<'EOF'
-delete subcommands are:"
+delete subcommands are:
  
-  cluster - Delete a local kubernetes cluster."
+  cluster - Delete a local kubernetes cluster.
  
-delete cluster options:"
+delete cluster options:
  
- Format:"
-  delete cluster NAME"
-  NAME        - The name of the cluster to delete"
+ Format:
+  delete cluster NAME
+  NAME        - The name of the cluster to delete
 
 EOF
 }
@@ -998,14 +1085,14 @@ EOF
 build_usage() {
 
   cat <<'EOF'
-build subcommands are:"
+build subcommands are:
  
-  image - Creates the ${baseimagename} base image."
+  image - Creates the ${baseimagename} base image.
  
-build image options:"
+build image options:
  
- Format:"
-  build image"
+ Format:
+  build image
 
 EOF
 }
@@ -1014,16 +1101,33 @@ EOF
 get_usage() {
 
   cat <<'EOF'
-get subcommands are:"
+get subcommands are:
  
-  cluster(s) - list all mokctl managed clusters."
+  cluster(s) - list all mokctl managed clusters.
  
-get cluster(s) options:"
+get cluster(s) options:
  
- Format:"
-  get cluster(s) [NAME]"
-  NAME        - (optional) The name of the cluster to get"
-                details about."
+ Format:
+  get cluster(s) [NAME]
+  NAME        - (optional) The name of the cluster to get
+                details about.
+
+EOF
+}
+
+# ---------------------------------------------------------------------------
+exec_usage() {
+
+  cat <<'EOF'
+exec has no subcommands. Exec into a container.
+ 
+get cluster(s) options:
+ 
+ Format:
+  exec [NAME]
+  NAME        - (optional) The name of the container to log into.
+                If this option is empty then the user will be offered
+                a choice of containers to log in to.
 
 EOF
 }
@@ -1173,13 +1277,29 @@ check_command_token() {
   #   arg1 - token
 
   case $1 in
-  create) COMMAND="create" ;;
-  delete) COMMAND="delete" ;;
-  build) COMMAND="build" ;;
-  get) COMMAND="get" ;;
+  create)
+    COMMAND="create"
+    STATE="SUBCOMMAND"
+    ;;
+  delete)
+    COMMAND="delete"
+    STATE="SUBCOMMAND"
+    ;;
+  build)
+    COMMAND="build"
+    STATE="SUBCOMMAND"
+    ;;
+  get)
+    COMMAND="get"
+    STATE="SUBCOMMAND"
+    ;;
+  exec)
+    COMMAND="exec"
+    SUBCOMMAND="unused"
+    STATE="OPTION"
+    ;;
   ?*) return $ERROR ;;
   esac
-  STATE="SUBCOMMAND"
 }
 
 # ---------------------------------------------------------------------------
@@ -1291,6 +1411,10 @@ check_option_token() {
       STATE="END"
       ;;
     esac
+    ;;
+  exec)
+    EXEC_CONTAINER_NAME="$1"
+    STATE="END"
     ;;
   esac
 }

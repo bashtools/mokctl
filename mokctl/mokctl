@@ -30,6 +30,8 @@ SUBCOMMAND=
 CREATE_CLUSTER_NAME=
 BUILD_IMAGE_K8SVER=
 CREATE_CLUSTER_K8SVER=
+CREATE_CLUSTER_WITH_LB=
+CREATE_CLUSTER_SKIPLBSETUP=
 CREATE_CLUSTER_NUM_MASTERS=0
 CREATE_CLUSTER_NUM_WORKERS=0
 CREATE_CLUSTER_SKIPMASTERSETUP=
@@ -282,6 +284,10 @@ do_create_cluster_mutate() {
   #    sleep 40
   #}
 
+  [[ $CREATE_CLUSTER_WITH_LB -gt 0 ]] && {
+    create_lb_node $CREATE_CLUSTER_NUM_MASTERS || return
+  }
+
   [[ $CREATE_CLUSTER_NUM_WORKERS -gt 0 ]] && {
     create_worker_nodes "$CREATE_CLUSTER_NUM_WORKERS" || return
   }
@@ -346,6 +352,72 @@ get_docker_ids_for_cluster() {
 }
 
 # ---------------------------------------------------------------------------
+create_lb_node() {
+
+  # Create the load balancer nodes
+  # Args:
+
+  # Ceate container
+  run_with_progress \
+    "    Creating LB container, '$CREATE_CLUSTER_NAME-lb'" \
+    create_docker_container \
+    "$CREATE_CLUSTER_NAME-lb" \
+    "$LABELKEY=$CREATE_CLUSTER_NAME"
+
+  # Set up
+  [[ -z $CREATE_CLUSTER_SKIPLBSETUP ]] && {
+    run_with_progress \
+      "    Setting up '$CREATE_CLUSTER_NAME-lb'" \
+      set_up_lb_node "$CREATE_CLUSTER_NAME-lb"
+    r=$?
+
+    [[ $r -ne 0 ]] && {
+      printf '\n' >"$E"
+      cat $RUNWITHPROGRESS_OUTPUT >"$E"
+      printf '\nERROR: Set up failed. See above, and also in the file:' >"$E"
+      printf '%s\n' "$RUNWITHPROGRESS_OUTPUT" >"$E"
+      return $ERROR
+    }
+  }
+
+  return $OK
+}
+
+# ---------------------------------------------------------------------------
+set_up_lb_node() {
+
+  # Call the correct set up function based on the version
+  # Args
+  #   arg1 - the container ID to set up
+
+  local setupfile
+
+  setupfile=$(mktemp --tmpdir=/var/tmp) || {
+    printf 'ERROR: mktmp failed.\n' >"$E"
+    return $ERROR
+  }
+
+  # Use:
+  #get_docker_container_ip ID/NAME
+
+  cat <<'EnD' >"$setupfile"
+# Disable ipv6
+sysctl -w net.ipv6.conf.all.disable_ipv6=1
+sysctl -w net.ipv6.conf.default.disable_ipv6=1
+
+systemctl stop kubelet crio
+systemctl disable kubelet crio
+EnD
+
+  docker cp "$setupfile" "$1":/root/setup.sh || err || {
+    rm -f "$setupfile"
+    return $ERROR
+  }
+
+  docker exec "$1" bash /root/setup.sh || err
+}
+
+# ---------------------------------------------------------------------------
 create_master_nodes() {
 
   # Create the master nodes
@@ -356,7 +428,7 @@ create_master_nodes() {
 
   for int in $(seq 1 "$1"); do
     run_with_progress \
-      "    Creating base container, '$CREATE_CLUSTER_NAME-master-$int'" \
+      "    Creating master container, '$CREATE_CLUSTER_NAME-master-$int'" \
       create_docker_container \
       "$CREATE_CLUSTER_NAME-master-$int" \
       "$LABELKEY=$CREATE_CLUSTER_NAME"
@@ -455,7 +527,7 @@ create_worker_nodes() {
 
   for int in $(seq 1 "$1"); do
     run_with_progress \
-      "    Creating base container, '$CREATE_CLUSTER_NAME-worker-$int'" \
+      "    Creating worker container, '$CREATE_CLUSTER_NAME-worker-$int'" \
       create_docker_container \
       "$CREATE_CLUSTER_NAME-worker-$int" \
       "$LABELKEY=$CREATE_CLUSTER_NAME"
@@ -714,7 +786,7 @@ do_exec_nomutate() {
 
   if [[ -n $1 ]]; then
 
-    # The caller gave a specific name for exec
+    # The caller gave a specific name for exec.
     # Check if the container name exists
 
     if grep -qs "^$1$" <<<"$names"; then
@@ -728,7 +800,7 @@ do_exec_nomutate() {
 
   else
 
-    # The caller supplied no container name
+    # The caller supplied no container name.
     # Present some choices
 
     printf 'Choose the container to log in to:\n\n'
@@ -822,9 +894,25 @@ do_get_clusters_nomutate() {
       <<<"$info") || err || return
 
     printf '%s %s %s %s\n' "$clustname" "$id" "$containerhostname" "$containerip"
+
   done | sort -k 3 >>"$output"
 
   column -t "$output" || err
+}
+
+# ---------------------------------------------------------------------------
+get_docker_container_ip() {
+
+  # Args:
+  #   arg1 - docker container id or container name
+
+  docker inspect \
+    --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' \
+    "$1" || {
+    printf 'ERROR: docker failed\n\n' >"$E"
+    err || return
+  }
+
 }
 
 # ---------------------------------------------------------------------------
@@ -958,7 +1046,7 @@ usage() {
 
   case $COMMAND in
   create)
-    help_usage
+    create_usage
     return $OK
     ;;
   delete)
@@ -979,7 +1067,7 @@ usage() {
     ;;
   esac
 
-  cat <<'EOF'
+  cat <<'EnD'
 
 Usage: mokctl [-h] <command> <subcommand> [subcommand_OPTIONS...]
  
@@ -995,14 +1083,14 @@ Where command can be one of:
   build  - Build item(s) used by the system.
   get    - Get details about items in the system.
 
-EOF
+EnD
 
   help_usage
   delete_usage
   build_usage
   get_usage
 
-  cat <<'EOF'
+  cat <<'EnD'
 EXAMPLES
  
 Get a list of mok clusters
@@ -1027,13 +1115,13 @@ Delete a cluster:
  
   mokctl delete cluster mycluster
 
-EOF
+EnD
 }
 
 # ---------------------------------------------------------------------------
-help_usage() {
+create_usage() {
 
-  cat <<'EOF'
+  cat <<'EnD'
 create subcommands are:
  
   cluster - Create a local kubernetes cluster.
@@ -1056,15 +1144,18 @@ create cluster [flags] options:
          See also '--k8sver' flag.
   --skipworkersetup - The same as '--skipmastersetup', but skips
          setting up the worker only.
+  --with-lb - Add a haproxy load balancer. The software will be installed
+         and set up to reverse proxy to the master node(s), unless
+         --skiplbsetup is used.
   --k8sver VERSION - Unimplemented.
 
-EOF
+EnD
 }
 
 # ---------------------------------------------------------------------------
 delete_usage() {
 
-  cat <<'EOF'
+  cat <<'EnD'
 delete subcommands are:
  
   cluster - Delete a local kubernetes cluster.
@@ -1075,13 +1166,13 @@ delete cluster options:
   delete cluster NAME
   NAME        - The name of the cluster to delete
 
-EOF
+EnD
 }
 
 # ---------------------------------------------------------------------------
 build_usage() {
 
-  cat <<'EOF'
+  cat <<'EnD'
 build subcommands are:
  
   image - Creates the ${baseimagename} base image.
@@ -1091,13 +1182,13 @@ build image options:
  Format:
   build image
 
-EOF
+EnD
 }
 
 # ---------------------------------------------------------------------------
 get_usage() {
 
-  cat <<'EOF'
+  cat <<'EnD'
 get subcommands are:
  
   cluster(s) - list all mokctl managed clusters.
@@ -1109,13 +1200,13 @@ get cluster(s) options:
   NAME        - (optional) The name of the cluster to get
                 details about.
 
-EOF
+EnD
 }
 
 # ---------------------------------------------------------------------------
 exec_usage() {
 
-  cat <<'EOF'
+  cat <<'EnD'
 exec has no subcommands. Exec into a container.
  
 get cluster(s) options:
@@ -1126,7 +1217,7 @@ get cluster(s) options:
                 If this option is empty then the user will be offered
                 a choice of containers to log in to.
 
-EOF
+EnD
 }
 
 # ---------------------------------------------------------------------------
@@ -1173,6 +1264,14 @@ parse_options() {
     --skipworkersetup)
       verify_option '--skipworkersetup' || return $ERROR
       CREATE_CLUSTER_SKIPWORKERSETUP=$TRUE
+      ;;
+    --skiplbsetup)
+      verify_option '--skiplbsetup' || return $ERROR
+      CREATE_CLUSTER_SKIPLBSETUP="$TRUE"
+      ;;
+    --with-lb)
+      verify_option '--with-lb' || return $ERROR
+      CREATE_CLUSTER_WITH_LB="$TRUE"
       ;;
     --k8sver)
       verify_option '--k8sver' || return $ERROR
@@ -1536,7 +1635,9 @@ check_valid_create_cluster_opts() {
     "-h"
     "--skipmastersetup"
     "--skipworkersetup"
+    "--skiplbsetup"
     "--k8sver"
+    "--with-lb"
   )
 
   for opt in "${validopts[@]}"; do
@@ -1590,6 +1691,26 @@ check_valid_build_image_opts() {
 
 # ---------------------------------------------------------------------------
 check_valid_get_cluster_opts() {
+
+  # Args:
+  #   arg1 - The option to check.
+
+  local opt validopts=(
+    "--help"
+    "-h"
+  )
+
+  for opt in "${validopts[@]}"; do
+    [[ $1 == "$opt" ]] && return $OK
+  done
+
+  usage
+  printf 'ERROR: "%s" is not a valid "get cluster" option.\n' "$1" >"$E"
+  return $ERROR
+}
+
+# ---------------------------------------------------------------------------
+check_valid_exec_cluster_opts() {
 
   # Args:
   #   arg1 - The option to check.

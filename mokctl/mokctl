@@ -738,12 +738,12 @@ do_exec_nomutate() {
     readarray -t containernames <<<"$names"
 
     # Print the header then print the items in the loop
-    printf '   %s\n' "${lines[0]}"
+    #printf '   %s\n' "${lines[0]}"
     for int in $(seq 1 $((${#lines[*]} - 1))); do
       printf '%00d) %s\n' "$int" "${lines[int]}"
-    done
+    done | sort -k 4
 
-    printf "\nEnter the number >"
+    printf "\nChoose a number (Enter to cancel)> "
     read -r ans
 
     [[ -z $ans || $ans -lt 0 || $ans -gt $((${#lines[*]} - 1)) ]] && {
@@ -800,15 +800,12 @@ do_get_clusters_nomutate() {
     return $ERROR
   }
 
-  shown=$FALSE
-  for id in "${nodes[@]}"; do
+  # Output the header
+  [[ $GET_CLUSTER_SHOW_HEADER -eq $TRUE ]] && {
+    printf 'MOK_Cluster Docker_ID Container_Name IP_Address\n' >"$output"
+  }
 
-    # Output the header
-    [[ $GET_CLUSTER_SHOW_HEADER -eq $TRUE && \
-    $shown -eq $FALSE ]] && {
-      shown=$TRUE
-      printf 'MOK_Cluster Docker_ID Container_Name IP_Address\n'
-    }
+  for id in "${nodes[@]}"; do
 
     info=$(get_info_about_container_using_docker "$id") || return
 
@@ -825,7 +822,7 @@ do_get_clusters_nomutate() {
       <<<"$info") || err || return
 
     printf '%s %s %s %s\n' "$clustname" "$id" "$containerhostname" "$containerip"
-  done >"$output"
+  done | sort -k 3 >>"$output"
 
   column -t "$output" || err
 }

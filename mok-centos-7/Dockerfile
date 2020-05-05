@@ -34,7 +34,9 @@ RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do \
     && systemctl enable crio \
     && curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz \
     && tar zxvf crictl-$CRICTL_VERSION-linux-amd64.tar.gz -C /usr/local/bin \
-    && rm -f crictl-$CRICTL_VERSION-linux-amd64.tar.gz
+    && rm -f crictl-$CRICTL_VERSION-linux-amd64.tar.gz \
+    && mkdir -p /opt/cni/ \
+    && ln -s /usr/libexec/cni /opt/cni/bin
 COPY k8s.conf /etc/sysctl.d/k8s.conf
 COPY 100-crio-bridge.conf /etc/cni/net.d/100-crio-bridge.conf
 COPY kubelet-config /etc/sysconfig/kubelet

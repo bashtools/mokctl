@@ -63,30 +63,7 @@ In progress.
 
 Take note of the [Status](#status) above and the [Releases](https://github.com/mclarkson/my-own-kind/releases) page.
 
-#### On Linux
-
-Probably the best way would be to:
-
-```bash
-git clone https://github.com/mclarkson/my-own-kind.git
-cd my-own-kind
-make test
-sudo make install
-mokctl build image
-mokctl create cluster mycluster 1 0
-```
-
-Removal
-
-```bash
-# To remove mokctl
-sudo make uninstall
-
-# OR, to remove mokctl and the `~/.mok/` configuration directory
-sudo make purge
-```
-
-#### For All Operating Systems
+#### For all Operating Systems
 
 Use the mokctl docker container from docker hub:
 
@@ -114,10 +91,33 @@ export KUBECONFIG=~/.mok/admin.conf
 
 kubectl get pods -A
 
-
+kubectl run -ti --image busybox busybox sh
 ```
 
 See: [Mokctl on Docker Hub](https://hub.docker.com/r/mclarkson/mokctl).
+
+#### For Linux only
+
+Probably the best way would be to:
+
+```bash
+git clone https://github.com/mclarkson/my-own-kind.git
+cd my-own-kind
+make test
+sudo make install
+mokctl build image
+mokctl create cluster mycluster 1 0
+```
+
+Removal
+
+```bash
+# To remove mokctl
+sudo make uninstall
+
+# OR, to remove mokctl and the `~/.mok/` configuration directory
+sudo make purge
+```
 
 ## Contributing
 

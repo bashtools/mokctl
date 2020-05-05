@@ -97,6 +97,24 @@ docker run --privileged -ti \
   -e TERM=xterm-256color mclarkson/mokctl
 ```
 
+An example alias:
+
+```bash
+alias mokctl='docker run --privileged -ti -v /var/run/docker.sock:/var/run/docker.sock -v ~/.mok/:/root/.mok/ -e TERM=xterm-256color mclarkson/mokctl'
+```
+
+(Or write a small script instead.)
+
+Then:
+
+```bash
+mokctl create cluster myk8s 1 0
+
+export KUBECONFIG=~/.mok/admin.conf
+
+kubectl get pods -A
+```
+
 See: [Mokctl on Docker Hub](https://hub.docker.com/r/mclarkson/mokctl) for more information and an example alias.
 
 ## Contributing

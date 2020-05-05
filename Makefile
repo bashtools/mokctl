@@ -2,11 +2,11 @@
 
 all: mokctl.deploy tags
 
-package: all
+mokctl-docker: all
 	cp mokctl.deploy package/
 	docker build -t local/mokctl package
 
-docker-hub: package
+docker-hub-upload: mokctl-docker
 	docker tag local/mokctl docker.io/mclarkson/mokctl
 	docker push docker.io/mclarkson/mokctl
 

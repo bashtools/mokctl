@@ -21,7 +21,7 @@ The compute instances in this lab will be provisioned using [CentOS](https://www
 Create three compute instances which will host the Kubernetes control plane and three instances that will host the workers.
 
 ```
-mokctl create cluster --skipmastersetup --with-lb kthw 3 3
+mokctl create cluster --skipmastersetup --skiplbsetup --with-lb kthw 3 3
 ```
 
 ### Verification

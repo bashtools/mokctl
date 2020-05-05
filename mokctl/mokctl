@@ -392,7 +392,7 @@ set_up_lb_node() {
 
   local setupfile
 
-  setupfile=$(mktemp --tmpdir=/var/tmp) || {
+  setupfile=$(mktemp -p /var/tmp) || {
     printf 'ERROR: mktmp failed.\n' >"$E"
     return $ERROR
   }
@@ -465,6 +465,10 @@ create_master_nodes() {
   [[ -z $CREATE_CLUSTER_SKIPMASTERSETUP ]] && {
     docker cp "$CREATE_CLUSTER_NAME-master-$int":/etc/kubernetes/admin.conf \
       ~/.mok/admin.conf
+    chmod 666 ~/.mok/admin.conf || {
+      printf 'ERROR: Could not "chown 666 ~/.mok/admin.conf"'
+      err || return
+    }
   }
 
   return $OK
@@ -587,7 +591,7 @@ get_master_join_details() {
 
   local joinvarsfile
 
-  joinvarsfile=$(mktemp --tmpdir=/var/tmp) || {
+  joinvarsfile=$(mktemp -p /var/tmp) || {
     printf 'ERROR: mktmp failed.\n' >"$E"
     return $ERROR
   }
@@ -752,7 +756,7 @@ create_docker_build_dir() {
   # Creates a docker build directory in /var/tmp/tmp.XXXXXXXX
   # No args expected
 
-  DOCKERBUILDTMPDIR=$(mktemp -d --tmpdir=/var/tmp) || {
+  DOCKERBUILDTMPDIR=$(mktemp -d -p /var/tmp) || {
     printf 'ERROR: mktmp failed.\n' >"$E"
     err || return
   }
@@ -782,7 +786,8 @@ do_exec_nomutate() {
   local names int ans lines containernames
 
   GET_CLUSTER_SHOW_HEADER=$FALSE
-  names=$(do_get_clusters_nomutate | awk '{ print $3; }')
+  names=$(do_get_clusters_nomutate) || return
+  names=$(printf '%s' "$names" | awk '{ print $3; }')
 
   if [[ -n $1 ]]; then
 
@@ -790,7 +795,7 @@ do_exec_nomutate() {
     # Check if the container name exists
 
     if grep -qs "^$1$" <<<"$names"; then
-      run_docker_exec "$1"
+      run_docker_exec "$1" || return
       return $OK
     else
       printf 'ERROR: Cannot exec into non-existent container: "%s".\n' \
@@ -837,7 +842,10 @@ run_docker_exec() {
 
   local cmd=${2:-bash}
 
-  docker exec -ti "$1" "$cmd"
+  docker exec -ti "$1" "$cmd" || {
+    printf 'ERROR: docker failed\n\n' >"$E"
+    err || return $ERROR
+  }
 }
 
 # ---------------------------------------------------------------------------
@@ -867,7 +875,7 @@ do_get_clusters_nomutate() {
 
   # Use 'docker inspect' to get the value of the label $LABELKEY
 
-  output=$(mktemp --tmpdir=/var/tmp) || {
+  output=$(mktemp -p /var/tmp) || {
     printf 'ERROR: mktmp failed.\n' >"$E"
     return $ERROR
   }
@@ -970,7 +978,7 @@ run_with_progress() {
 
   local displaytext=$1 retval int
 
-  RUNWITHPROGRESS_OUTPUT=$(mktemp --tmpdir=/var/tmp) || {
+  RUNWITHPROGRESS_OUTPUT=$(mktemp -p /var/tmp) || {
     printf 'ERROR: mktmp failed.\n' >"$E"
     err || return
   }
@@ -1069,7 +1077,7 @@ usage() {
 
   cat <<'EnD'
 
-Usage: mokctl [-h] <command> <subcommand> [subcommand_OPTIONS...]
+Usage: mokctl [-h] <command> [subcommand] [OPTIONS...]
  
 Global options:
  
@@ -1082,13 +1090,16 @@ Where command can be one of:
   delete - Delete item(s) from the system.
   build  - Build item(s) used by the system.
   get    - Get details about items in the system.
+  exec   - 'Log in' to the container.
 
 EnD
 
-  help_usage
+  # Output individual help pages
+  create_usage
   delete_usage
   build_usage
   get_usage
+  exec_usage
 
   cat <<'EnD'
 EXAMPLES
@@ -1742,7 +1753,7 @@ set_up_master_node_v1_18_2() {
 
   local setupfile
 
-  setupfile=$(mktemp --tmpdir=/var/tmp) || {
+  setupfile=$(mktemp -p /var/tmp) || {
     printf 'ERROR: mktmp failed.\n' >"$E"
     return $ERROR
   }
@@ -1799,7 +1810,7 @@ set_up_worker_node_v1_18_2() {
 
   local setupfile cahash="$2" token="$3" masterip="$4"
 
-  setupfile=$(mktemp --tmpdir=/var/tmp) || {
+  setupfile=$(mktemp -p /var/tmp) || {
     printf 'ERROR: mktmp failed.\n' >"$E"
     return $ERROR
   }

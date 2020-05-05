@@ -61,6 +61,10 @@ In progress.
 
 ### Try mokctl
 
+Take note of the [Status](#status) above and the [Releases](https://github.com/mclarkson/my-own-kind/releases) page.
+
+#### On Linux
+
 Probably the best way would be to:
 
 ```bash
@@ -82,7 +86,18 @@ sudo make uninstall
 sudo make purge
 ```
 
-Take note of the [Status](#status) above and the [Releases](https://github.com/mclarkson/my-own-kind/releases) page.
+#### For All Operating Systems
+
+Use the mokctl docker container from docker hub:
+
+```bash
+docker run --privileged -ti \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v ~/.mok/:/root/.mok/ \
+  -e TERM=xterm-256color mclarkson/mokctl
+```
+
+See: [Mokctl on Docker Hub](https://hub.docker.com/r/mclarkson/mokctl)
 
 ## Contributing
 

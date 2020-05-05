@@ -2,6 +2,14 @@
 
 all: mokctl.deploy tags
 
+package: all
+	cp mokctl.deploy package/
+	docker build -t local/mokctl package
+
+docker-hub: package
+	docker tag local/mokctl docker.io/mclarkson/mokctl
+	docker push docker.io/mclarkson/mokctl
+
 mokctl.deploy: mokctl mok-centos-7
 	bash mokctl/embed-dockerfile.sh
 	chmod +x mokctl.deploy

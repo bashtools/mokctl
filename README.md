@@ -97,7 +97,7 @@ docker run --privileged -ti \
   -e TERM=xterm-256color mclarkson/mokctl
 ```
 
-See: [Mokctl on Docker Hub](https://hub.docker.com/r/mclarkson/mokctl)
+See: [Mokctl on Docker Hub](https://hub.docker.com/r/mclarkson/mokctl) for more information and an example alias.
 
 ## Contributing
 

@@ -32,8 +32,8 @@ BUILD_IMAGE_K8SVER=
 CREATE_CLUSTER_K8SVER=
 CREATE_CLUSTER_WITH_LB=
 CREATE_CLUSTER_SKIPLBSETUP=
-CREATE_CLUSTER_NUM_MASTERS=0
-CREATE_CLUSTER_NUM_WORKERS=0
+CREATE_CLUSTER_NUM_MASTERS=
+CREATE_CLUSTER_NUM_WORKERS=
 CREATE_CLUSTER_SKIPMASTERSETUP=
 CREATE_CLUSTER_SKIPWORKERSETUP=
 DELETE_CLUSTER_NAME=
@@ -1758,6 +1758,7 @@ set_up_master_node_v1_18_2() {
     return $ERROR
   }
 
+  # Write the file
   cat <<'EnD' >"$setupfile"
 # Disable ipv6
 sysctl -w net.ipv6.conf.all.disable_ipv6=1
@@ -1790,7 +1791,8 @@ systemctl enable kubelet
 
 export KUBECONFIG=/etc/kubernetes/admin.conf
 
-kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+#kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
 EnD
 
   docker cp "$setupfile" "$1":/root/setup.sh || err || {
@@ -1798,7 +1800,34 @@ EnD
     return $ERROR
   }
 
-  docker exec "$1" bash /root/setup.sh || err
+  # Run the file
+  docker exec "$1" bash /root/setup.sh || err || return
+
+  # Remove the taint if we're setting up a single node cluster
+
+  [[ $CREATE_CLUSTER_NUM_WORKERS -eq 0 ]] && {
+
+    removetaint=$(mktemp -p /var/tmp) || {
+      printf 'ERROR: mktmp failed.\n' >"$E"
+      return $ERROR
+    }
+
+    # Write the file
+    cat <<'EnD' >"$removetaint"
+export KUBECONFIG=/etc/kubernetes/admin.conf
+kubectl taint nodes --all node-role.kubernetes.io/master-
+EnD
+
+    docker cp "$removetaint" "$1":/root/removetaint.sh || err || {
+      rm -f "$removetaint"
+      return $ERROR
+    }
+
+    # Run the file
+    docker exec "$1" bash /root/removetaint.sh || err
+  }
+
+  return $OK
 }
 
 # ---------------------------------------------------------------------------

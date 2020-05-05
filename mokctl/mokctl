@@ -50,7 +50,7 @@ DOCKERBUILDTMPDIR=
 # For the spinning progress animation
 RUNWITHPROGRESS_OUTPUT=
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 main() {
 
   # Execution begins here
@@ -788,6 +788,7 @@ do_exec_nomutate() {
   GET_CLUSTER_SHOW_HEADER=$FALSE
   names=$(do_get_clusters_nomutate) || return
   names=$(printf '%s' "$names" | awk '{ print $3; }')
+  readarray -t containernames <<<"$names"
 
   if [[ -n $1 ]]; then
 
@@ -803,6 +804,11 @@ do_exec_nomutate() {
       return $ERROR
     fi
 
+  elif [[ ${#containernames[*]} == 1 ]]; then
+
+    # If there's only one container just log into it without asking
+    run_docker_exec "${containernames[0]}"
+
   else
 
     # The caller supplied no container name.
@@ -812,7 +818,6 @@ do_exec_nomutate() {
 
     GET_CLUSTER_SHOW_HEADER=$TRUE
     readarray -t lines <<<"$(do_get_clusters_nomutate)" || return
-    readarray -t containernames <<<"$names"
 
     # Print the header then print the items in the loop
     printf '   %s\n' "${lines[0]}"
@@ -1777,7 +1782,7 @@ echo "failSwapOn: false" >>/var/lib/kubelet/config.yaml
 
 # Tell kubeadm to carry on from here
 kubeadm init \
-  --pod-network-cidr=192.168.0.0/16 \
+  --pod-network-cidr=10.123.0.0/16 \
   --ignore-preflight-errors Swap \
   --skip-phases=preflight,kubelet-start
 
@@ -1794,7 +1799,8 @@ export KUBECONFIG=/etc/kubernetes/admin.conf
 #kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
 #kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
 # Calico is e2e tested by k8s team. Requires --pod-network-cidr=192.168.0.0/16
-kubectl apply -f https://docs.projectcalico.org/v3.11/manifests/calico.yaml
+kubectl apply -f https://docs.projectcalico.org/v3.11/manifests/calico.yaml |
+curl https://docs.projectcalico.org/v3.11/manifests/calico.yaml | sed 's#192.168.0.0/16#10.123.0.0/16#' | kubectl apply -f -
 EnD
 
   docker cp "$setupfile" "$1":/root/setup.sh || err || {

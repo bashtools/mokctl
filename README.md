@@ -113,6 +113,8 @@ mokctl create cluster myk8s 1 0
 export KUBECONFIG=~/.mok/admin.conf
 
 kubectl get pods -A
+
+
 ```
 
 See: [Mokctl on Docker Hub](https://hub.docker.com/r/mclarkson/mokctl).

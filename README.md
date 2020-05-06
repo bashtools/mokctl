@@ -61,6 +61,8 @@ In progress.
 
 ### Try mokctl
 
+Install [Docker](https://docs.docker.com/get-docker/) if you don't have it already.
+
 Take note of the [Status](#status) above and the [Releases](https://github.com/mclarkson/my-own-kind/releases) page.
 
 #### For all Operating Systems
@@ -85,6 +87,8 @@ alias mokctl='docker run --privileged -ti -v /var/run/docker.sock:/var/run/docke
 Then:
 
 ```bash
+mokctl build image
+
 mokctl create cluster myk8s 1 0
 
 export KUBECONFIG=~/.mok/admin.conf

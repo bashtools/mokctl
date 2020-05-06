@@ -1,0 +1,115 @@
+#!/bin/bash
+# Info from:
+# https://serverfault.com/questions/178457/can-i-send-some-text-to-the-stdin-of-an-active-process-running-in-a-screen-sessi
+# Playback commands using screen's 'stuff' command.
+
+FILE=
+WAITING=
+PID=
+
+main() {
+
+  parse_options "$@" || return
+
+  start_gnu_screen
+
+  OLDWAITING="$WAITING"
+
+  while read -r line; do
+    [[ $line == "screencast paste" ]] && {
+      paste=true
+      continue
+    }
+    [[ $line == "screencast snapshotps" ]] && {
+      snapshotps=true
+      continue
+    }
+    [[ $line == "screencast firstps" ]] && {
+      WAITING="$OLDWAITING"
+      continue
+    }
+    if [[ -n $paste ]]; then
+      paste_line "$line"
+      [[ -n $snapshotps ]] && {
+        unset snapshotps
+        sleep 1
+        WAITING=$(pstree "$PID" | tr -d 0-9 | head -n 1 | wc -c)
+      }
+      unset paste
+    else
+      print_line "$line"
+      [[ -n $snapshotps ]] && {
+        unset snapshotps
+        sleep 2
+        WAITING=$(pstree "$PID" | tr -d 0-9 | head -n 1 | wc -c)
+      }
+    fi
+    read -r cmd trash <<<"$line"
+    if [[ $cmd == '#' ]]; then
+      echo "$trash" >/dev/null
+      sleep 2
+      continue
+    else
+      while [[ $WAITING != $(pstree $PID | tr -d 0-9 | head -n 1 | wc -c) ]]; do
+        sleep 1
+      done
+      sleep 1
+    fi
+  done <"$FILE"
+
+  sleep 2
+  killall byzanz-record &>/dev/null
+}
+
+paste_line() {
+  screen -S screencast -p 0 -X stuff "$1^M"
+  sleep 1
+}
+
+print_line() {
+  local chararray int
+  readarray -t chararray <<<"$(printf '%s' "$1" | grep -o .)"
+  for int in "${chararray[@]}"; do
+    screen -S screencast -p 0 -X stuff "$int"
+    sleep ."$(printf '%02d' $((RANDOM % 20)))"
+  done
+  screen -S screencast -p 0 -X stuff "^M"
+  sleep 1
+}
+
+parse_options() {
+  [[ -z $1 ]] && {
+    printf 'Usage: %s <FILENAME>\n' "$(basename "$0")"
+    return 1
+  }
+
+  FILE="$1"
+}
+
+start_gnu_screen() {
+  printf 'Starting a screen session\n'
+
+  screen -d -m -S screencast zsh
+  PID=$(screen -ls | grep screencast | sed -r 's/[ \t]+//g' | cut -f 1 -d.)
+  sleep 2
+  WAITING=$(pstree "$PID" | tr -d 0-9 | head -n 1 | wc -c)
+
+  cat <<EnD
+In another terminal type:
+
+  screen -r screencast
+
+Then press 'enter' here and the screencast will start
+in the other terminal.
+EnD
+
+  printf '>'
+  read -r
+}
+
+# Calls main() if we're called from the command line
+if [ "$0" = "${BASH_SOURCE[0]}" ] || [ -z "${BASH_SOURCE[0]}" ]; then
+  main "$@"
+fi
+
+# vim:ft=sh:sw=2:et:ts=2:

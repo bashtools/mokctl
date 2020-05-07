@@ -1228,7 +1228,7 @@ exec_usage() {
   cat <<'EnD'
 EXEC has no subcommands. Exec into a container.
  
-exec cluster(s) options:
+exec options:
  
  Format:
   exec [NAME]

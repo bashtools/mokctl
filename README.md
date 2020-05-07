@@ -8,6 +8,8 @@ Build a conformant kubernetes cluster in containers, on Linux, using docker only
 
 If you follow the instructions in this repository you will end up building your own version of [Kind](https://kind.sigs.k8s.io/). I'm pretty sure it won't be easy though - there's so much that can go wrong!
 
+If you only want to use `mokctl` to build a kubernetes cluster then that's fine! See [below](#try-mokctl) for instructions for using on your OS. Please add to the open Issues if it does or doesn't work for you. Thanks!
+
 To get the most out of the "labs", and I use that term loosely, you should have some theoretical understanding of kubernetes. Some good resources are:
 
 * [Certified Kubernetes Administrator (CKA) with Practice Exam Tests](https://www.udemy.com/course/certified-kubernetes-administrator-with-practice-tests/)

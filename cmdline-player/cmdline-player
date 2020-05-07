@@ -11,7 +11,10 @@ main() {
 
   parse_options "$@" || return
 
+  kill_old_gnu_screencasts
+  choose_recording_window # <- using xwininfo
   start_gnu_screen
+  start_recording &
 
   OLDWAITING="$WAITING"
 
@@ -40,7 +43,7 @@ main() {
       print_line "$line"
       [[ -n $snapshotps ]] && {
         unset snapshotps
-        sleep 2
+        sleep 1
         WAITING=$(pstree "$PID" | tr -d 0-9 | head -n 1 | wc -c)
       }
     fi
@@ -58,6 +61,29 @@ main() {
   done <"$FILE"
 
   sleep 2
+  end_recording
+}
+
+kill_old_gnu_screencasts() {
+  local pid
+  while true; do
+    pid=$(screen -ls | grep screencast | sed -r 's/[ \t]+//g' | cut -f 1 -d.)
+    [[ -z $pid ]] && break
+    screen -XS "$pid" quit
+  done
+}
+
+choose_recording_window() {
+  printf 'Click on the window to be recorded\n'
+  eval "$(awk 'BEGIN  {X=0;Y=0;} /Abs.*left X/ {X=$NF;} /Abs.*left Y/ {Y=$NF;} /Width/ {W=$NF;} /Height/ {H=$NF;} END { printf "X=%d\nY=%d\nW=%d\nH=%d\n",X,Y,W,H; }' <<<"$(xwininfo)")"
+}
+
+start_recording() {
+  [[ -e screencast.gif ]] && rm screencast.gif
+  byzanz-record -d 1200 --x="$X" --y="$Y" --width="$W" --height="$H" screencast.gif
+}
+
+end_recording() {
   killall byzanz-record &>/dev/null
 }
 
@@ -73,8 +99,9 @@ print_line() {
     screen -S screencast -p 0 -X stuff "$int"
     sleep ."$(printf '%02d' $((RANDOM % 20)))"
   done
+  sleep .3
   screen -S screencast -p 0 -X stuff "^M"
-  sleep 1
+  sleep .8
 }
 
 parse_options() {

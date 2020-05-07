@@ -1,11 +1,14 @@
 # Running mokctl using docker - Just set up an alias!
 screencast paste
 alias mokctl='docker run --privileged -ti -v /var/run/docker.sock:/var/run/docker.sock -v ~/.mok/:/root/.mok/ -e TERM=xterm-256color mclarkson/mokctl'
+screencast paste
 # Add that to your '~/.bashrc' and/or '~/.zshrc' to make permanent
+screencast paste
 # The docker container image will be downloaded on first run
 # Let's use mokctl now...
 mokctl -h
 mokctl build
+# Must build an image first. Takes a few minutes on first use.
 mokctl build image
 mokctl get -h
 mokctl get clusters
@@ -14,6 +17,7 @@ mokctl create
 mokctl create cluster myk8s --skipmastersetup 1 0
 mokctl get cluster
 # Let's take a look inside
+mokctl exec -h
 screencast snapshotps
 mokctl exec
 ps axf
@@ -21,6 +25,7 @@ rpm -qa | grep kube
 # Do kubernetes-the-hard-way now :)
 screencast snapshotps
 exit
+mokctl delete cluster -h
 screencast snapshotps
 mokctl delete cluster myk8s
 screencast firstps
@@ -33,10 +38,10 @@ docker ps
 kubectl get pods -A
 kubectl get nodes
 # Wait for k8s to settle
-sleep 30
+sleep 40
 kubectl get pods -A
 # Wait a bit longer...
-sleep 30
+sleep 40
 kubectl get pods -A
 kubectl run -ti --image busybox --restart=Never busybox1 -- ip address
 kubectl get pods -o wide

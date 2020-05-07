@@ -18,15 +18,15 @@ mokctl create cluster myk8s --skipmastersetup 1 0
 mokctl get cluster
 # Let's take a look inside
 mokctl exec -h
-screencast snapshotps
+screencast subshell
 mokctl exec
 ps axf
 rpm -qa | grep kube
 # Do kubernetes-the-hard-way now :)
-screencast snapshotps
+screencast subshell
 exit
 mokctl delete cluster -h
-screencast snapshotps
+screencast subshell
 mokctl delete cluster myk8s
 screencast firstps
 y
@@ -43,10 +43,16 @@ kubectl get pods -A
 # Wait a bit longer...
 sleep 40
 kubectl get pods -A
-kubectl run -ti --image busybox --restart=Never busybox1 -- ip address
+screencast prompt #%$
+kubectl run -ti --image busybox --restart=Never busybox1 sh
+screencast prompt #%$
+ping -c 3 8.8.8.8
+screencast prompt #%$
+ip address
+exit
 kubectl get pods -o wide
 mokctl get cluster
-screencast snapshotps
+screencast subshell
 mokctl delete cluster myk8s
 screencast firstps
 y

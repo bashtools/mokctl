@@ -6,6 +6,7 @@
 FILE=
 WAITING=
 PID=
+VIDEO="screencast.gif"
 
 main() {
 
@@ -23,45 +24,70 @@ main() {
       paste=true
       continue
     }
-    [[ $line == "screencast snapshotps" ]] && {
-      snapshotps=true
+    [[ $line == "screencast subshell" ]] && {
+      subshell=true
+      continue
+    }
+    [[ $line == "screencast prompt"* ]] && {
+      promptlist="${line##* }"
+      waitforprompt=true
       continue
     }
     [[ $line == "screencast firstps" ]] && {
       WAITING="$OLDWAITING"
       continue
     }
+
     if [[ -n $paste ]]; then
       paste_line "$line"
-      [[ -n $snapshotps ]] && {
-        unset snapshotps
+      [[ -n $subshell ]] && {
+        unset subshell
         sleep 1
-        WAITING=$(pstree "$PID" | tr -d 0-9 | head -n 1 | wc -c)
+        WAITING=$(fingerprint)
       }
       unset paste
     else
       print_line "$line"
-      [[ -n $snapshotps ]] && {
-        unset snapshotps
+      [[ -n $subshell ]] && {
+        unset subshell
         sleep 1
-        WAITING=$(pstree "$PID" | tr -d 0-9 | head -n 1 | wc -c)
+        WAITING=$(fingerprint)
       }
     fi
-    read -r cmd trash <<<"$line"
+
+    cmd="${line%% *}"
+
     if [[ $cmd == '#' ]]; then
-      echo "$trash" >/dev/null
-      sleep 2
+      sleep 0.5
       continue
     else
-      while [[ $WAITING != $(pstree $PID | tr -d 0-9 | head -n 1 | wc -c) ]]; do
+      if [[ -n $waitforprompt ]]; then
+        unset waitforprompt
+        while true; do
+          sleep 1
+          screen -S screencast -p 0 -X hardcopy latest.hardcopy
+          if prompt_found "$promptlist"; then break; fi
+        done
         sleep 1
-      done
-      sleep 1
+      else
+        while [[ $WAITING != $(fingerprint) ]]; do
+          sleep 1
+        done
+        sleep 1
+      fi
     fi
+
   done <"$FILE"
 
   sleep 2
   end_recording
+}
+
+prompt_found() {
+  promptlist="$1"
+  lastcharinfile=$(grep -v '^$' latest.hardcopy | tail -n 1 | grep -o '.$')
+  [[ $promptlist == *"$lastcharinfile"* ]] && return 0
+  return 1
 }
 
 kill_old_gnu_screencasts() {
@@ -79,8 +105,8 @@ choose_recording_window() {
 }
 
 start_recording() {
-  [[ -e screencast.gif ]] && rm screencast.gif
-  byzanz-record -d 1200 --x="$X" --y="$Y" --width="$W" --height="$H" screencast.gif
+  [[ -e $VIDEO ]] && rm "$VIDEO"
+  byzanz-record -d 1200 --x="$X" --y="$Y" --width="$W" --height="$H" "$VIDEO"
 }
 
 end_recording() {
@@ -97,7 +123,7 @@ print_line() {
   readarray -t chararray <<<"$(printf '%s' "$1" | grep -o .)"
   for int in "${chararray[@]}"; do
     screen -S screencast -p 0 -X stuff "$int"
-    sleep ."$(printf '%02d' $((RANDOM % 20)))"
+    sleep ."$(printf '%02d' $((RANDOM % 16)))"
   done
   sleep .3
   screen -S screencast -p 0 -X stuff "^M"
@@ -119,7 +145,7 @@ start_gnu_screen() {
   screen -d -m -S screencast zsh
   PID=$(screen -ls | grep screencast | sed -r 's/[ \t]+//g' | cut -f 1 -d.)
   sleep 2
-  WAITING=$(pstree "$PID" | tr -d 0-9 | head -n 1 | wc -c)
+  WAITING=$(fingerprint)
 
   cat <<EnD
 In another terminal type:
@@ -132,6 +158,10 @@ EnD
 
   printf '>'
   read -r
+}
+
+fingerprint() {
+  pstree "$PID" | tr -d 0-9 | md5sum
 }
 
 # Calls main() if we're called from the command line

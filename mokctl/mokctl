@@ -1194,7 +1194,7 @@ build_usage() {
   cat <<'EnD'
 BUILD subcommands are:
  
-  image - Creates the ${baseimagename} base image.
+  image - Creates the docker 'mok-centos-7' container image.
  
 build image options:
  

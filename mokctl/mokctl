@@ -1150,7 +1150,10 @@ create cluster [flags] options:
                 the prefix in the name for newly created
                 docker containers.
   NUM_MASTERS - The number of master containers.
-  NUM_WORKERS - The number of worker containers.
+  NUM_WORKERS - The number of worker containers. If NUM_WORKERS is
+                zero then the 'node-role.kubernetes.io/master' taint
+                will be removed from master nodes so that pods are
+                schedulable.
  
  Flags:
   --skipmastersetup - Create the master container but don't set it
@@ -1231,7 +1234,9 @@ get cluster(s) options:
   exec [NAME]
   NAME        - (optional) The name of the container to log into.
                 If this option is empty then the user will be offered
-                a choice of containers to log in to.
+                a choice of containers to log in to. If there is only
+                one cluster and one node then NAME can be left empty
+                and it will log into the only available container.
 
 EnD
 }

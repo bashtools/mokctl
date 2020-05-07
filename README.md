@@ -104,7 +104,7 @@ See: [Mokctl on Docker Hub](https://hub.docker.com/r/mclarkson/mokctl).
 
 #### For Linux only
 
-Probably the best way would be to:
+To build and install from source:
 
 ```bash
 git clone https://github.com/mclarkson/my-own-kind.git
@@ -115,6 +115,20 @@ mokctl build image
 mokctl create cluster mycluster 1 0
 ```
 
+Or, if you want to build your own `mokctl` docker image:
+
+```bash
+make mokctl-docker
+```
+
+Then add an alias that references the local image:
+
+```bash
+alias mokctl='docker run --privileged -ti -v /var/run/docker.sock:/var/run/docker.sock -v ~/.mok/:/root/.mok/ -e TERM=xterm-256color local/mokctl'
+```
+
+Then use `mokctl`.
+
 Removal
 
 ```bash
@@ -124,6 +138,16 @@ sudo make uninstall
 # OR, to remove mokctl and the `~/.mok/` configuration directory
 sudo make purge
 ```
+
+Also remove the docker images if required:
+
+* local/mokctl
+
+* local/mok-centos-7-v1.18.2
+
+* docker
+
+* centos
 
 ## Contributing
 

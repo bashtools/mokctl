@@ -19,8 +19,6 @@ Send a Pull Request to add to this list.
 
 ### Try mokctl
 
-**None of this will work until CRI-O tell us where the repo has moved to see [Issue #3740]([Centos 7 repos gone · Issue #3740 · cri-o/cri-o · GitHub](https://github.com/cri-o/cri-o/issues/3740)). Come back later and try when this message has gone.**
-
 Install [Docker](https://docs.docker.com/get-docker/) if you don't have it already.
 
 Take note of the [Status](#status) above and the [Releases](https://github.com/mclarkson/my-own-kind/releases) page.

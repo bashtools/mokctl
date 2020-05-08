@@ -17,6 +17,89 @@ To get the most out of the "labs", and I use that term loosely, you should have 
 
 Send a Pull Request to add to this list.
 
+### Try mokctl
+
+**None of this will work until CRI-O tell us where the repo has moved to see [Issue #3740]([Centos 7 repos gone · Issue #3740 · cri-o/cri-o · GitHub](https://github.com/cri-o/cri-o/issues/3740)). Come back later and try when this message has gone.**
+
+Install [Docker](https://docs.docker.com/get-docker/) if you don't have it already.
+
+Take note of the [Status](#status) above and the [Releases](https://github.com/mclarkson/my-own-kind/releases) page.
+
+#### For all Operating Systems
+
+Paste the following alias into your teminal:
+
+```bash
+alias mokctl='docker run --privileged -ti -v /var/run/docker.sock:/var/run/docker.sock -v ~/.mok/:/root/.mok/ -e TERM=xterm-256color mclarkson/mokctl'
+```
+
+Then use mokctl:
+
+```bash
+mokctl build image
+
+mokctl create cluster myk8s 1 0
+
+export KUBECONFIG=~/.mok/admin.conf
+
+kubectl get pods -A
+
+kubectl run -ti --image busybox busybox sh
+```
+
+See: [Mokctl on Docker Hub](https://hub.docker.com/r/mclarkson/mokctl).
+
+#### For Linux only
+
+To build and install from source:
+
+```bash
+git clone https://github.com/mclarkson/my-own-kind.git
+cd my-own-kind
+```
+
+Then EITHER build your own `mokctl` docker image and add a bash/zsh alias to it:
+
+```bash
+make mokctl-docker
+
+alias mokctl='docker run --privileged -ti -v /var/run/docker.sock:/var/run/docker.sock -v ~/.mok/:/root/.mok/ -e TERM=xterm-256color local/mokctl'
+```
+
+OR, install into `/usr/local/bin`:
+
+```bash
+make test
+sudo make install
+```
+
+Then use `mokctl`:
+
+```bash
+mokctl build image
+mokctl create cluster myk8s 1 0
+```
+
+Removal
+
+```bash
+# To remove mokctl
+sudo make uninstall
+
+# OR, to remove mokctl and the `~/.mok/` configuration directory
+sudo make purge
+```
+
+Also remove the docker images if required:
+
+* local/mokctl
+
+* local/mok-centos-7-v1.18.2
+
+* docker
+
+* centos
+
 ## Status
 
 **Mokctl Utility**
@@ -60,94 +143,6 @@ In progress.
 7. [Add-ons](/docs/addons.md)
    
    Trying popluar kubernetes add-ons.
-
-### Try mokctl
-
-Install [Docker](https://docs.docker.com/get-docker/) if you don't have it already.
-
-Take note of the [Status](#status) above and the [Releases](https://github.com/mclarkson/my-own-kind/releases) page.
-
-#### For all Operating Systems
-
-Use the mokctl docker container from docker hub:
-
-```bash
-docker run --privileged -ti \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v ~/.mok/:/root/.mok/ \
-  -e TERM=xterm-256color mclarkson/mokctl
-```
-
-An example alias:
-
-```bash
-alias mokctl='docker run --privileged -ti -v /var/run/docker.sock:/var/run/docker.sock -v ~/.mok/:/root/.mok/ -e TERM=xterm-256color mclarkson/mokctl'
-```
-
-(Or write a small script instead.)
-
-Then:
-
-```bash
-mokctl build image
-
-mokctl create cluster myk8s 1 0
-
-export KUBECONFIG=~/.mok/admin.conf
-
-kubectl get pods -A
-
-kubectl run -ti --image busybox busybox sh
-```
-
-See: [Mokctl on Docker Hub](https://hub.docker.com/r/mclarkson/mokctl).
-
-#### For Linux only
-
-To build and install from source:
-
-```bash
-git clone https://github.com/mclarkson/my-own-kind.git
-cd my-own-kind
-make test
-sudo make install
-mokctl build image
-mokctl create cluster mycluster 1 0
-```
-
-Or, if you want to build your own `mokctl` docker image:
-
-```bash
-make mokctl-docker
-```
-
-Then add an alias that references the local image:
-
-```bash
-alias mokctl='docker run --privileged -ti -v /var/run/docker.sock:/var/run/docker.sock -v ~/.mok/:/root/.mok/ -e TERM=xterm-256color local/mokctl'
-```
-
-Then use `mokctl`.
-
-Removal
-
-```bash
-# To remove mokctl
-sudo make uninstall
-
-# OR, to remove mokctl and the `~/.mok/` configuration directory
-sudo make purge
-```
-
-Also remove the docker images if required:
-
-* local/mokctl
-
-* local/mok-centos-7-v1.18.2
-
-* docker
-
-* centos
 
 ## Contributing
 

@@ -1,7 +1,7 @@
 FROM centos:7
-ARG CRIO_VERSION=1.17
-ARG CRICTL_VERSION=v1.17.0
-ARG K8SBINVER
+ARG CRIO_VERSION=1.18
+ARG CRICTL_VERSION=v1.18.0
+ARG K8SBINVER=-v1.18.2
 # Tell systemd that it's running in a container
 ENV container docker
 COPY kubernetes.repo /etc/yum.repos.d/kubernetes.repo

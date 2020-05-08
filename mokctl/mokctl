@@ -714,6 +714,7 @@ build_container_image() {
   TAGNAME="$BASEIMAGENAME-v$BUILD_IMAGE_K8SVER"
   cmd="docker build \
     -t local/$TAGNAME \
+    --force-rm \
     $buildargs \
     $DOCKERBUILDTMPDIR/$BASEIMAGENAME"
 
@@ -739,9 +740,9 @@ get_build_args_for_k8s_ver() {
   case "$BUILD_IMAGE_K8SVER" in
   "1.18.2")
     buildargs="--build-arg"
-    buildargs="$buildargs CRIO_VERSION=1.17"
+    buildargs="$buildargs CRIO_VERSION=1.18"
     buildargs="$buildargs --build-arg"
-    buildargs="$buildargs CRICTL_VERSION=v1.17.0"
+    buildargs="$buildargs CRICTL_VERSION=v1.18.0"
     buildargs="$buildargs --build-arg"
     buildargs="$buildargs K8SBINVER=-1.18.2"
     ;;

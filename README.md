@@ -25,7 +25,7 @@ Take note of the [Status](#status) above and the [Releases](https://github.com/m
 
 #### For all Operating Systems
 
-![](docs/images/install-linux.gif)
+
 
 Note for Fedora users: Cgroups2 needs to be disabled, see [Common F31 bugs - Fedora Project Wiki](https://fedoraproject.org/wiki/Common_F31_bugs#Docker_package_no_longer_available_and_will_not_run_by_default_.28due_to_switch_to_cgroups_v2.29), which amounts to typing the following command then rebooting: `sudo grubby --update-kernel=ALL --args="systemd.unified_cgroup_hierarchy=0"`
 

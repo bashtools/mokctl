@@ -9,6 +9,9 @@ mokctl-docker: all
 docker-hub-upload: mokctl-docker
 	docker tag local/mokctl docker.io/mclarkson/mokctl
 	docker push docker.io/mclarkson/mokctl
+	# Build with 'mokctl build image'
+	docker tag local/mok-centos-7-v1.18.2 docker.io/mclarkson/mok-centos-7-v1.18.2
+	docker push docker.io/mclarkson/mok-centos-7-v1.18.2
 
 mokctl.deploy: mokctl mok-centos-7
 	bash mokctl/embed-dockerfile.sh

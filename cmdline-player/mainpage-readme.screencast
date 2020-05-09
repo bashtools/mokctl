@@ -1,6 +1,6 @@
 # Running mokctl using docker - Just set up an alias!
 screencast paste
-alias mokctl='docker run --privileged -ti -v /var/run/docker.sock:/var/run/docker.sock -v ~/.mok/:/root/.mok/ -e TERM=xterm-256color mclarkson/mokctl'
+alias mokctl='docker run --rm --privileged -ti -v /var/run/docker.sock:/var/run/docker.sock -v ~/.mok/:/root/.mok/ -e TERM=xterm-256color mclarkson/mokctl'
 screencast paste
 # Add that to your '~/.bashrc' and/or '~/.zshrc' to make permanent
 screencast paste

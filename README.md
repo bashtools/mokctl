@@ -25,6 +25,8 @@ Take note of the [Status](#status) above and the [Releases](https://github.com/m
 
 #### For all Operating Systems
 
+![](docs/images/install-linux.gif)
+
 Paste the following alias into your teminal:
 
 ```bash

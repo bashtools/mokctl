@@ -4,13 +4,13 @@
 
 ## Summary
 
-Build a conformant kubernetes cluster in containers, on Linux, using docker only, by hand, from scratch, for learning.
+Build a verifiably conformant kubernetes cluster in containers.
 
 ### Try mokctl
 
 Install [Docker](https://docs.docker.com/get-docker/) if you don't have it already.
 
-Take note of the [Status](#status) above and the [Releases](https://github.com/mclarkson/my-own-kind/releases) page.
+Take note of the [Status](#status) below and the [Releases](https://github.com/mclarkson/my-own-kind/releases) page.
 
 #### For Non-Linux Operating Systems
 
@@ -44,19 +44,15 @@ Work is progressing on getting `podman` working with `mokctl` - See [Install Lin
 
 **Mokctl Utility**
 
-| OS        | Termnal          | Status |
-| --------- | ---------------- | ------ |
-| Fedora 31 | Gnome Terminal   | Works  |
-| Mac OS    | Default terminal | ?      |
-| Windows   | Cygwin           | ?      |
+| OS        | Termnal          | Status                    |
+| --------- | ---------------- | ------------------------- |
+| Fedora 31 | Gnome Terminal   | Works                     |
+| Fedora 32 | Gnome Terminal   | Not Working - in progress |
+| Mac OS    | Default terminal | ?                         |
+| Windows   | Cygwin           | ?                         |
 
 ## Contributing
 
 Please check the 'Help Wanted' issues if you fancy helping.
 
 All types of contributions are welcome, from bug reports, success stories, feature requests, fixing typppos, to coding. Also check the [CONTRIBUTING.md](/CONTRIBUTING.md) document.
-
-## License
-
-Apache 2 - You can do what you like with the software, as long as you include the required notices. This permissive license contains a patent license 
-from the contributors of the code. See: [tl;drLegal](https://tldrlegal.com/license/apache-license-2.0-%28apache-2.0%29) for a summary. Full text is in the LICENSE file.

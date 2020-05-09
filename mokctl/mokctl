@@ -43,6 +43,7 @@ EXEC_CONTAINER_NAME=
 
 # For outputting errors
 E="/dev/stderr"
+ERR_CALLED=
 
 # Directory to unpack the build files
 DOCKERBUILDTMPDIR=
@@ -60,6 +61,8 @@ main() {
   trap cleanup EXIT
 
   set_globals || return
+
+  podman_or_docker || return
 
   sanity_checks || return
 
@@ -95,6 +98,7 @@ set_globals() {
   DELETE_CLUSTER_NAME=
   GET_CLUSTER_NAME=
   GET_CLUSTER_SHOW_HEADER=$TRUE
+  ERR_CALLED=$FALSE
 }
 
 # ===========================================================================
@@ -504,7 +508,7 @@ create_docker_container() {
     --name "$1" \
     --hostname "$1" \
     --label "$2" \
-    local/"$BASEIMAGENAME-v$CREATE_CLUSTER_K8SVER"
+    localhost/local/"$BASEIMAGENAME-v$CREATE_CLUSTER_K8SVER"
 }
 
 # ---------------------------------------------------------------------------
@@ -713,7 +717,7 @@ build_container_image() {
   buildargs=$(get_build_args_for_k8s_ver $BUILD_IMAGE_K8SVER) || return
   TAGNAME="$BASEIMAGENAME-v$BUILD_IMAGE_K8SVER"
   cmd="docker build \
-    -t local/$TAGNAME \
+    -t localhost/local/$TAGNAME \
     --force-rm \
     $buildargs \
     $DOCKERBUILDTMPDIR/$BASEIMAGENAME"
@@ -937,7 +941,7 @@ get_mok_cluster_docker_ids() {
   #   arg1 - mok cluster name, optional
 
   docker ps -a -f label="$LABELKEY$1" -q || {
-    printf 'ERROR: docker failed\n\n' >"$E"
+    printf 'ERROR: docker failed\n' >"$E"
     err || return
   }
 }
@@ -963,7 +967,10 @@ get_info_about_container_using_docker() {
 err() {
 
   # In case of error print the function call stack
+  # No args expected
 
+  [[ $ERR_CALLED == "$TRUE" ]] && return
+  ERR_CALLED=$TRUE
   local frame=0
   printf '\n' >"$E"
   while caller $frame; do
@@ -1029,6 +1036,41 @@ run_with_progress() {
 }
 
 # ---------------------------------------------------------------------------
+podman_or_docker() {
+
+  # Prefer podman over docker. Docker is getting hard to install on Fedora.
+
+  if type podman &>/dev/null; then
+    docker() {
+      local id
+      id=$(id -u)
+      [[ $id -ne 0 ]] && {
+        err
+        cat <<'EnD' >/dev/stderr
+Must run 'podman' as root! Try using:
+
+  $ alias mokctl="sudo mokctl"
+
+Then run the command again.
+EnD
+        return $ERROR
+      }
+      podman "$@"
+    }
+  elif type docker &>/dev/null; then
+    docker() {
+      docker "$@"
+    }
+  else
+    printf 'ERROR: Neither "podman" nor "docker" were found.\n'
+    printf 'Please install one of "podman" or "docker".\nAborting.\n'
+    return $ERROR
+  fi
+
+  return $OK
+}
+
+# ---------------------------------------------------------------------------
 sanity_checks() {
 
   # Check our environment
@@ -1036,7 +1078,7 @@ sanity_checks() {
 
   local binary
 
-  for binary in tac column tput docker grep sed; do
+  for binary in tac column tput grep sed; do
     if ! command -v "$binary" >&/dev/null; then
       printf 'ERROR: "%s" binary not found in path. Aborting.' "$binary" >"$E"
       return 1

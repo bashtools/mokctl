@@ -1775,6 +1775,10 @@ set_up_master_node_v1_18_2() {
 sysctl -w net.ipv6.conf.all.disable_ipv6=1
 sysctl -w net.ipv6.conf.default.disable_ipv6=1
 
+# CRIO version 1.18 needs storage changing to VFS
+sed -i 's/\(^driver = \).*/\1"vfs"/' /etc/containers/storage.conf
+systemctl restart crio
+
 # Run the preflight phase
 kubeadm init \
   --ignore-preflight-errors Swap \

@@ -28,7 +28,7 @@ Take note of the [Status](#status) above and the [Releases](https://github.com/m
 Paste the following alias into your teminal:
 
 ```bash
-alias mokctl='docker run --privileged -ti -v /var/run/docker.sock:/var/run/docker.sock -v ~/.mok/:/root/.mok/ -e TERM=xterm-256color mclarkson/mokctl'
+alias mokctl='docker run --rm --privileged -ti -v /var/run/docker.sock:/var/run/docker.sock -v ~/.mok/:/root/.mok/ -e TERM=xterm-256color mclarkson/mokctl'
 ```
 
 Then use mokctl:
@@ -61,7 +61,7 @@ Then EITHER build your own `mokctl` docker image and add a bash/zsh alias to it:
 ```bash
 make mokctl-docker
 
-alias mokctl='docker run --privileged -ti -v /var/run/docker.sock:/var/run/docker.sock -v ~/.mok/:/root/.mok/ -e TERM=xterm-256color local/mokctl'
+alias mokctl='docker run --rm --privileged -ti -v /var/run/docker.sock:/var/run/docker.sock -v ~/.mok/:/root/.mok/ -e TERM=xterm-256color local/mokctl'
 ```
 
 OR, install into `/usr/local/bin`:

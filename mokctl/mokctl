@@ -468,7 +468,7 @@ create_master_nodes() {
 
   [[ -z $CREATE_CLUSTER_SKIPMASTERSETUP ]] && {
     docker cp "$CREATE_CLUSTER_NAME-master-$int":/etc/kubernetes/admin.conf \
-      ~/.mok/admin.conf
+      ~/.mok/admin.conf || err || return
     chmod 666 ~/.mok/admin.conf || {
       printf 'ERROR: Could not "chown 666 ~/.mok/admin.conf"'
       err || return

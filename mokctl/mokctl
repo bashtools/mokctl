@@ -969,7 +969,7 @@ err() {
   # In case of error print the function call stack
   # No args expected
 
-  [[ $ERR_CALLED == "$TRUE" ]] && return
+  [[ $ERR_CALLED == "$TRUE" ]] && return $ERROR
   ERR_CALLED=$TRUE
   local frame=0
   printf '\n' >"$E"
@@ -1041,11 +1041,9 @@ podman_or_docker() {
   # Prefer podman over docker. Docker is getting hard to install on Fedora.
 
   if type podman &>/dev/null; then
-    docker() {
       local id
       id=$(id -u)
       [[ $id -ne 0 ]] && {
-        err
         cat <<'EnD' >/dev/stderr
 Must run 'podman' as root! Try using:
 
@@ -1055,6 +1053,7 @@ Then run the command again.
 EnD
         return $ERROR
       }
+    docker() {
       podman "$@"
     }
   elif type docker &>/dev/null; then

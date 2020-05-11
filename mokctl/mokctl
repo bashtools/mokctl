@@ -1041,18 +1041,18 @@ podman_or_docker() {
   # Prefer podman over docker. Docker is getting hard to install on Fedora.
 
   if type podman &>/dev/null; then
-      local id
-      id=$(id -u)
-      [[ $id -ne 0 ]] && {
-        cat <<'EnD' >/dev/stderr
+    local id
+    id=$(id -u)
+    [[ $id -ne 0 ]] && {
+      cat <<'EnD' >/dev/stderr
 Must run 'podman' as root! Try using:
 
   $ alias mokctl="sudo mokctl"
 
 Then run the command again.
 EnD
-        return $ERROR
-      }
+      return $ERROR
+    }
     docker() {
       podman "$@"
     }

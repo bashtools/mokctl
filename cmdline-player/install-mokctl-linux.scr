@@ -1,17 +1,13 @@
 # How to install and use mokctl
-# My OS:
 lsb_release -d
-# Paste the alias shown below
-screencast paste
-alias mokctl='docker run --rm --privileged -ti -v /var/run/docker.sock:/var/run/docker.sock -v ~/.mok/:/root/.mok/ -e TERM=xterm-256color mclarkson/mokctl'
-# mokctl is ready to use!
-# Build the docker image 
+git clone https://github.com/mclarkson/my-own-kind.git
+cd my-own-kind
+make test
+sudo make install
 mokctl build image
-# Notice that the last command started by downloading mokctl itself
-# Create a kubernetes cluster that uses the docker image we just built
+alias mokctl="sudo mokctl"
+mokctl build image
 mokctl create cluster myk8s 1 0
-# Tell kubectl where its configuration is
 export KUBECONFIG=~/.mok/admin.conf
-# See if kubernetes is running
 kubectl get pods -A
 # That's it

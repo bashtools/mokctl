@@ -439,6 +439,7 @@ testGetClusterSizeReturnSize() {
   # Override get_cluster_size to return an arbitrary number which would
   # be the 'docker ps' return code
 
+  podman_or_docker() { return $OK; }
   docker() {
     echo -e "123\n234\n345\n456\n"
     return 0
@@ -499,6 +500,7 @@ testCreateClusterMasterNodesWithFailure() {
 
   local r
 
+  podman_or_docker() { return $OK; }
   docker() {
     sleep 1
     return 0
@@ -528,6 +530,7 @@ testCreateClusterMasterNodesWithFailure2() {
   local r
 
   # return 1 below means that docker failed
+  podman_or_docker() { return $OK; }
   docker() {
     sleep 1
     return 1

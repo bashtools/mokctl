@@ -8,11 +8,50 @@ Build a verifiably conformant kubernetes cluster in containers.
 
 ### Try mokctl
 
-Install [Docker](https://docs.docker.com/get-docker/) if you don't have it already.
-
 Take note of the [Status](#status) below and the [Releases](https://github.com/mclarkson/my-own-kind/releases) page.
 
+#### For Linux Operating Systems
+
+If your distribution enables cgroups v2 then it must be disabled - only Fedora 31/32 do this right now, so for Fedora do:
+
+```bash
+grubby --update-kernel=ALL --args="systemd.unified_cgroup_hierarchy=0"
+```
+
+To build and install from source:
+
+```bash
+git clone https://github.com/mclarkson/my-own-kind.git
+cd my-own-kind
+```
+
+Install into `/usr/local/bin` (don't use mokctl if any tests fail):
+
+```none
+make test
+sudo make install
+```
+
+Then use `mokctl`:
+
+```bash
+mokctl build image
+mokctl create cluster myk8s 1 0
+```
+
+Removal
+
+```bash
+# To remove mokctl
+sudo make uninstall
+
+# OR, to remove mokctl and the `~/.mok/` configuration directory
+sudo make purge
+```
+
 #### For Non-Linux Operating Systems
+
+Install [Docker](https://docs.docker.com/get-docker/) if you don't have it already.
 
 Paste the following alias into your teminal:
 
@@ -36,19 +75,7 @@ kubectl run -ti --image busybox busybox sh
 
 See: [Mokctl on Docker Hub](https://hub.docker.com/r/mclarkson/mokctl).
 
-#### For Linux Operating Systems
-
-If your distribution enables cgroups v2 then it must be disabled - only Fedora 31/32 do this right now, so for Fedora do:
-
-```bash
-grubby --update-kernel=ALL --args="systemd.unified_cgroup_hierarchy=0"
-```
-
-Install Podman or Docker if one of them is not installed already, then continue with the installation instructions for all operating systems, above.
-
-Fedora 32 removed docker and replaced with [Podman](https://podman.io). Mokctl now supports Podman out-of-the-box and will choose Podman over Docker if both are installed.
-
-See [Install Linux](/docs/install-linux.md) for more installation options.
+See [Install Linux](/docs/install-linux.md) for more complete instructions.
 
 ## Status
 

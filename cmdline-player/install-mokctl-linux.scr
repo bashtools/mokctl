@@ -5,11 +5,9 @@ cd my-own-kind
 sudo make test # <- sudo is required to test
 sudo make install
 mokctl build -h
-mokctl build image
 alias mokctl="sudo mokctl"
-mokctl build image
-mokctl create -h
+mokctl build image # I've already done this and it takes a while so....^c
 mokctl create cluster myk8s 1 0
-export KUBECONFIG=~/.mok/admin.conf
+export KUBECONFIG=/var/tmp/admin.conf
 kubectl get pods -A
 # That's it

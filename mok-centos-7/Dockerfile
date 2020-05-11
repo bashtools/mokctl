@@ -38,7 +38,7 @@ RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do \
     && mkdir -p /opt/cni/ \
     && ln -s /usr/libexec/cni /opt/cni/bin
 COPY k8s.conf /etc/sysctl.d/k8s.conf
-COPY 100-crio-bridge.conf /etc/cni/net.d/100-crio-bridge.conf
+COPY 100-crio-bridge.conf-flannel /etc/cni/net.d/100-crio-bridge.conf
 COPY kubelet-config /etc/sysconfig/kubelet
 COPY entrypoint /usr/local/bin
 VOLUME [ "/sys/fs/cgroup" ]

@@ -300,7 +300,7 @@ do_create_cluster_mutate() {
 
   [[ -z $CREATE_CLUSTER_SKIPMASTERSETUP ]] && {
     printf 'Cluster, "%s", can be accessed using:\n\n' "$CREATE_CLUSTER_NAME"
-    printf 'export KUBECONFIG=~/.mok/admin.conf\n\n'
+    printf 'export KUBECONFIG=/var/tmp/admin.conf\n\n'
   }
 
   return $OK
@@ -468,9 +468,9 @@ create_master_nodes() {
 
   [[ -z $CREATE_CLUSTER_SKIPMASTERSETUP ]] && {
     docker cp "$CREATE_CLUSTER_NAME-master-$int":/etc/kubernetes/admin.conf \
-      ~/.mok/admin.conf || err || return
-    chmod 666 ~/.mok/admin.conf || {
-      printf 'ERROR: Could not "chown 666 ~/.mok/admin.conf"'
+      /var/tmp/admin.conf || err || return
+    chmod 666 /var/tmp/admin.conf || {
+      printf 'ERROR: Could not "chown 666 /var/tmp/admin.conf"'
       err || return
     }
   }
@@ -1904,6 +1904,10 @@ set_up_worker_node_v1_18_2() {
   }
 
   cat <<EnD >"$setupfile"
+# CRIO version 1.18 needs storage changing to VFS
+sed -i 's/\(^driver = \).*/\1"vfs"/' /etc/containers/storage.conf
+systemctl restart crio
+
 # Wait for the master API to become ready
 while true; do
   curl -k https://$masterip:6443/

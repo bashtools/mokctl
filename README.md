@@ -75,8 +75,6 @@ kubectl run -ti --image busybox busybox sh
 
 See: [Mokctl on Docker Hub](https://hub.docker.com/r/mclarkson/mokctl).
 
-See [Install Linux](/docs/install-linux.md) for more complete instructions.
-
 ## Status
 
 **Mokctl Utility**

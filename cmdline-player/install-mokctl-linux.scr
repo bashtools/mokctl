@@ -1,12 +1,14 @@
 # How to install and use mokctl
-lsb_release -d
+lsb_release -d # <- The version of linux
 git clone https://github.com/mclarkson/my-own-kind.git
 cd my-own-kind
-make test
+sudo make test # <- sudo is required to test
 sudo make install
+mokctl build -h
 mokctl build image
 alias mokctl="sudo mokctl"
 mokctl build image
+mokctl create -h
 mokctl create cluster myk8s 1 0
 export KUBECONFIG=~/.mok/admin.conf
 kubectl get pods -A

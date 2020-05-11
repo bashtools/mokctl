@@ -38,13 +38,17 @@ See: [Mokctl on Docker Hub](https://hub.docker.com/r/mclarkson/mokctl).
 
 #### For Linux Operating Systems
 
-For distributions that enable cgroup2 by default, e.g. Fedora 31/32:
+If your distribution enables cgroups v2 then it must be disabled - only Fedora 31/32 do this right now, so for Fedora do:
 
 ```bash
 grubby --update-kernel=ALL --args="systemd.unified_cgroup_hierarchy=0"
 ```
 
-Work has started on getting `podman` working with `mokctl` - Also see [Install Linux](/docs/install-linux.md).
+Install Podman or Docker if one of them is not installed already, then continue with the installation instructions for all operating systems, above.
+
+Fedora 32 removed docker and replaced with [Podman](https://podman.io). Mokctl now supports Podman out-of-the-box and will choose Podman over Docker if both are installed.
+
+See [Install Linux](/docs/install-linux.md) for more installation options.
 
 ## Status
 

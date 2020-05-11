@@ -46,7 +46,7 @@ centos7_fix_cgroup() {
   local a
   echo 'INFO: fix cgroup mounts for centos7'
   local id=$(awk -F/ '{ print $NF; exit }' /proc/1/cgroup)
-  echo "docker id = $id"
+  echo "docker/podman id = $id"
   find /sys/fs/cgroup -name "$id" | while read a ; do mount --bind $a ${a%/*/*}; done
 }
 
@@ -64,17 +64,19 @@ fix_cgroup() {
   # The following is a workaround to recreate the original cgroup
   # environment by doing another bind mount for each subsystem.
   local docker_cgroup_mounts
-  docker_cgroup_mounts=$(grep /sys/fs/cgroup /proc/self/mountinfo | grep docker || true)
-  if [[ -n "${docker_cgroup_mounts}" ]]; then
-    local docker_cgroup cgroup_subsystems subsystem
-    docker_cgroup=$(echo "${docker_cgroup_mounts}" | head -n 1 | cut -d' ' -f 4)
-    cgroup_subsystems=$(echo "${docker_cgroup_mounts}" | cut -d' ' -f 5)
-    echo "${cgroup_subsystems}" |
-    while IFS= read -r subsystem; do
-      mkdir -p "${subsystem}${docker_cgroup}"
-      mount --bind "${subsystem}" "${subsystem}${docker_cgroup}"
-    done
-  fi
+  for cri in docker libpod;do
+    docker_cgroup_mounts=$(grep /sys/fs/cgroup /proc/self/mountinfo | grep "$cri" || true)
+    if [[ -n "${docker_cgroup_mounts}" ]]; then
+      local docker_cgroup cgroup_subsystems subsystem
+      docker_cgroup=$(echo "${docker_cgroup_mounts}" | head -n 1 | cut -d' ' -f 4)
+      cgroup_subsystems=$(echo "${docker_cgroup_mounts}" | cut -d' ' -f 5)
+      echo "${cgroup_subsystems}" |
+      while IFS= read -r subsystem; do
+        mkdir -p "${subsystem}${docker_cgroup}"
+        mount --bind "${subsystem}" "${subsystem}${docker_cgroup}"
+      done
+    fi
+  done
 }
 
 fix_machine_id() {

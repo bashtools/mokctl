@@ -38,18 +38,24 @@ See: [Mokctl on Docker Hub](https://hub.docker.com/r/mclarkson/mokctl).
 
 #### For Linux Operating Systems
 
-Work is progressing on getting `podman` working with `mokctl` - See [Install Linux](/docs/install-linux.md)
+For distributions that enable cgroup2 by default, e.g. Fedora 31/32:
+
+```bash
+grubby --update-kernel=ALL --args="systemd.unified_cgroup_hierarchy=0"
+```
+
+Work has started on getting `podman` working with `mokctl` - Also see [Install Linux](/docs/install-linux.md).
 
 ## Status
 
 **Mokctl Utility**
 
-| OS        | Termnal          | Status                    |
-| --------- | ---------------- | ------------------------- |
-| Fedora 31 | Gnome Terminal   | Works                     |
-| Fedora 32 | Gnome Terminal   | Not Working - in progress |
-| Mac OS    | Default terminal | ?                         |
-| Windows   | Cygwin           | ?                         |
+| OS        | Termnal          | Status                       |
+| --------- | ---------------- | ---------------------------- |
+| Fedora 31 | Gnome Terminal   | Works - must disable cgroup2 |
+| Fedora 32 | Gnome Terminal   | Works - must disable cgroup2 |
+| Mac OS    | Default terminal | ?                            |
+| Windows   | Cygwin           | ?                            |
 
 ## Contributing
 

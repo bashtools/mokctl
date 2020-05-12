@@ -10,7 +10,7 @@ docker-hub-upload: mokctl-docker
 	sudo podman tag local/mokctl docker.io/mclarkson/mokctl
 	sudo podman push docker.io/mclarkson/mokctl
 	# Build with 'mokctl build image'
-	sudo podman tag local/mok-centos-7-v1.18.2 docker.io/mclarkson/mok-centos-7-v1.18.2
+	sudo podman tag localhost/local/mok-centos-7-v1.18.2 docker.io/mclarkson/mok-centos-7-v1.18.2
 	sudo podman push docker.io/mclarkson/mok-centos-7-v1.18.2
 
 mokctl.deploy: mokctl mok-centos-7

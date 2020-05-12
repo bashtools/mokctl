@@ -12,16 +12,18 @@ mokctl build -h
 screencast sleep 4
 mokctl build image
 ^c
-# I quit because this has already be done
+# Actually building an image locally will take good a few minutes.
+# Let's download it from a container registry instead:
+mokctl build image --get
 mokctl create -h
 mokctl create cluster myk8s 1 0
 export KUBECONFIG=/var/tmp/admin.conf
 kubectl get pods -A
 screencast prompt %
-for i in {10..1}; do printf '%d..' "$i"; sleep 1; done
+for i in {10..1}; do echo -n "$i.."; sleep 1; done
 kubectl get pods -A
 screencast prompt %
-for i in {10..1}; do printf '%d..' "$i"; sleep 1; done
+for i in {10..1}; do echo -n "$i.."; sleep 1; done
 kubectl get pods -A
 # It's all up and running
 screencast prompt #
@@ -30,6 +32,8 @@ screencast prompt #
 ip address
 screencast prompt #
 apk add fortune
+screencast prompt #
+# That was downloaded from the Internet, so networking looks ok
 screencast prompt #
 fortune
 screencast prompt %

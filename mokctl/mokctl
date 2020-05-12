@@ -45,6 +45,9 @@ EXEC_CONTAINER_NAME=
 E="/dev/stderr"
 ERR_CALLED=
 
+PODMANIMGPREFIX=
+BUILD_GET_PREBUILT=
+
 # Directory to unpack the build files
 DOCKERBUILDTMPDIR=
 
@@ -99,6 +102,8 @@ set_globals() {
   GET_CLUSTER_NAME=
   GET_CLUSTER_SHOW_HEADER=$TRUE
   ERR_CALLED=$FALSE
+  PODMANIMGPREFIX=
+  BUILD_GET_PREBUILT=
 }
 
 # ===========================================================================
@@ -500,6 +505,28 @@ create_docker_container() {
   #   arg1 - name to use as the name and hostname.
   #   arg2 - the label to write to the container.
 
+  local imglocal="${PODMANIMGPREFIX}local/$BASEIMAGENAME-v$CREATE_CLUSTER_K8SVER"
+  local imgremote="docker.io/mclarkson/$BASEIMAGENAME-v$CREATE_CLUSTER_K8SVER"
+  local allimgs
+
+  # Prefer a locally built container over one downloaded from a registry
+  allimgs=$(podman images -n)
+  if echo "$allimgs" | grep -qs "$imglocal"; then
+    imagename="$imglocal"
+  elif echo "$allimgs" | grep -qs "$imgremote"; then
+    imagename="$imgremote"
+  else
+    cat <<EnD
+ERROR: No container base image found. Use either:
+
+  $ mokctl build image
+OR
+  $ mokctl build image --get-prebuilt-image
+
+Then try running 'mokctl create ...' again.
+EnD
+  fi
+
   docker run --privileged \
     -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
     -v /lib/modules:/lib/modules:ro \
@@ -508,7 +535,7 @@ create_docker_container() {
     --name "$1" \
     --hostname "$1" \
     --label "$2" \
-    localhost/local/"$BASEIMAGENAME-v$CREATE_CLUSTER_K8SVER"
+    "$imagename"
 }
 
 # ---------------------------------------------------------------------------
@@ -710,20 +737,27 @@ build_container_image() {
   # docker build to build the image.
   # No args expected.
 
-  local retval TAGNAME buildargs
+  local retval TAGNAME buildargs text
 
   create_docker_build_dir || return
 
   buildargs=$(get_build_args_for_k8s_ver $BUILD_IMAGE_K8SVER) || return
   TAGNAME="$BASEIMAGENAME-v$BUILD_IMAGE_K8SVER"
-  cmd="docker build \
+
+  if [[ -z $BUILD_GET_PREBUILT ]]; then
+    cmd="docker build \
     -t localhost/local/$TAGNAME \
     --force-rm \
     $buildargs \
     $DOCKERBUILDTMPDIR/$BASEIMAGENAME"
+    text="Creating"
+  else
+    cmd="docker pull mclarkson/mok-centos-7-v1.18.2"
+    text="Downloading"
+  fi
 
   run_with_progress \
-    "    Creating base image, '$TAGNAME'" "$cmd"
+    "    $text base image, '$TAGNAME'" "$cmd"
 
   retval=$?
   [[ $retval -ne 0 ]] && {
@@ -1041,6 +1075,7 @@ podman_or_docker() {
   # Prefer podman over docker. Docker is getting hard to install on Fedora.
 
   if type podman &>/dev/null; then
+    PODMANIMGPREFIX="localhost/"
     local id
     id=$(id -u)
     [[ $id -ne 0 ]] && {
@@ -1243,6 +1278,10 @@ build image options:
  Format:
   build image
 
+ Flags:
+  --get-prebuilt-image - Instead of building a 'node' image
+         locally, download it from a container registry instead.
+
 EnD
 }
 
@@ -1340,6 +1379,10 @@ parse_options() {
       verify_option '--k8sver' || return $ERROR
       # enable later -> BUILD_IMAGE_K8SVER="$1"
       shift
+      ;;
+    --get-prebuilt-image)
+      verify_option '--get-prebuilt-image' || return $ERROR
+      BUILD_GET_PREBUILT="$TRUE"
       ;;
     --help) ;&
     -h)
@@ -1741,6 +1784,7 @@ check_valid_build_image_opts() {
   local opt validopts=(
     "--help"
     "-h"
+    "--get-prebuilt-image"
   )
 
   for opt in "${validopts[@]}"; do

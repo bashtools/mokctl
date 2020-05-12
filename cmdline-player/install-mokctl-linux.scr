@@ -14,7 +14,7 @@ screencast sleep 4
 mokctl build image
 ^c
 # I hit Control-C there
-# Building an image locally will take good a few minutes.
+# Building an image locally will take a good few minutes.
 # Let's download it from a container registry instead:
 mokctl build image --get-prebuilt-image
 mokctl create -h
@@ -42,6 +42,7 @@ screencast prompt #
 fortune
 screencast prompt %
 exit
+kubectl get pods -A
 mokctl get cluster
 # Now to delete the cluster we just made:
 screencast prompt >
@@ -52,5 +53,6 @@ mokctl get cluster
 sudo make uninstall
 cd ..
 rm -rvf my-own-kind
+sudo podman images
 # That's it for now.
 # Thanks for watching!

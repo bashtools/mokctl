@@ -30,13 +30,14 @@ cd my-own-kind
 Install into `/usr/local/bin` (don't use mokctl if any tests fail):
 
 ```none
-make test
+sudo make test
 sudo make install
 ```
 
 Then use `mokctl`:
 
 ```bash
+alias mokctl="sudo mokctl"
 mokctl build image
 mokctl create cluster myk8s 1 0
 ```

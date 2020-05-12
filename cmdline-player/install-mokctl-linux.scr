@@ -3,11 +3,11 @@ lsb_release -d
 screencast paste
 git clone https://github.com/mclarkson/my-own-kind.git
 cd my-own-kind
-sudo make test # <- yes, sudo is required to test
+sudo make test # <- yes, sudo is required to test :(
 sudo make install
-# Need to build the base image used for 'nodes' first:
+# The base image used for 'nodes' needs to be built first:
 mokctl build
-# Use 'sudo mokctl' or set an alias as shown above:
+# Use 'sudo mokctl' to run podman as root (required) or set an alias as shown above:
 alias mokctl="sudo mokctl"
 mokctl build -h
 screencast sleep 4
@@ -18,17 +18,17 @@ mokctl build image
 # Let's download it from a container registry instead:
 mokctl build image --get-prebuilt-image
 mokctl create -h
-# Let's create a single node kubernetes cluster:
+# Let's create a single node kubernetes cluster, this will take a few minutes...
 mokctl create cluster myk8s 1 0
 export KUBECONFIG=/var/tmp/admin.conf
 kubectl get pods -A
 screencast prompt %
-for i in {10..1}; do echo -n "$i.."; sleep 1; done
+for i in {10..1}; do echo -n "$i.."; sleep 1; done; echo
 kubectl get pods -A
 screencast prompt %
-for i in {10..1}; do echo -n "$i.."; sleep 1; done
+for i in {10..1}; do echo -n "$i.."; sleep 1; done; echo
 kubectl get pods -A
-# Kubernetes is up and running :)
+# Kubernetes looks about ready :)
 # Let's try starting a Pod:
 screencast prompt #
 kubectl run --rm -ti --restart=Never --image=alpine shell2 sh
@@ -37,12 +37,11 @@ ip address
 screencast prompt #
 apk add fortune
 screencast prompt #
-# That was downloaded from the Internet, so networking looks ok
+# 'apk add' downloads from the Internet, so networking and external dns looks ok
 screencast prompt #
 fortune
 screencast prompt %
 exit
-kubectl get pods -A
 mokctl get cluster
 # Now to delete the cluster we just made:
 screencast prompt >
@@ -52,7 +51,6 @@ mokctl get cluster
 # And uninstall mokctl
 sudo make uninstall
 cd ..
-rm -rvf my-own-kind
-sudo podman images
+rm -rf my-own-kind
 # That's it for now.
 # Thanks for watching!

@@ -12,7 +12,7 @@ Take note of the [Status](#status) below and the [Releases](https://github.com/m
 
 #### For Linux Operating Systems
 
-Either [Podman](https://podman.io/) or [Docker](https://www.docker.com/get-started) must be installed frst. If both are installed `mokctl` will choose Podman.
+Either [Podman](https://podman.io/) or [Docker](https://www.docker.com/get-started) must be installed frst. If both are installed `mokctl` will choose to use Podman.
 
 If your distribution enables cgroups v2 then it must be disabled. Only Fedora do this right now, so for Fedora 31 or 32 do:
 

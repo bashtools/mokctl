@@ -12,7 +12,9 @@ Take note of the [Status](#status) below and the [Releases](https://github.com/m
 
 #### For Linux Operating Systems
 
-If your distribution enables cgroups v2 then it must be disabled - only Fedora 31/32 do this right now, so for Fedora do:
+Either [Podman](https://podman.io/) or [Docker](https://www.docker.com/get-started) must be installed frst. If both are installed `mokctl` will choose Podman.
+
+If your distribution enables cgroups v2 then it must be disabled. Only Fedora do this right now, so for Fedora 31 or 32 do:
 
 ```bash
 grubby --update-kernel=ALL --args="systemd.unified_cgroup_hierarchy=0"

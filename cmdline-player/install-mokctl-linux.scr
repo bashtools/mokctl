@@ -1,13 +1,46 @@
 # How to install and use mokctl
-lsb_release -d # <- The version of linux
+lsb_release -d
+screencast paste
 git clone https://github.com/mclarkson/my-own-kind.git
 cd my-own-kind
-sudo make test # <- sudo is required to test
+sudo make test # <- yes, sudo is required to test
 sudo make install
-mokctl build -h
+# Need to build the base image used for 'nodes' first
+mokctl build
 alias mokctl="sudo mokctl"
-mokctl build image # I've already done this and it takes a while so....^c
+mokctl build -h
+screencast sleep 4
+mokctl build image
+^c
+# I quit because this has already be done
+mokctl create -h
 mokctl create cluster myk8s 1 0
 export KUBECONFIG=/var/tmp/admin.conf
 kubectl get pods -A
+screencast prompt %
+for i in {10..1}; do printf '%d..' "$i"; sleep 1; done
+kubectl get pods -A
+screencast prompt %
+for i in {10..1}; do printf '%d..' "$i"; sleep 1; done
+kubectl get pods -A
+# It's all up and running
+screencast prompt #
+kubectl run --rm -ti --restart=Never --image=alpine shell2 sh
+screencast prompt #
+ip address
+screencast prompt #
+apk add fortune
+screencast prompt #
+fortune
+screencast prompt %
+exit
+mokctl get cluster
+screencast prompt >
+mokctl delete cluster myk8s
+y
+mokctl get cluster
+sudo make uninstall
+cd ..
+rm -rvf my-own-kind
 # That's it
+# Thanks for watching!

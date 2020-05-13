@@ -2,7 +2,7 @@
 
 ![](docs/images/mokctl-demo.gif)
 
-[Transcript](/cmdline-player/install-mokctl-linux.md)
+View a [Transcript of the screenscast](/cmdline-player/install-mokctl-linux.md).
 
 ## Summary
 

@@ -4,7 +4,8 @@ all: mokctl.deploy tags cmdline-player/*.md
 cmdline-player/*.md: cmdline-player/*.scr
 	cd cmdline-player && \
 	./scr2md.sh install-mokctl-linux.scr && \
-	./scr2md.sh kthw-2.scr
+	./scr2md.sh kthw-2.scr \
+	./scr2md.sh kthw-3.scr
 
 mokctl-docker: all
 	cp mokctl.deploy package/

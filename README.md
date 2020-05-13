@@ -2,6 +2,8 @@
 
 ![](docs/images/mokctl-demo.gif)
 
+[Transcript](/cmdline-player/install-mokctl-linux.md)
+
 ## Summary
 
 Build a verifiably conformant kubernetes cluster in containers.

@@ -1,11 +1,15 @@
-.PHONY: all install uninstall purge clean test unittest
-
+.PHONY: all
 all: mokctl.deploy tags
+
+cmdline-player/install-mokctl-linux.md: cmdline-player/install-mokctl-linux.scr
+	cd cmdline-player && \
+	./scr2md.sh install-mokctl-linux.scr
 
 mokctl-docker: all
 	cp mokctl.deploy package/
 	sudo podman build --force-rm -t local/mokctl package
 
+.PHONY: docker-hub-upload
 docker-hub-upload: mokctl-docker
 	sudo podman tag local/mokctl docker.io/mclarkson/mokctl
 	sudo podman push docker.io/mclarkson/mokctl
@@ -17,18 +21,23 @@ mokctl.deploy: mokctl mok-centos-7
 	bash mokctl/embed-dockerfile.sh
 	chmod +x mokctl.deploy
 
+.PHONY: install
 install: all
 	install mokctl.deploy /usr/local/bin/mokctl
 
+.PHONY: uninstall
 uninstall:
 	rm -f /usr/local/bin/mokctl
 
+.PHONY: purge
 purge: uninstall
 	rm -rf ~/.mok
 
+.PHONY: clean
 clean:
 	rm -f mokctl.deploy
 
+.PHONY: test
 test: clean mokctl.deploy
 	./tests/unit-tests.sh
 	shellcheck mokctl/mokctl

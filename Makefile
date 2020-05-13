@@ -2,10 +2,12 @@
 all: mokctl.deploy tags cmdline-player/*.md
 
 cmdline-player/*.md: cmdline-player/*.scr
-	cd cmdline-player && \
-	./scr2md.sh install-mokctl-linux.scr && \
-	./scr2md.sh kthw-2.scr && \
-	./scr2md.sh kthw-3.scr
+	./cmdline-player/scr2md.sh $$PWD/cmdline-player/install-mokctl-linux.scr \
+		"Install mokctl on Linux"
+	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-2.scr \
+	  "KTHW 02 Client Tools"
+	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-3.scr \
+	  "KTHW 03 Compute Resources"
 
 mokctl-docker: all
 	cp mokctl.deploy package/

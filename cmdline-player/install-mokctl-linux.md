@@ -1,6 +1,8 @@
+# Install mokctl on Linux
+
+```bash
 # How to install and use mokctl
 lsb_release -d
-screencast paste
 git clone https://github.com/mclarkson/my-own-kind.git
 cd my-own-kind
 sudo make test # <- yes, sudo is required to test :(
@@ -10,7 +12,6 @@ mokctl build
 # Use 'sudo mokctl' to run podman as root (required) or set an alias as shown above:
 alias mokctl="sudo mokctl"
 mokctl build -h
-screencast sleep 4
 mokctl build image
 ^c
 # I hit Control-C there
@@ -22,29 +23,20 @@ mokctl create -h
 mokctl create cluster myk8s 1 0
 export KUBECONFIG=/var/tmp/admin.conf
 kubectl get pods -A
-screencast prompt %
 for i in {10..1}; do echo -n "$i.."; sleep 1; done; echo
 kubectl get pods -A
-screencast prompt %
 for i in {10..1}; do echo -n "$i.."; sleep 1; done; echo
 kubectl get pods -A
 # Kubernetes looks about ready :)
 # Let's try starting a Pod:
-screencast prompt #
 kubectl run --rm -ti --restart=Never --image=alpine shell2 sh
-screencast prompt #
 ip address
-screencast prompt #
 apk add fortune
-screencast prompt #
 # 'apk add' downloads from the Internet, so networking and external dns looks ok
-screencast prompt #
 fortune
-screencast prompt %
 exit
 mokctl get cluster
 # Now to delete the cluster we just made:
-screencast prompt >
 mokctl delete cluster myk8s
 y
 mokctl get cluster
@@ -54,3 +46,5 @@ cd ..
 rm -rf my-own-kind
 # That's it for now...
 # Thanks for watching!
+
+```

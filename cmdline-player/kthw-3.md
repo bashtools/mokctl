@@ -1,4 +1,4 @@
-# Install mokctl on Linux
+# KTHW 03 Compute Resources
 
 ```bash
 # ---------------------------------------------------------

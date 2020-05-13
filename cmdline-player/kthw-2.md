@@ -1,12 +1,10 @@
-screencast paste
+# Install mokctl on Linux
+
+```bash
 # ---------------------------------------------------------
-screencast paste
 # Kubernetes the Hard Way - using `mokctl` from My Own Kind
-screencast paste
 # ---------------------------------------------------------
-screencast paste
 # 02-client-tools
-screencast paste
 # Install CFSSL
 
 # Let's do all this in a container so the host is kept clean
@@ -14,7 +12,6 @@ screencast paste
 # directory to use as a volume mount, where we'll put
 # all the certificates.
 
-screencast prompt %$#:>
 podman ps
 mkdir -p kthw
 podman run -d -v /root:$PWD/kthw --name kthw fedora /sbin/init
@@ -22,36 +19,25 @@ podman exec -ti kthw bash
 dnf install wget
 y
 # Installing the Client Tools
-screencast paste
 wget -q --show-progress --https-only --timestamping \\
-screencast paste
   https://storage.googleapis.com/kubernetes-the-hard-way/cfssl/linux/cfssl \\
-screencast paste
   https://storage.googleapis.com/kubernetes-the-hard-way/cfssl/linux/cfssljson
-screencast paste
 chmod +x cfssl cfssljson
-screencast paste
 sudo mv cfssl cfssljson /usr/local/bin/
 # Verification
-screencast paste
 cfssl version
-screencast paste
 cfssljson --version
 # Install kubectl
 # Linux
-screencast paste
 wget https://storage.googleapis.com/kubernetes-release/release/v1.15.3/bin/linux/amd64/kubectl
-screencast paste
 chmod +x kubectl
-screencast paste
 sudo mv kubectl /usr/local/bin/
 # Verification
-screencast paste
 kubectl version --client
 exit
 ls kthw
-screencast paste
 # ------------------------------------
 # Next: Provisioning Compute Resources
-screencast paste
 # ------------------------------------
+
+```

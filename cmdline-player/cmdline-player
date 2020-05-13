@@ -20,11 +20,19 @@ main() {
   OLDWAITING="$WAITING"
 
   while read -r line; do
+    [[ $line == '"'* ]] && {
+      continue
+    }
     [[ $line == "screencast paste" ]] && {
       paste=true
       continue
     }
+    [[ $line == "screencast sleep"* ]] && {
+      sleepytime="${line##* }"
+      continue
+    }
     [[ $line == "screencast subshell" ]] && {
+      unset waitforprompt
       subshell=true
       continue
     }
@@ -34,6 +42,7 @@ main() {
       continue
     }
     [[ $line == "screencast firstps" ]] && {
+      unset waitforprompt
       WAITING="$OLDWAITING"
       continue
     }
@@ -42,7 +51,7 @@ main() {
       paste_line "$line"
       [[ -n $subshell ]] && {
         unset subshell
-        sleep 1
+        sleep .5
         WAITING=$(fingerprint)
       }
       unset paste
@@ -50,7 +59,7 @@ main() {
       print_line "$line"
       [[ -n $subshell ]] && {
         unset subshell
-        sleep 1
+        sleep .5
         WAITING=$(fingerprint)
       }
     fi
@@ -61,32 +70,35 @@ main() {
       sleep 0.5
       continue
     else
-      if [[ -n $waitforprompt ]]; then
-        unset waitforprompt
+      if [[ -n $sleepytime ]]; then
+        sleep "$sleepytime"
+        sleepytime=
+      elif [[ -n $waitforprompt ]]; then
         while true; do
           sleep 1
           screen -S screencast -p 0 -X hardcopy latest.hardcopy
           if prompt_found "$promptlist"; then break; fi
         done
-        sleep 1
+        sleep .5
       else
         while [[ $WAITING != $(fingerprint) ]]; do
           sleep 1
         done
-        sleep 1
+        sleep .5
       fi
     fi
 
   done <"$FILE"
 
-  sleep 2
+  sleep 4
   end_recording
+  echo
 }
 
 prompt_found() {
   promptlist="$1"
-  lastcharinfile=$(grep -v '^$' latest.hardcopy | tail -n 1 | grep -o '.$')
-  [[ $promptlist == *"$lastcharinfile"* ]] && return 0
+  lastcharinfile=$(grep -v '^$' latest.hardcopy | tail -n 1 | grep -o '. *$')
+  [[ $promptlist == *"$lastcharinfile"* && -n $lastcharinfile ]] && return 0
   return 1
 }
 
@@ -115,19 +127,33 @@ end_recording() {
 
 paste_line() {
   screen -S screencast -p 0 -X stuff "$1^M"
-  sleep 1
+  sleep .5
 }
 
 print_line() {
-  local chararray int
+  local chararray char
   readarray -t chararray <<<"$(printf '%s' "$1" | grep -o .)"
-  for int in "${chararray[@]}"; do
-    screen -S screencast -p 0 -X stuff "$int"
+  for char in "${chararray[@]}"; do
+    [[ $char == '^' ]] && {
+      controlchar=yes
+      continue
+    }
+    if [[ -n $controlchar ]]; then
+      #screen -S screencast -p 0 -X stuff "\^c"
+      screen -S screencast -p 0 -X stuff "^$char"
+    elif [[ $char == \\ ]]; then
+      screen -S screencast -p 0 -X stuff \\\\
+    else
+      screen -S screencast -p 0 -X stuff "$char"
+    fi
     sleep ."$(printf '%02d' $((RANDOM % 16)))"
   done
   sleep .3
-  screen -S screencast -p 0 -X stuff "^M"
-  sleep .8
+  [[ -z $controlchar ]] && {
+    screen -S screencast -p 0 -X stuff "^M"
+  }
+  controlchar=
+  sleep .2
 }
 
 parse_options() {
@@ -142,7 +168,7 @@ parse_options() {
 start_gnu_screen() {
   printf 'Starting a screen session\n'
 
-  screen -d -m -S screencast zsh
+  screen -d -m -S screencast
   PID=$(screen -ls | grep screencast | sed -r 's/[ \t]+//g' | cut -f 1 -d.)
   sleep 2
   WAITING=$(fingerprint)

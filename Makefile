@@ -1,9 +1,10 @@
 .PHONY: all
-all: mokctl.deploy tags
+all: mokctl.deploy tags cmdline-player/*.md
 
-cmdline-player/install-mokctl-linux.md: cmdline-player/install-mokctl-linux.scr
+cmdline-player/*.md: cmdline-player/*.scr
 	cd cmdline-player && \
-	./scr2md.sh install-mokctl-linux.scr
+	./scr2md.sh install-mokctl-linux.scr && \
+	./scr2md.sh kthw-2.scr
 
 mokctl-docker: all
 	cp mokctl.deploy package/

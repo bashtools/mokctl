@@ -1891,10 +1891,14 @@ systemctl enable kubelet
 
 export KUBECONFIG=/etc/kubernetes/admin.conf
 
-#kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
-kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
+# Flannel - 10.244.0.0./16
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+# Weave - ?
+#kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
+
+# Calico - custom 10.123.0.0/16
 # Calico is e2e tested by k8s team. Requires --pod-network-cidr=192.168.0.0/16
-#kubectl apply -f https://docs.projectcalico.org/v3.11/manifests/calico.yaml |
 #curl https://docs.projectcalico.org/v3.11/manifests/calico.yaml | sed 's#192.168.0.0/16#10.123.0.0/16#' | kubectl apply -f -
 EnD
 

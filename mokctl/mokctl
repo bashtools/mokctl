@@ -1864,28 +1864,69 @@ sysctl -w net.ipv6.conf.default.disable_ipv6=1
 sed -i 's/\(^driver = \).*/\1"vfs"/' /etc/containers/storage.conf
 systemctl restart crio
 
+# Use a custom configuration. Default config created from kubeadm with:
+#   kubeadm config print init-defaults
+# then edited.
+
+ipaddr=$(ip ro get default 8.8.8.8 | head -n 1 | cut -f 7 -d " ")
+hostnet=$(ip ro | grep "$ipaddr *$" | cut -f 1 -d " ")
+
+cat <<EOF >kubeadm-init-defaults.yaml
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: InitConfiguration
+bootstrapTokens:
+- groups:
+  - system:bootstrappers:kubeadm:default-node-token
+  token: abcdef.0123456789abcdef
+  ttl: 24h0m0s
+  usages:
+  - signing
+  - authentication
+localAPIEndpoint:
+  advertiseAddress: $ipaddr
+  bindPort: 6443
+nodeRegistration:
+  criSocket: /var/run/crio/crio.sock
+  name: myk8s-master-1
+  kubeletExtraArgs: {}
+  taints:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+failSwapOn: false
+featureGates:
+  AllAlpha: false
+  RunAsGroup: true
+runtimeRequestTimeout: "5m"
+---
+kind: ClusterConfiguration
+apiServer:
+  timeoutForControlPlane: 4m0s
+apiVersion: kubeadm.k8s.io/v1beta2
+certificatesDir: /etc/kubernetes/pki
+clusterName: kubernetes
+controllerManager: {}
+dns:
+  type: CoreDNS
+etcd:
+  local:
+    dataDir: /var/lib/etcd
+imageRepository: k8s.gcr.io
+kubernetesVersion: v1.18.2
+networking:
+  dnsDomain: cluster.local
+  podSubnet: 10.244.0.0/16
+  serviceSubnet: $hostnet
+scheduler: {}
+EOF
+
+
 # Run the preflight phase
 kubeadm init \
   --ignore-preflight-errors Swap \
-  phase preflight
-
-# Set up the kubelet
-kubeadm init phase kubelet-start
-
-# Edit the kubelet configuration file
-echo "failSwapOn: false" >>/var/lib/kubelet/config.yaml
-
-# Tell kubeadm to carry on from here
-kubeadm init \
-  --pod-network-cidr=10.244.0.0/16 \
-  --ignore-preflight-errors Swap \
-  --skip-phases=preflight,kubelet-start
-
-declare -i i=120
-while [[ $((i--)) -gt 0 ]]; do
-  curl -k https://localhost:6443/api/ && break
-  sleep 1
-done
+  --config=kubeadm-init-defaults.yaml
 
 systemctl enable kubelet
 

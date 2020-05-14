@@ -376,7 +376,11 @@ It also says:
 >   Some requests, especially pulling huge images, may take longer than 
 >   default (2 minutes) and will cause an error.
 
-We did the first two, but not the last, `--runtime-request-timeout=10m`. This probably should be added.
+We did the first two, but not the last, `--runtime-request-timeout=10m`. This probably should be added. We are also given:
+
+```none
+KUBELET_EXTRA_ARGS=--feature-gates="AllAlpha=false,RunAsGroup=true" --container-runtime=remote --cgroup-driver=systemd --container-runtime-endpoint='unix:///var/run/crio/crio.sock' --runtime-request-timeout=5m
+```
 
 ## Summary
 

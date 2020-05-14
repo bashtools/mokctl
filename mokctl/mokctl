@@ -746,7 +746,7 @@ build_container_image() {
 
   if [[ -z $BUILD_GET_PREBUILT ]]; then
     cmd="docker build \
-    -t localhost/local/$TAGNAME \
+    -t "$PODMANIMGPREFIX/local/$TAGNAME" \
     --force-rm \
     $buildargs \
     $DOCKERBUILDTMPDIR/$BASEIMAGENAME"

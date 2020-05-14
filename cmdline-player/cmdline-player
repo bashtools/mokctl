@@ -3,6 +3,7 @@
 # https://serverfault.com/questions/178457/can-i-send-some-text-to-the-stdin-of-an-active-process-running-in-a-screen-sessi
 # Playback commands using screen's 'stuff' command.
 
+DELAY=18 # not <-- less than 1
 FILE=
 WAITING=
 PID=
@@ -25,6 +26,14 @@ main() {
     ((linenum++))
     while read -r line; do
       ((linenum++))
+      [[ $line == "screencast clear" ]] && {
+        screen -S screencast -p 0 -X stuff "clear^M"
+        continue
+      }
+      [[ $line == "screencast delay"* ]] && {
+        DELAY="${line##* }"
+        continue
+      }
       [[ $line == "screencast pause" ]] && {
         printf -- '\n- PAUSED - press any key to unpause...\n'
         pause=1
@@ -156,14 +165,14 @@ print_line() {
       continue
     }
     if [[ -n $controlchar ]]; then
-      #screen -S screencast -p 0 -X stuff "\^c"
+      screen -S screencast -p 0 -X stuff "\^c"
       screen -S screencast -p 0 -X stuff "^$char"
     elif [[ $char == \\ ]]; then
       screen -S screencast -p 0 -X stuff \\\\
     else
       screen -S screencast -p 0 -X stuff "$char"
     fi
-    sleep ."$(printf '%02d' $((RANDOM % 16)))"
+    sleep ."$(printf '%02d' $((RANDOM % DELAY)))"
   done
   sleep .3
   [[ -z $controlchar ]] && {

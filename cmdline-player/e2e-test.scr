@@ -1,0 +1,60 @@
+screencast delay 1
+screencast clear
+# Starting test
+screencast prompt %$
+bash
+screencast paste
+git clone https://github.com/mclarkson/my-own-kind.git
+cd my-own-kind
+sudo make test
+sudo make install
+alias mokctl="sudo mokctl"
+mokctl build -h
+mokctl build image --get-prebuilt-image
+mokctl create -h
+mokctl create cluster myk8s 1 2
+export KUBECONFIG=/var/tmp/admin.conf
+for i in {100..81}; do echo -n "$i.."; sleep 1; done; echo
+for i in {80..61}; do echo -n "$i.."; sleep 1; done; echo
+for i in {60..41}; do echo -n "$i.."; sleep 1; done; echo
+for i in {40..21}; do echo -n "$i.."; sleep 1; done; echo
+for i in {20..1}; do echo -n "$i.."; sleep 1; done; echo
+kubectl get pods -A
+screencast prompt #$%>
+kubectl run --rm -ti --restart=Never --image=alpine shell2 sh
+ip address
+apk add fortune
+exit
+mokctl get -h
+mokctl get cluster
+mokctl delete -h
+mokctl delete cluster myk8s
+y
+mokctl get cluster
+# Test 2
+mokctl build image
+mokctl create -h
+mokctl create cluster myk8s 1 0
+export KUBECONFIG=/var/tmp/admin.conf
+for i in {80..61}; do echo -n "$i.."; sleep 1; done; echo
+for i in {60..41}; do echo -n "$i.."; sleep 1; done; echo
+for i in {40..21}; do echo -n "$i.."; sleep 1; done; echo
+for i in {20..1}; do echo -n "$i.."; sleep 1; done; echo
+kubectl get pods -A
+screencast prompt #$%>
+kubectl run --rm -ti --restart=Never --image=alpine shell2 sh
+ip address
+apk add fortune
+exit
+mokctl get -h
+mokctl get cluster
+mokctl delete -h
+mokctl delete cluster myk8s
+y
+mokctl get cluster
+# And uninstall mokctl
+sudo make uninstall
+cd ..
+rm -rf my-own-kind
+screencast sleep 6
+# Test complete

@@ -19,76 +19,93 @@ main() {
 
   OLDWAITING="$WAITING"
 
-  while read -r line; do
-    [[ $line == '"'* ]] && {
-      continue
-    }
-    [[ $line == "screencast paste" ]] && {
-      paste=true
-      continue
-    }
-    [[ $line == "screencast sleep"* ]] && {
-      sleepytime="${line##* }"
-      continue
-    }
-    [[ $line == "screencast subshell" ]] && {
-      unset waitforprompt
-      subshell=true
-      continue
-    }
-    [[ $line == "screencast prompt"* ]] && {
-      promptlist="${line##* }"
-      waitforprompt=true
-      continue
-    }
-    [[ $line == "screencast firstps" ]] && {
-      unset waitforprompt
-      WAITING="$OLDWAITING"
-      continue
-    }
-
-    if [[ -n $paste ]]; then
-      paste_line "$line"
-      [[ -n $subshell ]] && {
-        unset subshell
-        sleep .5
-        WAITING=$(fingerprint)
+  pause=0
+  linenum=0
+  while true; do
+    ((linenum++))
+    while read -r line; do
+      ((linenum++))
+      [[ $line == "screencast pause" ]] && {
+        printf -- '\n- PAUSED - press any key to unpause...\n'
+        pause=1
+        break
       }
-      unset paste
-    else
-      print_line "$line"
-      [[ -n $subshell ]] && {
-        unset subshell
-        sleep .5
-        WAITING=$(fingerprint)
+      [[ $line == '"'* ]] && {
+        continue
       }
-    fi
+      [[ $line == "screencast paste" ]] && {
+        paste=true
+        continue
+      }
+      [[ $line == "screencast sleep"* ]] && {
+        sleepytime="${line##* }"
+        continue
+      }
+      [[ $line == "screencast subshell" ]] && {
+        unset waitforprompt
+        subshell=true
+        continue
+      }
+      [[ $line == "screencast prompt"* ]] && {
+        promptlist="${line##* }"
+        waitforprompt=true
+        continue
+      }
+      [[ $line == "screencast firstps" ]] && {
+        unset waitforprompt
+        WAITING="$OLDWAITING"
+        continue
+      }
 
-    cmd="${line%% *}"
-
-    if [[ $cmd == '#' ]]; then
-      sleep 0.5
-      continue
-    else
-      if [[ -n $sleepytime ]]; then
-        sleep "$sleepytime"
-        sleepytime=
-      elif [[ -n $waitforprompt ]]; then
-        while true; do
-          sleep 1
-          screen -S screencast -p 0 -X hardcopy latest.hardcopy
-          if prompt_found "$promptlist"; then break; fi
-        done
-        sleep .5
+      if [[ -n $paste ]]; then
+        paste_line "$line"
+        [[ -n $subshell ]] && {
+          unset subshell
+          sleep .5
+          WAITING=$(fingerprint)
+        }
+        unset paste
       else
-        while [[ $WAITING != $(fingerprint) ]]; do
-          sleep 1
-        done
-        sleep .5
+        print_line "$line"
+        [[ -n $subshell ]] && {
+          unset subshell
+          sleep .5
+          WAITING=$(fingerprint)
+        }
       fi
-    fi
 
-  done <"$FILE"
+      cmd="${line%% *}"
+
+      if [[ $cmd == '#' ]]; then
+        sleep 0.5
+        continue
+      else
+        if [[ -n $sleepytime ]]; then
+          sleep "$sleepytime"
+          sleepytime=
+        elif [[ -n $waitforprompt ]]; then
+          while true; do
+            sleep 1
+            screen -S screencast -p 0 -X hardcopy latest.hardcopy
+            if prompt_found "$promptlist"; then break; fi
+          done
+          sleep .5
+        else
+          while [[ $WAITING != $(fingerprint) ]]; do
+            sleep 1
+          done
+          sleep .5
+        fi
+      fi
+
+    done <<<"$(sed -n ' '"$linenum"',$ {p}' "$FILE")"
+    [[ $pause -eq 1 ]] && {
+      read -r
+      pause=0
+      continue
+    }
+    break
+  done
 
   sleep 4
   end_recording

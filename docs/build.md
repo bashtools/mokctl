@@ -1,7 +1,9 @@
 # My Own Kind - Build
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
+
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Create a Container Image](#create-a-container-image)
@@ -339,6 +341,8 @@ EnD
 ### Install crictl, a crio control binary
 
 This step is not necessary but is nice for us to have to be able to check that crio is set up correctly.
+
+> **NOTE:** Actually, `kubeadm` uses crictl to check that pods can run successfully. So this step is REQUIRED.
 
 See  also: [github.com/kubernetes-sigs/.../crictl.md](https://github.com/kubernetes-sigs/cri-tools/blob/master/docs/crictl.md)
 

@@ -4,17 +4,19 @@
 
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-<!-- END doctoc -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Fixing Busybox not working](#fixing-busybox-not-working)
   - [Trying the changes](#trying-the-changes)
   - [Result](#result)
-    - [Summary](#summary)
-    - [All working at last!](#all-working-at-last)
+  - [Summary](#summary)
+  - [All working at last!](#all-working-at-last)
 - [Checking against Kind](#checking-against-kind)
 - [Finding the root cause](#finding-the-root-cause)
   - [Comparing Components](#comparing-components)
   - [Comparing Logs](#comparing-logs)
+  - [Code Tidy Ups](#code-tidy-ups)
+  - [Niggles (skip this - in progress)](#niggles-skip-this---in-progress)
 - [Summary](#summary-1)
 - [What's next](#whats-next)
 
@@ -249,17 +251,17 @@ mok 4-node cluster uses around 50% CPU
 
 Not good. It still needs fixing...
 
-## Finding the root cause
+### Finding the root cause
 
 We've got away with not digging too deep up to now but we will need to put a little more effort in to find the root cause.
 
-### Comparing Components
+#### Comparing Components
 
 Kind: Ubuntu 19 nodes, containerd, kind-net, k8s version 1.17.0
 
 Mok: Centos 7 nodes, cri-o, flannel, k8s version 1.18.2
 
-### Comparing Logs
+#### Comparing Logs
 
 View logs on master and worker using `journalctl -xef`
 
@@ -320,7 +322,7 @@ Trying a seven node cluster, as that was the goal, so that's 1 master and 6 work
 
 It would be nice to also be able to `mokctl edit cluster myclust add worker 1` to test adding nodes slowly. I've added this to the ‘Help Wanted’ Project in this repository, but I'm happy with this right now.
 
-### Code Tidy Ups
+#### Code Tidy Ups
 
 I put a note on a couple of groups on Reddit about `mokctl` and got some good feedback about the code. Some of it highlighted that I needed a linter and code formatter so I added that to our Makefile - look for `shellcheck` and `shfmt` and see [CONTRIBUTING.md](/CONTRIBUTING.md). The recommended changes were useful, some I had done already, but I'll list them next:
 
@@ -340,7 +342,7 @@ I put a note on a couple of groups on Reddit about `mokctl` and got some good fe
 
 Never get precious about the code you've sweated over. Judge whether the suggestion is valid and implement it if it is. I really appreciated the comments and there's nothing us humans like doing more than pointing out mistakes in other's work (usually behind the persons back, but now with the Internet people just do it direct!).
 
-### Niggles (skip this - in progress)
+#### Niggles (skip this - in progress)
 
 I tried using cgroupfs and systemd as options to kubelet and crio. Some times cgroupfs worked and sometimes systemd worked.
 
@@ -349,6 +351,32 @@ The easiest thing would be for systemd or docker to create new cgroup hierarchie
 This can be tested. First see what a `systemd-nspawn` container looks like (might need to use febootstrap, which is the Fedora version of debootstrap, to get a small chroot system), then try using nsenter, and the same "chroot" files, and bind mounts to set it up. Then try to run kubelet and crio in it. So forget febootstrap and copy the linux container files out so it's easy to test crio and kubelet - will have to run the binaries directly without systemctl. <mark>Break this out</mark>
 
 A Systemd author said to either use systemd to run the container, or use some really tricky api over DBUS protocol, probably requiring a language that has glib and dbus bindings. You'll find that in the block of links above.
+
+### Checking Networking
+
+For multi-node clusters CRI-O is configured incorrectly. Sometimes IP ranges overlap on each node. When CRI-O is needed to run on multiple nodes the configuration needs to be mostly empty, leaving the network set up to a CNI. See: [cri-o/kubernetes.md at master · cri-o/cri-o · GitHub](https://github.com/cri-o/cri-o/blob/master/tutorials/kubernetes.md), where we are given:
+
+```none
+# cat /etc/cni/net.d/10-crio.conf
+{
+    "name": "crio",
+    "type": "flannel"
+}
+```
+
+Without the above, kubernetes will complain - but will seem to work, until multiple Pods are started.
+
+It also says:
+
+> You need to add following parameters to `KUBELET_ARGS`:
+> 
+> - `--container-runtime=remote` - Use remote runtime with provided socket.
+> - `--container-runtime-endpoint=unix:///var/run/crio/crio.sock` - Socket for remote runtime (default `crio` socket localization).
+> - `--runtime-request-timeout=10m` - Optional but useful. 
+>   Some requests, especially pulling huge images, may take longer than 
+>   default (2 minutes) and will cause an error.
+
+We did the first two, but not the last, `--runtime-request-timeout=10m`. This probably should be added.
 
 ## Summary
 

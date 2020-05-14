@@ -1,9 +1,7 @@
 # Testing and Fixing
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
-
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Fixing Busybox not working](#fixing-busybox-not-working)
@@ -12,11 +10,14 @@
   - [Summary](#summary)
   - [All working at last!](#all-working-at-last)
 - [Checking against Kind](#checking-against-kind)
-- [Finding the root cause](#finding-the-root-cause)
-  - [Comparing Components](#comparing-components)
-  - [Comparing Logs](#comparing-logs)
-  - [Code Tidy Ups](#code-tidy-ups)
-  - [Niggles (skip this - in progress)](#niggles-skip-this---in-progress)
+  - [Finding the root cause](#finding-the-root-cause)
+    - [Comparing Components](#comparing-components)
+    - [Comparing Logs](#comparing-logs)
+    - [Code Tidy Ups](#code-tidy-ups)
+    - [Niggles (skip this - in progress)](#niggles-skip-this---in-progress)
+  - [Checking Networking](#checking-networking)
+    - [Pod Networking](#pod-networking)
+    - [DNS](#dns)
 - [Summary](#summary-1)
 - [What's next](#whats-next)
 

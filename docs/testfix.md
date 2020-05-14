@@ -467,13 +467,66 @@ The following resources are needed to work out how to write a kubeadm configurat
 
 * kubelet config: [v1beta1 - GoDoc](https://godoc.org/k8s.io/kubelet/config/v1beta1#KubeletConfiguration) or [kubernetes/types.go at release-1.18](https://github.com/kubernetes/kubernetes/blob/release-1.18/staging/src/k8s.io/kubelet/config/v1beta1/types.go)
 
-Now using the kubeadm allows me to get rid of the 'hack' used in the Build and Package sections - so no Phases are needed. The new kubeadm config and `kubeadm init` command line can be seen here:
+Now using the kubeadm allows me to get rid of the 'hack' used in the Build and Package sections - so no Phases are needed. The new kubeadm config and `kubeadm init` command line can be seen in the `set_up_master_node_v1_18_2` function:
 
+```bash
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: InitConfiguration
+bootstrapTokens:
+- groups:
+  - system:bootstrappers:kubeadm:default-node-token
+  token: abcdef.0123456789abcdef
+  ttl: 24h0m0s
+  usages:
+  - signing
+  - authentication
+localAPIEndpoint:
+  advertiseAddress: $ipaddr
+  bindPort: 6443
+nodeRegistration:
+  criSocket: /var/run/crio/crio.sock
+  name: myk8s-master-1
+  kubeletExtraArgs: {}
+  taints:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+failSwapOn: false
+featureGates:
+  AllAlpha: false
+  RunAsGroup: true
+runtimeRequestTimeout: "5m"
+---
+kind: ClusterConfiguration
+apiServer:
+  timeoutForControlPlane: 4m0s
+apiVersion: kubeadm.k8s.io/v1beta2
+certificatesDir: /etc/kubernetes/pki
+clusterName: kubernetes
+controllerManager: {}
+dns:
+  type: CoreDNS
+etcd:
+  local:
+    dataDir: /var/lib/etcd
+imageRepository: k8s.gcr.io
+kubernetesVersion: v1.18.2
+networking:
+  dnsDomain: cluster.local
+  podSubnet: 10.244.0.0/16
+  serviceSubnet: $hostnet
+scheduler: {}
+```
 
+And finally, the kubernetes pods were unable to lookup names using DNS. Flannel logs showed that it didn't have enough rights to set IP tables masquerade for node to external DNS. I changed 'privileged: false' to true in the flannel daemonsets, and then setting iptables worked. I'm not yet sure why NETADMIN rights wasn't enough for this. 
 
 ## Summary
 
 So the answers were all to be found in official documentation:
+
+CRI
 
 - [Running CRI-O with kubeadm tutorial](https://github.com/cri-o/cri-o/blob/master/tutorials/kubeadm.md)
 
@@ -485,9 +538,17 @@ So the answers were all to be found in official documentation:
 
 - [this systemd documentation page](https://systemd.io/CONTAINER_INTERFACE/)
 
+DNS
+
+* [kubeadm init - Kubernetes](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init/)
+
+- kubeadm config: [v1beta2 - GoDoc](https://godoc.org/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta2)
+
+- kubelet config: [v1beta1 - GoDoc](https://godoc.org/k8s.io/kubelet/config/v1beta1#KubeletConfiguration) or [kubernetes/types.go at release-1.18](https://github.com/kubernetes/kubernetes/blob/release-1.18/staging/src/k8s.io/kubelet/config/v1beta1/types.go)
+
 The performance issue was solved, and was exactly the first thing I thought it wasn't! It became clearer after reading the listed information and `mokctl` helped quite a bit with all the testing and fixing.
 
-The network problem was also fixed, so we're in great shape!
+The network problems were also fixed, so we're in great shape!
 
 ## What's next
 

@@ -1922,7 +1922,6 @@ networking:
 scheduler: {}
 EOF
 
-
 # Run the preflight phase
 kubeadm init \
   --ignore-preflight-errors Swap \
@@ -1933,7 +1932,8 @@ systemctl enable kubelet
 export KUBECONFIG=/etc/kubernetes/admin.conf
 
 # Flannel - 10.244.0.0./16
-kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+# Why isn't NETADMIN enough here?
+curl -L https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml | sed 's/privileged: false/privileged: true/' | kubectl apply -f -
 
 # Weave - ?
 #kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"

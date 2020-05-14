@@ -342,7 +342,7 @@ EnD
 
 This step is not necessary but is nice for us to have to be able to check that crio is set up correctly.
 
-> **NOTE:** Actually, `kubeadm` uses crictl to check that pods can run successfully. So this step is REQUIRED.
+> **NOTE:** Actually, `kubeadm` uses crictl to pull the control plane's container images. So this step is REQUIRED.
 
 See  also: [github.com/kubernetes-sigs/.../crictl.md](https://github.com/kubernetes-sigs/cri-tools/blob/master/docs/crictl.md)
 

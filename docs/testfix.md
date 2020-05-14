@@ -354,6 +354,8 @@ A Systemd author said to either use systemd to run the container, or use some re
 
 ### Checking Networking
 
+#### Pod Networking
+
 For multi-node clusters CRI-O is configured incorrectly. Sometimes IP ranges overlap on each node. When CRI-O is needed to run on multiple nodes the configuration needs to be mostly empty, leaving the network set up to a CNI. See: [cri-o/kubernetes.md at master · cri-o/cri-o · GitHub](https://github.com/cri-o/cri-o/blob/master/tutorials/kubernetes.md), where we are given:
 
 ```none
@@ -381,6 +383,93 @@ We did the first two, but not the last, `--runtime-request-timeout=10m`. This pr
 ```none
 KUBELET_EXTRA_ARGS=--feature-gates="AllAlpha=false,RunAsGroup=true" --container-runtime=remote --cgroup-driver=systemd --container-runtime-endpoint='unix:///var/run/crio/crio.sock' --runtime-request-timeout=5m
 ```
+
+#### DNS
+
+Using Flannel and CRI-O as in the previous section, DNS does not work.
+
+The coredns pods have IP addresses, 10.244.0.2 and 10.244.0.3.
+
+The `/etc/resolv.conf` settings on new pods point DNS to 10.96.0.10.
+
+These settings are not in the coredns yaml file, and if coredns is scaled to 0 then back to 2 (a restart), then the new pods don't start, with:
+
+```none
+Readiness probe failed: HTTP probe failed with statuscode: 503
+```
+
+and pod logs containing:
+
+```none
+Get https://10.96.0.1:443/api/v1/namespaces?limit=500&resourceVersion=0:
+ dial tcp 10.96.0.1:443: i/o timeout
+```
+
+So, coredns uses default settings for itself, and for the location of the API server.
+
+Looking up in kubernetes official docs: [Customizing DNS Service - Kubernetes](https://kubernetes.io/docs/tasks/administer-cluster/dns-custom-nameservers/), it tells us:
+
+> ... The kubelet passes DNS to each container with the `--cluster-dns=<dns-service-ip>` flag. ...
+> 
+> DNS names also need domains. You configure the local domain in the kubelet
+> with the flag `--cluster-domain=<default-local-domain>`.
+
+From: [Customizing control plane configuration with kubeadm - Kubernetes](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/control-plane-flags/), the kubeadm default values can be seen using `kubeadm config print init-defaults`:
+
+```yaml
+apiVersion: kubeadm.k8s.io/v1beta2
+bootstrapTokens:
+- groups:
+  - system:bootstrappers:kubeadm:default-node-token
+  token: abcdef.0123456789abcdef
+  ttl: 24h0m0s
+  usages:
+  - signing
+  - authentication
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: 1.2.3.4
+  bindPort: 6443
+nodeRegistration:
+  criSocket: /var/run/dockershim.sock
+  name: myk8s-master-1
+  taints:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+---
+apiServer:
+  timeoutForControlPlane: 4m0s
+apiVersion: kubeadm.k8s.io/v1beta2
+certificatesDir: /etc/kubernetes/pki
+clusterName: kubernetes
+controllerManager: {}
+dns:
+  type: CoreDNS
+etcd:
+  local:
+    dataDir: /var/lib/etcd
+imageRepository: k8s.gcr.io
+kind: ClusterConfiguration
+kubernetesVersion: v1.18.0
+networking:
+  dnsDomain: cluster.local
+  serviceSubnet: 10.96.0.0/12
+scheduler: {}
+```
+
+We need to edit the above and run `kubeadm init` with `--config <YOUR CONFIG YAML>`.
+
+The following resources are needed to work out how to write a kubeadm configuration file:
+
+* [kubeadm init - Kubernetes](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init/)
+
+* kubeadm config: [v1beta2 - GoDoc](https://godoc.org/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta2)
+
+* kubelet config: [v1beta1 - GoDoc](https://godoc.org/k8s.io/kubelet/config/v1beta1#KubeletConfiguration) or [kubernetes/types.go at release-1.18](https://github.com/kubernetes/kubernetes/blob/release-1.18/staging/src/k8s.io/kubelet/config/v1beta1/types.go)
+
+Now using the kubeadm allows me to get rid of the 'hack' used in the Build and Package sections - so no Phases are needed. The new kubeadm config and `kubeadm init` command line can be seen here:
+
+
 
 ## Summary
 

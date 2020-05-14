@@ -1877,7 +1877,7 @@ echo "failSwapOn: false" >>/var/lib/kubelet/config.yaml
 
 # Tell kubeadm to carry on from here
 kubeadm init \
-  --pod-network-cidr=10.123.0.0/16 \
+  --pod-network-cidr=10.244.0.0/16 \
   --ignore-preflight-errors Swap \
   --skip-phases=preflight,kubelet-start
 

@@ -165,7 +165,7 @@ print_line() {
       continue
     }
     if [[ -n $controlchar ]]; then
-      screen -S screencast -p 0 -X stuff "\^c"
+      #screen -S screencast -p 0 -X stuff "\^c"
       screen -S screencast -p 0 -X stuff "^$char"
     elif [[ $char == \\ ]]; then
       screen -S screencast -p 0 -X stuff \\\\

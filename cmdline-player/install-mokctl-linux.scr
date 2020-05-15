@@ -1,3 +1,4 @@
+screencast clear
 # How to install and use mokctl
 lsb_release -d
 screencast paste
@@ -25,26 +26,21 @@ kubectl get pods -A
 screencast prompt %
 for i in {10..1}; do echo -n "$i.."; sleep 1; done; echo
 kubectl get pods -A
-screencast prompt %
 for i in {10..1}; do echo -n "$i.."; sleep 1; done; echo
 kubectl get pods -A
 # Kubernetes looks about ready :)
 # Let's try starting a Pod:
 screencast prompt #
 kubectl run --rm -ti --restart=Never --image=alpine shell2 sh
-screencast prompt #
 ip address
-screencast prompt #
 apk add fortune
-screencast prompt #
 # 'apk add' downloads from the Internet, so networking and external dns looks ok
-screencast prompt #
 fortune
 screencast prompt %
 exit
 mokctl get cluster
 # Now to delete the cluster we just made:
-screencast prompt >
+screencast prompt %>
 mokctl delete cluster myk8s
 y
 mokctl get cluster

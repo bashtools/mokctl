@@ -53,16 +53,13 @@ ls -lh *.yaml
 exit
 # The encryption key should be in the kthw-certs directory
 ls kthw-certs/*.yaml
-# It is, good!
+# It is, good! Let's have a quick look at it:
+cat kthw-certs/*.yaml
 # Now to copy it to the Masters:
 # NOTE that 'sudo' is required as these are privileged containers
 # that were created with 'sudo mokctl'.
 cd kthw-certs
 screencast prompt %$#>
-for instance in kthw-worker-1 kthw-worker-2 kthw-worker-3; do
-  sudo podman cp ${instance}.kubeconfig ${instance}:/root
-  sudo podman cp kube-proxy.kubeconfig ${instance}:/root
-done
 # Copy to the masters
 for instance in kthw-master-1 kthw-master-2 kthw-master-3; do
   sudo podman cp encryption-config.yaml ${instance}:/root

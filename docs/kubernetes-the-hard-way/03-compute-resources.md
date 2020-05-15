@@ -1,12 +1,14 @@
 > **My Own Kind changes:**
 > 
 > * Removed all GCP sections.
+> 
 > * Changed 'using Ubuntu 18.04' to 'using CentOS 7'.
+> 
 > * Added information for using `mokctl`.
-> 
-> ![](../images/kthw-3.gif)
-> 
-> [Screencast transcript](/cmdline-player/kthw-3.md)
+>   
+>   ![](../images/kthw-3.gif)
+>   
+>   [Screencast transcript](/cmdline-player/kthw-3.md)
 
 # Provisioning Compute Resources
 

@@ -1,0 +1,76 @@
+screencast clear
+screencast paste
+# ---------------------------------------------------------
+screencast paste
+# Kubernetes the Hard Way - using `mokctl` from My Own Kind
+screencast paste
+# ---------------------------------------------------------
+screencast paste
+# 06-generating-the-data-encryption-config-and-key
+screencast paste
+# Create encryption config and key
+
+screencast prompt %$#
+# We need to log back into the podman container, 'kthw', then
+# paste the command blocks
+
+podman exec -ti kthw bash
+
+# The Encryption Key
+
+# Set the public address variable to the load balancer address
+ENCRYPTION_KEY=$(head -c 32 /dev/urandom | base64)
+echo $ENCRYPTION_KEY
+
+# Need to be in the directory where the certs are so it can be copied from
+# the host later on
+cd /certs
+
+# The Encryption Config File
+
+screencast paste start
+cat > encryption-config.yaml <<EOF
+kind: EncryptionConfig
+apiVersion: v1
+resources:
+  - resources:
+      - secrets
+    providers:
+      - aescbc:
+          keys:
+            - name: key1
+              secret: ${ENCRYPTION_KEY}
+      - identity: {}
+EOF
+screencast paste end
+screencast sleep 2
+ls -lh *.yaml
+
+# Copy the encryption-config.yaml encryption config file to each controller instance:
+
+# We need to log out of this container then copy the encryption key to the
+# kubernetes master nodes
+exit
+# The encryption key should be in the kthw-certs directory
+ls kthw-certs/*.yaml
+# It is, good!
+# Now to copy it to the Masters:
+# NOTE that 'sudo' is required as these are privileged containers
+# that were created with 'sudo mokctl'.
+cd kthw-certs
+screencast prompt %$#>
+for instance in kthw-worker-1 kthw-worker-2 kthw-worker-3; do
+  sudo podman cp ${instance}.kubeconfig ${instance}:/root
+  sudo podman cp kube-proxy.kubeconfig ${instance}:/root
+done
+# Copy to the masters
+for instance in kthw-master-1 kthw-master-2 kthw-master-3; do
+  sudo podman cp encryption-config.yaml ${instance}:/root
+done
+# All done :)
+
+screencast paste
+# ------------------------------------
+# Next: Bootstrapping the etcd Cluster
+screencast paste
+# ------------------------------------

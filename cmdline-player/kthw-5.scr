@@ -1,40 +1,33 @@
-> **My Own Kind changes:**
-> 
-> * Changed node names
-> 
-> * Changed commands from `gcloud` to `docker`
-> 
-> ![](../images/kthw-5.gif)
-> 
-> [Screencast transcript](/cmdline-player/kthw-5.md)
+screencast clear
+screencast paste
+# ---------------------------------------------------------
+screencast paste
+# Kubernetes the Hard Way - using `mokctl` from My Own Kind
+screencast paste
+# ---------------------------------------------------------
+screencast paste
+# 05-generating-kubernetes-configuration-files-for-authentication
+screencast paste
+# Create all required 'kubeconfig' files
 
-# Generating Kubernetes Configuration Files for Authentication
+screencast prompt %$#
+# We need to log back into the podman container, 'kthw', then
+# paste the command blocks
 
-In this lab you will generate [Kubernetes configuration files](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/), also known as kubeconfigs, which enable Kubernetes clients to locate and authenticate to the Kubernetes API Servers.
+podman exec -ti kthw bash
 
-## Client Authentication Configs
+# Kubernetes Public IP Address
 
-In this section you will generate kubeconfig files for the `controller manager`, `kubelet`, `kube-proxy`, and `scheduler` clients and the `admin` user.
-
-### Kubernetes Public IP Address
-
-Each kubeconfig requires a Kubernetes API Server to connect to. To support high availability the IP address assigned to the external load balancer fronting the Kubernetes API Servers will be used.
-
-Retrieve the `kubernetes-the-hard-way` static IP address:
-
-```
+# Set the public address variable to the load balancer address
 KUBERNETES_PUBLIC_ADDRESS=$(grep kthw-lb /certs/cluster-list.txt | awk '{ print $NF; }')
-```
+echo $KUBERNETES_PUBLIC_ADDRESS
 
-### The kubelet Kubernetes Configuration File
+# Need to be in the directory where the certs are
+cd /certs
 
-When generating kubeconfig files for Kubelets the client certificate matching the Kubelet's node name must be used. This will ensure Kubelets are properly authorized by the Kubernetes [Node Authorizer](https://kubernetes.io/docs/admin/authorization/node/).
+# The kubelet Kubernetes Configuration File
 
-> The following commands must be run in the same directory used to generate the SSL certificates during the [Generating TLS Certificates](04-certificate-authority.md) lab.
-
-Generate a kubeconfig file for each worker node:
-
-```
+screencast paste start
 for instance in kthw-worker-1 kthw-worker-2 kthw-worker-3; do
   kubectl config set-cluster kubernetes-the-hard-way \
     --certificate-authority=ca.pem \
@@ -55,21 +48,13 @@ for instance in kthw-worker-1 kthw-worker-2 kthw-worker-3; do
 
   kubectl config use-context default --kubeconfig=${instance}.kubeconfig
 done
-```
+screencast paste end
+screencast sleep 2
+ls -lh *.kubeconfig
 
-Results:
+# The kube-proxy Kubernetes Configuration File
 
-```
-worker-1.kubeconfig
-worker-2.kubeconfig
-worker-3.kubeconfig
-```
-
-### The kube-proxy Kubernetes Configuration File
-
-Generate a kubeconfig file for the `kube-proxy` service:
-
-```
+screencast paste start
 {
   kubectl config set-cluster kubernetes-the-hard-way \
     --certificate-authority=ca.pem \
@@ -90,19 +75,13 @@ Generate a kubeconfig file for the `kube-proxy` service:
 
   kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
 }
-```
+screencast paste end
+screencast sleep 2
+ls -lh *.kubeconfig
 
-Results:
+# The kube-controller-manager Kubernetes Configuration File
 
-```
-kube-proxy.kubeconfig
-```
-
-### The kube-controller-manager Kubernetes Configuration File
-
-Generate a kubeconfig file for the `kube-controller-manager` service:
-
-```
+screencast paste start
 {
   kubectl config set-cluster kubernetes-the-hard-way \
     --certificate-authority=ca.pem \
@@ -123,19 +102,13 @@ Generate a kubeconfig file for the `kube-controller-manager` service:
 
   kubectl config use-context default --kubeconfig=kube-controller-manager.kubeconfig
 }
-```
+screencast paste end
+screencast sleep 2
+ls -lh *.kubeconfig
 
-Results:
+# The kube-scheduler Kubernetes Configuration File
 
-```
-kube-controller-manager.kubeconfig
-```
-
-### The kube-scheduler Kubernetes Configuration File
-
-Generate a kubeconfig file for the `kube-scheduler` service:
-
-```
+screencast paste start
 {
   kubectl config set-cluster kubernetes-the-hard-way \
     --certificate-authority=ca.pem \
@@ -156,19 +129,13 @@ Generate a kubeconfig file for the `kube-scheduler` service:
 
   kubectl config use-context default --kubeconfig=kube-scheduler.kubeconfig
 }
-```
+screencast paste end
+screencast sleep 2
+ls -lh *.kubeconfig
 
-Results:
+# The admin Kubernetes Configuration File
 
-```
-kube-scheduler.kubeconfig
-```
-
-### The admin Kubernetes Configuration File
-
-Generate a kubeconfig file for the `admin` user:
-
-```
+screencast paste start
 {
   kubectl config set-cluster kubernetes-the-hard-way \
     --certificate-authority=ca.pem \
@@ -189,33 +156,37 @@ Generate a kubeconfig file for the `admin` user:
 
   kubectl config use-context default --kubeconfig=admin.kubeconfig
 }
-```
+screencast paste end
+screencast sleep 2
+ls -lh *.kubeconfig
 
-Results:
+# Distribute the Kubernetes Configuration Files
 
-```
-admin.kubeconfig
-```
-
-## Distribute the Kubernetes Configuration Files
-
-Copy the appropriate `kubelet` and `kube-proxy` kubeconfig files to each worker instance:
-
-```
+# We need to log out of this container then copy the certs to the
+# kubernetes nodes
+exit
+# All the kubeconfigs should be in the kthw-certs directory
+ls kthw-certs/*.kubeconfig
+# They are, good!
+# Now to copy them, workers first:
+# NOTE that 'sudo' is required as these are privileged containers
+# that were created with 'sudo mokctl'.
+cd kthw-certs
+screencast prompt %$#>
 for instance in kthw-worker-1 kthw-worker-2 kthw-worker-3; do
-  docker cp ${instance}.kubeconfig ${instance}:/root
-  docker cp kube-proxy.kubeconfig ${instance}:/root
+  sudo podman cp ${instance}.kubeconfig ${instance}:/root
+  sudo podman cp kube-proxy.kubeconfig ${instance}:/root
 done
-```
-
-Copy the appropriate `kube-controller-manager` and `kube-scheduler` kubeconfig files to each controller instance:
-
-```
+# Copy to the masters
 for instance in kthw-master-1 kthw-master-2 kthw-master-3; do
-  docker cp admin.kubeconfig ${instance}:/root
-  docker cp kube-controller-manager.kubeconfig ${instance}:/root
-  docker cp kube-scheduler.kubeconfig ${instance}:/root
+  sudo podman cp admin.kubeconfig ${instance}:/root
+  sudo podman cp kube-controller-manager.kubeconfig ${instance}:/root
+  sudo podman cp kube-scheduler.kubeconfig ${instance}:/root
 done
-```
+# All done :)
 
-Next: [Generating the Data Encryption Config and Key](06-data-encryption-keys.md)
+screencast paste
+# ---------------------------------------------------
+# Next: Generating the Data Encryption Config and Key
+screencast paste
+# ---------------------------------------------------

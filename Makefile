@@ -10,6 +10,8 @@ cmdline-player/*.md: cmdline-player/*.scr
 	  "KTHW 03 Compute Resources"
 	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-4.scr \
 	  "KTHW 04 Provisioning a CA and Generating TLS Certificates"
+	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-5.scr \
+	  "KTHW 05 Generating Kubernetes Configuration Files for Authentication"
 
 mokctl-docker: all
 	cp mokctl.deploy package/

@@ -47,7 +47,7 @@ main() {
         continue
       }
       [[ $line == "screencast sleep"* ]] && {
-        sleepytime="${line##* }"
+        sleep "${line##* }"
         continue
       }
       [[ $line == "screencast subshell" ]] && {
@@ -89,10 +89,7 @@ main() {
         sleep 0.5
         continue
       else
-        if [[ -n $sleepytime ]]; then
-          sleep "$sleepytime"
-          sleepytime=
-        elif [[ -n $waitforprompt ]]; then
+        if [[ -n $waitforprompt ]]; then
           while true; do
             sleep 1
             screen -S screencast -p 0 -X hardcopy latest.hardcopy

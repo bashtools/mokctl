@@ -14,12 +14,12 @@ mokctl create cluster --skipmastersetup --skiplbsetup --with-lb kthw 3 3
 mokctl get cluster kthw
 # Accessing the containers:
 mokctl exec kthw-master-1
-# we're in!
+# we're in a Master!
 exit
 # Invoking the chooser
 mokctl exec
 5
-# we're in!
+# we're in a Worker!
 exit
 # ------------------------------------
 # Next: Certificate Authority

@@ -1,7 +1,9 @@
 # Testing and Fixing
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
+
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Fixing Busybox not working](#fixing-busybox-not-working)
@@ -341,7 +343,7 @@ I put a note on a couple of groups on Reddit about `mokctl` and got some good fe
 
 * Use heredocs instead of multiple 'echo' lines.
 
-Never get precious about the code you've sweated over. Judge whether the suggestion is valid and implement it if it is. I really appreciated the comments and there's nothing us humans like doing more than pointing out mistakes in other's work (usually behind the persons back, but now with the Internet people just do it direct!).
+
 
 #### Niggles (skip this - in progress)
 
@@ -542,7 +544,6 @@ CRI
 DNS
 
 * [kubeadm init - Kubernetes](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init/)
-
 - kubeadm config: [v1beta2 - GoDoc](https://godoc.org/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta2)
 
 - kubelet config: [v1beta1 - GoDoc](https://godoc.org/k8s.io/kubelet/config/v1beta1#KubeletConfiguration) or [kubernetes/types.go at release-1.18](https://github.com/kubernetes/kubernetes/blob/release-1.18/staging/src/k8s.io/kubelet/config/v1beta1/types.go)

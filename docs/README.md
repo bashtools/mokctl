@@ -1,8 +1,8 @@
 # How it was built
 
-In progress. It's all changed!
 
-To get the most out of the "labs", and I use that term loosely, you should have some theoretical understanding of kubernetes. Some good resources are:
+
+The following resources will help when following the documentation below.
 
 - [Certified Kubernetes Administrator (CKA) with Practice Exam Tests](https://www.udemy.com/course/certified-kubernetes-administrator-with-practice-tests/)
 - [Kubernetes in Action by Marko Luksa](https://www.goodreads.com/book/show/34013922-kubernetes-in-action)
@@ -11,17 +11,17 @@ Send a Pull Request to add to this list.
 
 ## Let's get started
 
-1. [Single Node](docs/build.md)
+1. [Single Node](/docs/build.md)
    
-   Jump straight into setting up a docker container for a single node kubernetes cluster.
+   Setting up a single node cluster by hand.
 
-2. [Package](docs/package.md)
+2. [Package](/docs/package.md)
    
-   We package up what we have learned ready for the next task.
+   Packaging the commands we used into an application.
 
 3. [Testing and Fixing](/docs/testfix.md)
    
-   This thing has bugs. Let's fix it.
+   Finding and fixing any problems.
 
 4. [Kubernetes the Hard Way](/docs/k8shardway.md)
    

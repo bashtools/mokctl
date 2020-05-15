@@ -13,9 +13,10 @@
 # all the certificates.
 
 podman ps
-mkdir -p kthw
-podman run -d -v /root:$PWD/kthw --name kthw fedora /sbin/init
+mkdir -p kthw-certs
+podman run -d -v $PWD/kthw-certs:/certs --name kthw fedora /sbin/init
 podman exec -ti kthw bash
+cd
 dnf install wget
 y
 # Installing the Client Tools
@@ -35,7 +36,7 @@ sudo mv kubectl /usr/local/bin/
 # Verification
 kubectl version --client
 exit
-ls kthw
+ls kthw-certs
 # ------------------------------------
 # Next: Provisioning Compute Resources
 # ------------------------------------

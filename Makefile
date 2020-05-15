@@ -8,6 +8,8 @@ cmdline-player/*.md: cmdline-player/*.scr
 	  "KTHW 02 Client Tools"
 	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-3.scr \
 	  "KTHW 03 Compute Resources"
+	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-4.scr \
+	  "KTHW 04 Provisioning a CA and Generating TLS Certificates"
 
 mokctl-docker: all
 	cp mokctl.deploy package/

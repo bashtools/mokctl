@@ -91,6 +91,27 @@ See: [Mokctl on Docker Hub](https://hub.docker.com/r/mclarkson/mokctl).
 | Mac OS    | Default terminal | ?                            |
 | Windows   | Cygwin           | ?                            |
 
+## Documentation
+
+## Kubernetes the Hard Way - on your laptop
+
+These documents and screencasts show how to use `mokctl` on Fedora 32, with Podman, to create a 6 node kubernetes cluster and external load balancer on your laptop or desktop computer. This is especially useful for older laptops with with only 8GB of memory or if you just want to watch how it's done.
+
+| Document                                                                                                               | Screencast                            | Transcript                             |
+| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | -------------------------------------- |
+| [01-prerequisites.md](/docs/kubernetes-the-hard-way/01-prerequisites.md)                                               |                                       |                                        |
+| [02-client-tools.md](/docs/kubernetes-the-hard-way/02-client-tools.md)                                                 | [kthw-2.gif](/docs/images/kthw-2.gif) | [kthw-2.md](/cmdline-player/kthw-2.md) |
+| [03-compute-resources.md](/docs/kubernetes-the-hard-way/03-compute-resources.md)                                       | [kthw-3.gif](/docs/images/kthw-3.gif) | [kthw-3.md](/cmdline-player/kthw-3.md) |
+| [04-certificate-authority.md](/docs/kubernetes-the-hard-way/04-certificate-authority.md)                               | [kthw-4.gif](/docs/images/kthw-4.gif) | [kthw-4.md](/cmdline-player/kthw-4.md) |
+| [05-kubernetes-configuration-files.md](/docs/kubernetes-the-hard-way/05-kubernetes-configuration-files.md)             | [kthw-5.gif](/docs/images/kthw-5.gif) | [kthw-5.md](/cmdline-player/kthw-5.md) |
+| [06-data-encryption-keys.md](/docs/kubernetes-the-hard-way/06-data-encryption-keys.md)                                 | [kthw-6.gif](/docs/images/kthw-6.gif) | [kthw-6.md](/cmdline-player/kthw-6.md) |
+| [07-bootstrapping-etcd.md](/docs/kubernetes-the-hard-way/07-bootstrapping-etcd.md)                                     | [kthw-7.gif](/docs/images/kthw-7.gif) | [kthw-7.md](/cmdline-player/kthw-7.md) |
+| [08-bootstrapping-kubernetes-controllers.md](/docs/kubernetes-the-hard-way/08-bootstrapping-kubernetes-controllers.md) | [kthw-8.gif](/docs/images/kthw-8.gif) | [kthw-8.md](/cmdline-player/kthw-8.md) |
+| ...                                                                                                                    |                                       |                                        |
+| ...                                                                                                                    |                                       |                                        |
+| ...                                                                                                                    |                                       |                                        |
+| ...                                                                                                                    |                                       |                                        |
+
 ## Contributing
 
 Please check the 'Help Wanted' issues if you fancy helping.

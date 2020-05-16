@@ -3,10 +3,6 @@
 > * Certificate creation is identical
 > 
 > * Changed commands from `gcloud` to `docker`
-> 
-> ![](../images/kthw-4.gif)
-> 
-> [Screencast transcript](/cmdline-player/kthw-4.md)
 
 # Provisioning a CA and Generating TLS Certificates
 

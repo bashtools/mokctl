@@ -2,9 +2,6 @@
 > 
 > * Encryption creation is identical
 > * Changed commands from `gcloud` to `docker`
->
-> ![](../images/kthw-6.gif)
-> [Screencast transcript](/cmdline-player/kthw-6.md)
 
 # Generating the Data Encryption Config and Key
 

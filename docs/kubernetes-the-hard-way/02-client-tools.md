@@ -1,10 +1,6 @@
 >  **My Own Kind changes:**
 > 
 > * No changes made to this page
-> 
-> ![](../../docs/images/kthw-2.gif)
-> 
-> [Screencast transcript](/cmdline-player/kthw-2.md)
 
 # Installing the Client Tools
 

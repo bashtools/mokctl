@@ -1,3 +1,8 @@
+> **My Own Kind changes:**
+> 
+> * blah
+> * Changed commands from `gcloud` to `mokctl`
+
 # Bootstrapping the Kubernetes Control Plane
 
 In this lab you will bootstrap the Kubernetes control plane across three compute instances and configure it for high availability. You will also create an external load balancer that exposes the Kubernetes API Servers to remote clients. The following components will be installed on each node: Kubernetes API Server, Scheduler, and Controller Manager.

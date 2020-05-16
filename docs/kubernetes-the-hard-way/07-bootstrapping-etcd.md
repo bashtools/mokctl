@@ -2,10 +2,6 @@
 > 
 > * ETCD set up is identical
 > * Changed commands from `gcloud` to `mokctl`
-> 
-> ![](../images/kthw-7.gif)
-> 
-> [Screencast transcript](/cmdline-player/kthw-7.md)
 
 # Bootstrapping the etcd Cluster
 

@@ -47,6 +47,7 @@ ERR_CALLED=
 
 PODMANIMGPREFIX=
 BUILD_GET_PREBUILT=
+CONTAINERRT=
 
 # Directory to unpack the build files
 DOCKERBUILDTMPDIR=
@@ -104,6 +105,7 @@ set_globals() {
   ERR_CALLED=$FALSE
   PODMANIMGPREFIX=
   BUILD_GET_PREBUILT=
+  CONTAINERRT=
 }
 
 # ===========================================================================
@@ -886,10 +888,12 @@ run_docker_exec() {
 
   local cmd=${2:-bash}
 
-  docker exec -ti "$1" "$cmd" || {
-    printf 'ERROR: docker failed\n\n' >"$E"
-    err || return $ERROR
-  }
+  read -rt 0.1
+  if [[ $CONTAINERRT == "podman" ]]; then
+    exec podman exec -ti "$1" "$cmd"
+  elif [[ $CONTAINERRT == "podman" ]]; then
+    exec docker exec -ti "$1" "$cmd"
+  fi
 }
 
 # ---------------------------------------------------------------------------
@@ -1076,6 +1080,7 @@ podman_or_docker() {
 
   if type podman &>/dev/null; then
     PODMANIMGPREFIX="localhost/"
+    CONTAINERRT="podman"
     local id
     id=$(id -u)
     [[ $id -ne 0 ]] && {
@@ -1092,6 +1097,7 @@ EnD
       podman "$@"
     }
   elif type docker &>/dev/null; then
+    CONTAINERRT="podman"
     docker() {
       docker "$@"
     }

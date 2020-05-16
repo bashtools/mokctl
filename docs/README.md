@@ -1,7 +1,5 @@
 # How it was built
 
-
-
 The following resources will help when following the documentation below.
 
 - [Certified Kubernetes Administrator (CKA) with Practice Exam Tests](https://www.udemy.com/course/certified-kubernetes-administrator-with-practice-tests/)
@@ -31,10 +29,10 @@ Send a Pull Request to add to this list.
    
    Build a bigger cluster using our package.
 
-6. [Upgrade](/docs/upgrade.md)
+6. Upgrade
    
    We can install any version of kubernetes. Let's try installing an older cluster and upgrading it.
 
-7. [Add-ons](/docs/addons.md)
+7. Add-ons
    
    Trying popluar kubernetes add-ons.

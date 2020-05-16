@@ -1,4 +1,4 @@
-# KTHW 06 Generating the Data Encryption Config and Key
+# KTHW 07 Bootstrapping the etcd Cluster
 
 ```bash
 # ---------------------------------------------------------

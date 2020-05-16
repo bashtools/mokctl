@@ -1,3 +1,4 @@
+screencast delay 10
 screencast clear
 screencast paste
 # ---------------------------------------------------------
@@ -30,4 +31,3 @@ screencast paste
 # Next: Certificate Authority
 screencast paste
 # ------------------------------------
-screencast sleep 6

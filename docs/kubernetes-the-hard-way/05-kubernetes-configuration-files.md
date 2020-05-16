@@ -1,7 +1,6 @@
 > **My Own Kind changes:**
 > 
 > * Changed node names
-> 
 > * Changed commands from `gcloud` to `docker`
 > 
 > ![](../images/kthw-5.gif)

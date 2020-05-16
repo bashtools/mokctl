@@ -344,7 +344,6 @@ In this section you will provision an external load balancer to front the Kubern
 
 > The compute instances created in this tutorial will not have permission to complete this section. **Run the following commands from the same machine used to create the compute instances**.
 
-
 ### Provision a Network Load Balancer
 
 Create the external load balancer network resources:

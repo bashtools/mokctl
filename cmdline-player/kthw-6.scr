@@ -1,3 +1,4 @@
+screencast delay 10
 screencast clear
 screencast paste
 # ---------------------------------------------------------
@@ -11,8 +12,10 @@ screencast paste
 # Create encryption config and key
 
 screencast prompt %$#
+screencast delay 5
 # We need to log back into the podman container, 'kthw', then
 # paste the command blocks
+screencast delay 18
 
 podman exec -ti kthw bash
 
@@ -56,8 +59,10 @@ ls kthw-certs/*.yaml
 # It is, good! Let's have a quick look at it:
 cat kthw-certs/*.yaml
 # Now to copy it to the Masters:
+screencast delay 1
 # NOTE that 'sudo' is required as these are privileged containers
 # that were created with 'sudo mokctl'.
+screencast delay 18
 cd kthw-certs
 screencast prompt %$#>
 # Copy to the masters

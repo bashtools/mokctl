@@ -1,5 +1,5 @@
 .PHONY: all
-all: mokctl.deploy tags cmdline-player/*.md
+all: mokctl.deploy tags
 
 cmdline-player/*.md: cmdline-player/*.scr
 	./cmdline-player/scr2md.sh $$PWD/cmdline-player/install-mokctl-linux.scr \
@@ -14,6 +14,11 @@ cmdline-player/*.md: cmdline-player/*.scr
 	  "KTHW 05 Generating Kubernetes Configuration Files for Authentication"
 	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-6.scr \
 	  "KTHW 06 Generating the Data Encryption Config and Key"
+	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-6.scr \
+	  "KTHW 07 Bootstrapping the etcd Cluster"
+
+.PHONY: docs
+docs: cmdline-player/*.md
 
 mokctl-docker: all
 	cp mokctl.deploy package/

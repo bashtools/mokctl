@@ -1,3 +1,4 @@
+screencast delay 10
 screencast clear
 screencast paste
 # ---------------------------------------------------------
@@ -10,15 +11,18 @@ screencast paste
 screencast paste
 # Create all required 'kubeconfig' files
 
+screencast delay 5
 screencast prompt %$#
 # We need to log back into the podman container, 'kthw', then
 # paste the command blocks
+screencast delay 18
 
 podman exec -ti kthw bash
 
 # Kubernetes Public IP Address
 
 # Set the public address variable to the load balancer address
+screencast paste
 KUBERNETES_PUBLIC_ADDRESS=$(grep kthw-lb /certs/cluster-list.txt | awk '{ print $NF; }')
 echo $KUBERNETES_PUBLIC_ADDRESS
 
@@ -169,23 +173,28 @@ exit
 ls kthw-certs/*.kubeconfig
 # They are, good!
 # Now to copy them, workers first:
+screencast delay 2
 # NOTE that 'sudo' is required as these are privileged containers
 # that were created with 'sudo mokctl'.
+screencast delay 18
 cd kthw-certs
 screencast prompt %$#>
+screencast paste start
 for instance in kthw-worker-1 kthw-worker-2 kthw-worker-3; do
   sudo podman cp ${instance}.kubeconfig ${instance}:/root
   sudo podman cp kube-proxy.kubeconfig ${instance}:/root
 done
+screencast paste end
 # Copy to the masters
+screencast paste start
 for instance in kthw-master-1 kthw-master-2 kthw-master-3; do
   sudo podman cp admin.kubeconfig ${instance}:/root
   sudo podman cp kube-controller-manager.kubeconfig ${instance}:/root
   sudo podman cp kube-scheduler.kubeconfig ${instance}:/root
 done
+screencast paste end
 # All done :)
 
-screencast paste
 # ---------------------------------------------------
 # Next: Generating the Data Encryption Config and Key
 screencast paste

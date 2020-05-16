@@ -1,10 +1,19 @@
+> **My Own Kind changes:**
+> 
+> * ETCD set up is identical
+> * Changed commands from `gcloud` to `mokctl`
+> 
+> ![](../images/kthw-7.gif)
+> 
+> [Screencast transcript](/cmdline-player/kthw-7.md)
+
 # Bootstrapping the etcd Cluster
 
 Kubernetes components are stateless and store cluster state in [etcd](https://github.com/etcd-io/etcd). In this lab you will bootstrap a three node etcd cluster and configure it for high availability and secure remote access.
 
 ## Prerequisites
 
-The commands in this lab must be run on each controller instance: `kthw-master-1`, `kthw-master-2`, and `kthw-master-3`. Login to each controller instance using the `gcloud` command. Example:
+The commands in this lab must be run on each controller instance: `kthw-master-1`, `kthw-master-2`, and `kthw-master-3`. Login to each controller instance using the `mokctl` command. Example:
 
 ```
 mokctl exec kthw-master-1

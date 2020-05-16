@@ -1,3 +1,4 @@
+screencast delay 10
 screencast clear
 screencast paste
 # ---------------------------------------------------------
@@ -24,20 +25,18 @@ cd
 dnf install wget
 y
 # Installing the Client Tools
-screencast paste
-wget -q --show-progress --https-only --timestamping \\
-screencast paste
-  https://storage.googleapis.com/kubernetes-the-hard-way/cfssl/linux/cfssl \\
-screencast paste
+screencast paste start
+wget -q --show-progress --https-only --timestamping \
+  https://storage.googleapis.com/kubernetes-the-hard-way/cfssl/linux/cfssl \
   https://storage.googleapis.com/kubernetes-the-hard-way/cfssl/linux/cfssljson
+screencast paste end
 screencast paste
 chmod +x cfssl cfssljson
 screencast paste
 sudo mv cfssl cfssljson /usr/local/bin/
+screencast paste
 # Verification
-screencast paste
 cfssl version
-screencast paste
 cfssljson --version
 # Install kubectl
 # Linux
@@ -49,7 +48,6 @@ chmod +x kubectl
 screencast paste
 sudo mv kubectl /usr/local/bin/
 # Verification
-screencast paste
 kubectl version --client
 screencast prompt #%
 exit
@@ -59,4 +57,3 @@ screencast paste
 # Next: Provisioning Compute Resources
 screencast paste
 # ------------------------------------
-screencast sleep 4

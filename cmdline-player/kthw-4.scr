@@ -1,3 +1,4 @@
+screencast delay 10
 screencast clear
 screencast paste
 # ---------------------------------------------------------
@@ -11,8 +12,10 @@ screencast paste
 # Create all the required certificates
 
 screencast prompt %$#
+screencast delay 4
 # We need to log back into the podman container, 'kthw' then
 # paste the command blocks
+screencast delay 18
 
 podman exec -ti kthw bash
 
@@ -62,7 +65,7 @@ cfssl gencert -initca ca-csr.json | cfssljson -bare ca
 }
 screencast paste end
 screencast sleep 2
-ls -lh *.pem *.key
+ls -lh *.pem
 
 # Client and Server Certificates
 # The Admin Client Certificate
@@ -261,13 +264,27 @@ ls -lh *.pem
 
 # The Kubernetes API Server Certificate
 
+screencast paste
+KUBERNETES_PUBLIC_ADDRESS=$(grep kthw-lb /certs/cluster-list.txt | awk '{ print $NF; }')
+echo $KUBERNETES_PUBLIC_ADDRESS
+screencast sleep 2
+screencast paste
+MASTER1=$(grep kthw-master-1 /certs/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER1
+screencast sleep 2
+screencast paste
+MASTER2=$(grep kthw-master-2 /certs/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER2
+screencast sleep 2
+screencast paste
+MASTER3=$(grep kthw-master-3 /certs/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER3
+screencast sleep 2
+
+# Create the certificate
+
 screencast paste start
 {
-
-KUBERNETES_PUBLIC_ADDRESS=$(grep kthw-lb /certs/cluster-list.txt | awk '{ print $NF; }')
-MASTER1=$(grep kthw-master-1 /certs/cluster-list.txt | awk '{ print $NF; }')
-MASTER2=$(grep kthw-master-2 /certs/cluster-list.txt | awk '{ print $NF; }')
-MASTER3=$(grep kthw-master-3 /certs/cluster-list.txt | awk '{ print $NF; }')
 
 KUBERNETES_HOSTNAMES=kubernetes,kubernetes.default,kubernetes.default.svc,kubernetes.default.svc.cluster,kubernetes.svc.cluster.local
 
@@ -294,13 +311,14 @@ cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
   -config=ca-config.json \
-  -hostname=10.88.0.1,$MASTER-1,$MASTER-2,$MASTER-3,${KUBERNETES_PUBLIC_ADDRESS},127.0.0.1,${KUBERNETES_HOSTNAMES} \
+  -hostname=10.88.0.1,$MASTER1,$MASTER2,$MASTER3,${KUBERNETES_PUBLIC_ADDRESS},127.0.0.1,${KUBERNETES_HOSTNAMES} \
   -profile=kubernetes \
   kubernetes-csr.json | cfssljson -bare kubernetes
 
 }
-
 screencast paste end
+# Quick verification of the cert
+openssl x509 -noout -in kubernetes.pem -text | grep "Subject Alt" -A 1
 screencast sleep 2
 ls -lh *.pem
 
@@ -342,6 +360,7 @@ ls -lh *.pem
 
 # Distribute the Client and Server Certificates
 
+screencast prompt #%
 # We need to log out of this container then copy the certs to the
 # kubernetes nodes
 exit
@@ -352,13 +371,15 @@ ls kthw-certs
 # NOTE that 'sudo' is required as these are privileged containers
 # that were created with 'sudo mokctl'.
 cd kthw-certs
-screencast prompt %$#>
+screencast paste start
 for instance in kthw-worker-1 kthw-worker-2 kthw-worker-3; do
   sudo podman cp ca.pem ${instance}:/root
   sudo podman cp ${instance}-key.pem ${instance}:/root
   sudo podman cp ${instance}.pem ${instance}:/root
 done
+screencast paste end
 # Copy to the masters
+screencast paste start
 for instance in kthw-master-1 kthw-master-2 kthw-master-3; do
   sudo podman cp ca.pem ${instance}:/root
   sudo podman cp ca-key.pem ${instance}:/root
@@ -367,10 +388,10 @@ for instance in kthw-master-1 kthw-master-2 kthw-master-3; do
   sudo podman cp service-account-key.pem ${instance}:/root
   sudo podman cp service-account.pem ${instance}:/root
 done
+screencast paste end
 # All done :)
 
 # ------------------------------------------------------------------
 # Next: Generating Kubernetes Configuration Files for Authentication
 screencast paste
 # ------------------------------------------------------------------
-screencast sleep 4

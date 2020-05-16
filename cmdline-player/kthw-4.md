@@ -55,7 +55,7 @@ EOF
 cfssl gencert -initca ca-csr.json | cfssljson -bare ca
 
 }
-ls -lh *.pem *.key
+ls -lh *.pem
 
 # Client and Server Certificates
 # The Admin Client Certificate
@@ -239,12 +239,18 @@ ls -lh *.pem
 
 # The Kubernetes API Server Certificate
 
-{
-
 KUBERNETES_PUBLIC_ADDRESS=$(grep kthw-lb /certs/cluster-list.txt | awk '{ print $NF; }')
+echo $KUBERNETES_PUBLIC_ADDRESS
 MASTER1=$(grep kthw-master-1 /certs/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER1
 MASTER2=$(grep kthw-master-2 /certs/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER2
 MASTER3=$(grep kthw-master-3 /certs/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER3
+
+# Create the certificate
+
+{
 
 KUBERNETES_HOSTNAMES=kubernetes,kubernetes.default,kubernetes.default.svc,kubernetes.default.svc.cluster,kubernetes.svc.cluster.local
 
@@ -271,12 +277,13 @@ cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
   -config=ca-config.json \
-  -hostname=10.88.0.1,$MASTER-1,$MASTER-2,$MASTER-3,${KUBERNETES_PUBLIC_ADDRESS},127.0.0.1,${KUBERNETES_HOSTNAMES} \
+  -hostname=10.88.0.1,$MASTER1,$MASTER2,$MASTER3,${KUBERNETES_PUBLIC_ADDRESS},127.0.0.1,${KUBERNETES_HOSTNAMES} \
   -profile=kubernetes \
   kubernetes-csr.json | cfssljson -bare kubernetes
 
 }
-
+# Quick verification of the cert
+openssl x509 -noout -in kubernetes.pem -text | grep "Subject Alt" -A 1
 ls -lh *.pem
 
 # The Service Account Key Pair

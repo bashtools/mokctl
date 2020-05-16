@@ -14,7 +14,7 @@ cmdline-player/*.md: cmdline-player/*.scr
 	  "KTHW 05 Generating Kubernetes Configuration Files for Authentication"
 	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-6.scr \
 	  "KTHW 06 Generating the Data Encryption Config and Key"
-	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-6.scr \
+	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-7.scr \
 	  "KTHW 07 Bootstrapping the etcd Cluster"
 
 .PHONY: docs

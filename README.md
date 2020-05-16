@@ -93,6 +93,8 @@ See: [Mokctl on Docker Hub](https://hub.docker.com/r/mclarkson/mokctl).
 
 ## Documentation
 
+To see how `mokctl` was created go to the [docs section](/docs/README.md).
+
 ## Kubernetes the Hard Way - on your laptop
 
 These documents and screencasts show how to use `mokctl` on Fedora 32, with Podman, to create a 6 node kubernetes cluster and external load balancer on your laptop or desktop computer. This is especially useful for older laptops with with only 8GB of memory or if you just want to watch how it's done.

@@ -21,7 +21,6 @@ podman exec -ti kthw bash
 # Set the public address variable to the load balancer address
 KUBERNETES_PUBLIC_ADDRESS=$(grep kthw-lb /certs/cluster-list.txt | awk '{ print $NF; }')
 echo $KUBERNETES_PUBLIC_ADDRESS
-
 # Need to be in the directory where the certs are
 cd /certs
 

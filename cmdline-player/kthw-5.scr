@@ -25,15 +25,46 @@ podman exec -ti kthw bash
 # Kubernetes Public IP Address
 
 # Set the public address variable to the load balancer address
+.MD 
+.MD # Generating Kubernetes Configuration Files for Authentication
+.MD 
+.MD In this lab you will generate [Kubernetes configuration files](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/), also known as kubeconfigs, which enable Kubernetes clients to locate and authenticate to the Kubernetes API Servers.
+.MD 
+.MD ## Client Authentication Configs
+.MD 
+.MD In this section you will generate kubeconfig files for the `controller manager`, `kubelet`, `kube-proxy`, and `scheduler` clients and the `admin` user.
+.MD 
+.MD ### Kubernetes Public IP Address
+.MD 
+.MD Each kubeconfig requires a Kubernetes API Server to connect to. To support high availability the IP address assigned to the external load balancer fronting the Kubernetes API Servers will be used.
+.MD 
+.MD Retrieve the `kubernetes-the-hard-way` load balancer IP address:
+.MD 
+.MD ```
 screencast paste
 KUBERNETES_PUBLIC_ADDRESS=$(grep kthw-lb /certs/cluster-list.txt | awk '{ print $NF; }')
 echo $KUBERNETES_PUBLIC_ADDRESS
-
+.MD ```
+.MD
+.MD ### The kubelet Kubernetes Configuration File
+.MD 
+.MD When generating kubeconfig files for Kubelets the client certificate matching the Kubelet's node name must be used. This will ensure Kubelets are properly authorized by the Kubernetes [Node Authorizer](https://kubernetes.io/docs/admin/authorization/node/).
+.MD 
+.MD > The following commands must be run in the same directory used to generate the SSL certificates during the [Generating TLS Certificates](04-certificate-authority.md) lab.
+.MD 
 # Need to be in the directory where the certs are
+.MD Change to the `/certs` directory, which is volume mounted to the host:
+.MD
+.MD ```
 cd /certs
+.MD ```
+.MD
 
 # The kubelet Kubernetes Configuration File
 
+.MD Generate a kubeconfig file for each worker node:
+.MD 
+.MD ```
 screencast paste start
 for instance in kthw-worker-1 kthw-worker-2 kthw-worker-3; do
   kubectl config set-cluster kubernetes-the-hard-way \
@@ -57,10 +88,30 @@ for instance in kthw-worker-1 kthw-worker-2 kthw-worker-3; do
 done
 screencast paste end
 screencast sleep 2
+.MD ```
+.MD
+.MD View the created kubeconfigs
+.MD
+.MD ```
 ls -lh *.kubeconfig
+.MD ```
+.MD
+.MD Results:
+.MD 
+.MD ```
+.MD worker-1.kubeconfig
+.MD worker-2.kubeconfig
+.MD worker-3.kubeconfig
+.MD ```
+.MD 
 
 # The kube-proxy Kubernetes Configuration File
 
+.MD ### The kube-proxy Kubernetes Configuration File
+.MD 
+.MD Generate a kubeconfig file for the `kube-proxy` service:
+.MD 
+.MD ```
 screencast paste start
 {
   kubectl config set-cluster kubernetes-the-hard-way \
@@ -84,10 +135,28 @@ screencast paste start
 }
 screencast paste end
 screencast sleep 2
+.MD ```
+.MD
+.MD View the created kubeconfigs
+.MD
+.MD ```
 ls -lh *.kubeconfig
+.MD ```
+.MD
+.MD Results:
+.MD 
+.MD ```
+.MD kube-proxy.kubeconfig
+.MD ```
+.MD 
 
 # The kube-controller-manager Kubernetes Configuration File
 
+.MD ### The kube-controller-manager Kubernetes Configuration File
+.MD 
+.MD Generate a kubeconfig file for the `kube-controller-manager` service:
+.MD 
+.MD ```
 screencast paste start
 {
   kubectl config set-cluster kubernetes-the-hard-way \
@@ -111,10 +180,28 @@ screencast paste start
 }
 screencast paste end
 screencast sleep 2
+.MD ```
+.MD
+.MD View the created kubeconfigs
+.MD
+.MD ```
 ls -lh *.kubeconfig
+.MD ```
+.MD
+.MD Results:
+.MD 
+.MD ```
+.MD kube-controller-manager.kubeconfig
+.MD ```
+.MD 
 
 # The kube-scheduler Kubernetes Configuration File
 
+.MD ### The kube-scheduler Kubernetes Configuration File
+.MD 
+.MD Generate a kubeconfig file for the `kube-scheduler` service:
+.MD 
+.MD ```
 screencast paste start
 {
   kubectl config set-cluster kubernetes-the-hard-way \
@@ -138,10 +225,28 @@ screencast paste start
 }
 screencast paste end
 screencast sleep 2
+.MD ```
+.MD
+.MD View the created kubeconfigs
+.MD
+.MD ```
 ls -lh *.kubeconfig
+.MD ```
+.MD
+.MD Results:
+.MD 
+.MD ```
+.MD kube-scheduler.kubeconfig
+.MD ```
+.MD 
 
 # The admin Kubernetes Configuration File
 
+.MD ### The admin Kubernetes Configuration File
+.MD 
+.MD Generate a kubeconfig file for the `admin` user:
+.MD 
+.MD ```
 screencast paste start
 {
   kubectl config set-cluster kubernetes-the-hard-way \
@@ -165,28 +270,66 @@ screencast paste start
 }
 screencast paste end
 screencast sleep 2
+.MD ```
+.MD
+.MD View the created kubeconfigs
+.MD
+.MD ```
 ls -lh *.kubeconfig
+.MD ```
+.MD
+.MD Results:
+.MD 
+.MD ```
+.MD admin.kubeconfig
+.MD ```
+.MD 
 
 # Distribute the Kubernetes Configuration Files
 
+.MD ## Distribute the Kubernetes Configuration Files
+.MD 
 # We need to log out of this container then copy the certs to the
 # kubernetes nodes
+.MD Log out of the container to copy the kubeconfigs to the masters and workers:
+.MD
+.MD ```
 exit
+.MD ```
+.MD
 # All the kubeconfigs should be in the kthw-certs directory
+.MD Check that the kubeconfigs are in the directory on the host:
+.MD
+.MD ```
 ls kthw-certs/*.kubeconfig
+.MD ```
+.MD
 # They are, good!
 # Now to copy them, workers first:
 screencast delay 2
 # NOTE that 'sudo' is required as these are privileged containers
 # that were created with 'sudo mokctl'.
 screencast delay 18
+.MD Change to the `kthw-certs` directory:
+.MD
+.MD ```
 cd kthw-certs
+.MD ```
 screencast prompt %$#>
+.MD
+.MD Copy the appropriate `kubelet` and `kube-proxy` kubeconfig files to each worker instance:
+.MD 
+.MD ```
 screencast paste start
 for instance in kthw-worker-1 kthw-worker-2 kthw-worker-3; do
   sudo podman cp ${instance}.kubeconfig ${instance}:/root
   sudo podman cp kube-proxy.kubeconfig ${instance}:/root
 done
+.MD ```
+.MD
+.MD Copy the appropriate `kube-controller-manager` and `kube-scheduler` kubeconfig files to each controller instance:
+.MD 
+.MD ```
 screencast paste end
 # Copy to the masters
 screencast paste start
@@ -196,9 +339,12 @@ for instance in kthw-master-1 kthw-master-2 kthw-master-3; do
   sudo podman cp kube-scheduler.kubeconfig ${instance}:/root
 done
 screencast paste end
+.MD ```
+.MD
 # All done :)
 
 # ---------------------------------------------------
 # Next: Generating the Data Encryption Config and Key
 screencast paste
 # ---------------------------------------------------
+.MD Next: [Generating the Data Encryption Config and Key](06-data-encryption-keys.md)

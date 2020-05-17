@@ -45,7 +45,6 @@ Type `exit` or control-d to exit the container.
 ```
 exit
 ```
-
 Or, choose from a list:
 
 ```

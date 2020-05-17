@@ -20,16 +20,6 @@ screencast prompt %$#
 # paste the command blocks
 screencast delay 18
 
-.MD
-.MD Log in to the podman container we created earlier
-.MD
-.MD ```
-podman exec -ti kthw bash
-.MD ```
-
-# Kubernetes Public IP Address
-
-# Set the public address variable to the load balancer address
 .MD 
 .MD # Generating Kubernetes Configuration Files for Authentication
 .MD 
@@ -38,6 +28,16 @@ podman exec -ti kthw bash
 .MD ## Client Authentication Configs
 .MD 
 .MD In this section you will generate kubeconfig files for the `controller manager`, `kubelet`, `kube-proxy`, and `scheduler` clients and the `admin` user.
+.MD
+.MD First we need to log back in to the podman container we created earlier
+.MD
+.MD ```
+podman exec -ti kthw bash
+.MD ```
+
+# Kubernetes Public IP Address
+
+# Set the public address variable to the load balancer address
 .MD 
 .MD ### Kubernetes Public IP Address
 .MD 

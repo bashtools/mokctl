@@ -2,12 +2,6 @@
 > 
 > View a [screencast and transcript](/cmdline-player/kthw-5.md)
 
-Log in to the podman container we created earlier
-
-```
-podman exec -ti kthw bash
-```
-
 # Generating Kubernetes Configuration Files for Authentication
 
 In this lab you will generate [Kubernetes configuration files](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/), also known as kubeconfigs, which enable Kubernetes clients to locate and authenticate to the Kubernetes API Servers.
@@ -15,6 +9,12 @@ In this lab you will generate [Kubernetes configuration files](https://kubernete
 ## Client Authentication Configs
 
 In this section you will generate kubeconfig files for the `controller manager`, `kubelet`, `kube-proxy`, and `scheduler` clients and the `admin` user.
+
+First we need to log back in to the podman container we created earlier
+
+```
+podman exec -ti kthw bash
+```
 
 ### Kubernetes Public IP Address
 

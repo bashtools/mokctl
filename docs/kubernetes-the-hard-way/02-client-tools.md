@@ -1,7 +1,5 @@
->  **My Own Kind changes:**
+>  **Kubernetes the Hard Way using My Own Kind**
 > 
-> * No changes made to this page
->
 > View a [screencast and transcript](/cmdline-player/kthw-2.md)
 
 # Installing the Client Tools
@@ -14,28 +12,20 @@ The `cfssl` and `cfssljson` command line utilities will be used to provision a [
 
 Download and install `cfssl` and `cfssljson`:
 
-### OS X
-
-```
-curl -o cfssl https://storage.googleapis.com/kubernetes-the-hard-way/cfssl/darwin/cfssl
-curl -o cfssljson https://storage.googleapis.com/kubernetes-the-hard-way/cfssl/darwin/cfssljson
-```
-
-```
-chmod +x cfssl cfssljson
-```
-
-```
-sudo mv cfssl cfssljson /usr/local/bin/
-```
-
-Some OS X users may experience problems using the pre-built binaries in which case [Homebrew](https://brew.sh) might be a better option:
-
-```
-brew install cfssl
-```
-
 ### Linux
+
+Create a machine to do our work in and install wget:
+
+```
+podman ps
+mkdir -p kthw-certs
+podman run -d -v $PWD/kthw-certs:/certs --name kthw fedora /sbin/init
+podman exec -ti kthw bash
+cd
+dnf -y install wget
+```
+
+Install the client tools:
 
 ```
 wget -q --show-progress --https-only --timestamping \
@@ -59,41 +49,11 @@ Verify `cfssl` and `cfssljson` version 1.3.4 or higher is installed:
 cfssl version
 ```
 
-> output
-
-```
-Version: 1.3.4
-Revision: dev
-Runtime: go1.13
-```
-
 ```
 cfssljson --version
 ```
 
-```
-Version: 1.3.4
-Revision: dev
-Runtime: go1.13
-```
-
 ## Install kubectl
-
-The `kubectl` command line utility is used to interact with the Kubernetes API Server. Download and install `kubectl` from the official release binaries:
-
-### OS X
-
-```
-curl -o kubectl https://storage.googleapis.com/kubernetes-release/release/v1.15.3/bin/darwin/amd64/kubectl
-```
-
-```
-chmod +x kubectl
-```
-
-```
-sudo mv kubectl /usr/local/bin/
-```
 
 ### Linux
 
@@ -111,16 +71,14 @@ sudo mv kubectl /usr/local/bin/
 
 ### Verification
 
-Verify `kubectl` version 1.15.3 or higher is installed:
-
 ```
 kubectl version --client
 ```
 
-> output
+Then exit from our Pod
 
 ```
-Client Version: version.Info{Major:"1", Minor:"15", GitVersion:"v1.15.3", GitCommit:"2d3c76f9091b6bec110a5e63777c332469e0cba2", GitTreeState:"clean", BuildDate:"2019-08-19T11:13:54Z", GoVersion:"go1.12.9", Compiler:"gc", Platform:"linux/amd64"}
+exit
 ```
 
 Next: [Provisioning Compute Resources](03-compute-resources.md)

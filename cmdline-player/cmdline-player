@@ -34,6 +34,9 @@ main() {
       if [[ $line == "screencast clear" ]]; then
         screen -S screencast -p 0 -X stuff "clear^M"
         continue
+      elif [[ $line == ".MD" || $line == ".MD"* ]]; then
+        # Skip markdown lines
+        continue
       elif [[ $line == "screencast delay"* ]]; then
         DELAY="${line##* }"
         continue

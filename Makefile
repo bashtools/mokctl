@@ -1,24 +1,31 @@
 .PHONY: all
 all: mokctl.deploy tags
 
-cmdline-player/*.md: cmdline-player/*.scr
+.PHONY: docs
+docs:
 	./cmdline-player/scr2md.sh $$PWD/cmdline-player/install-mokctl-linux.scr \
 		"Install mokctl on Linux"
+
 	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-2.scr \
-	  "KTHW 02 Client Tools"
+	  "KTHW 02 Client Tools" \
+		$$PWD/docs/kubernetes-the-hard-way/02-client-tools.md
+
 	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-3.scr \
-	  "KTHW 03 Compute Resources"
+	  "KTHW 03 Compute Resources" \
+		$$PWD/docs/kubernetes-the-hard-way/03-compute-resources.md
+
 	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-4.scr \
-	  "KTHW 04 Provisioning a CA and Generating TLS Certificates"
+	  "KTHW 04 Provisioning a CA and Generating TLS Certificates" \
+		$$PWD/docs/kubernetes-the-hard-way/04-certificate-authority.md
+
 	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-5.scr \
 	  "KTHW 05 Generating Kubernetes Configuration Files for Authentication"
+
 	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-6.scr \
 	  "KTHW 06 Generating the Data Encryption Config and Key"
+
 	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-7.scr \
 	  "KTHW 07 Bootstrapping the etcd Cluster"
-
-.PHONY: docs
-docs: cmdline-player/*.md
 
 mokctl-docker: all
 	cp mokctl.deploy package/

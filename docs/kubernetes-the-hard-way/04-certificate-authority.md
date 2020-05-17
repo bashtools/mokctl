@@ -1,9 +1,5 @@
-> **My Own Kind changes:**
+>  **Kubernetes the Hard Way using My Own Kind**
 > 
-> * Certificate creation is identical
-> 
-> * Changed commands from `gcloud` to `docker`
->
 > View a [screencast and transcript](/cmdline-player/kthw-4.md)
 
 # Provisioning a CA and Generating TLS Certificates
@@ -14,11 +10,22 @@ In this lab you will provision a [PKI Infrastructure](https://en.wikipedia.org/w
 
 In this section you will provision a Certificate Authority that can be used to generate additional TLS certificates.
 
+First 'log in' to the podman container that we created earlier:
+
+```
+podman exec -ti kthw bash
+```
+
+Change to the `/certs` directory, which is volume mounted to the host:
+
+```
+cd /certs
+```
+
 Generate the CA configuration file, certificate, and private key:
 
 ```
 {
-
 cat > ca-config.json <<EOF
 {
   "signing": {
@@ -34,7 +41,6 @@ cat > ca-config.json <<EOF
   }
 }
 EOF
-
 cat > ca-csr.json <<EOF
 {
   "CN": "Kubernetes",
@@ -53,10 +59,14 @@ cat > ca-csr.json <<EOF
   ]
 }
 EOF
-
 cfssl gencert -initca ca-csr.json | cfssljson -bare ca
-
 }
+```
+
+View the created certificates
+
+```
+ls -lh *.pem
 ```
 
 Results:
@@ -76,7 +86,6 @@ Generate the `admin` client certificate and private key:
 
 ```
 {
-
 cat > admin-csr.json <<EOF
 {
   "CN": "admin",
@@ -95,15 +104,19 @@ cat > admin-csr.json <<EOF
   ]
 }
 EOF
-
 cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
   -config=ca-config.json \
   -profile=kubernetes \
   admin-csr.json | cfssljson -bare admin
-
 }
+```
+
+View the created certificates
+
+```
+ls -lh *.pem
 ```
 
 Results:
@@ -116,6 +129,26 @@ admin.pem
 ### The Kubelet Client Certificates
 
 Kubernetes uses a [special-purpose authorization mode](https://kubernetes.io/docs/admin/authorization/node/) called Node Authorizer, that specifically authorizes API requests made by [Kubelets](https://kubernetes.io/docs/concepts/overview/components/#kubelet). In order to be authorized by the Node Authorizer, Kubelets must use a credential that identifies them as being in the `system:nodes` group, with a username of `system:node:<nodeName>`. In this section you will create a certificate for each Kubernetes worker node that meets the Node Authorizer requirements.
+
+Get the list of 'nodes' from `mokctl`:
+
+```
+exit
+sudo mokctl get clusters | tee kthw-certs/cluster-list.txt
+podman exec -ti kthw bash
+```
+
+Check that the file was created:
+
+```
+cat /certs/cluster-list.txt
+```
+
+Change to the `/certs` directory, which is volume mounted to the host:
+
+```
+cd /certs
+```
 
 Generate a certificate and private key for each Kubernetes worker node:
 
@@ -139,19 +172,21 @@ cat > ${instance}-csr.json <<EOF
   ]
 }
 EOF
-
-IP=$(docker inspect \
-  --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' \
-  ${instance})
-
+INTERNAL_IP=$(grep ${instance} /certs/cluster-list.txt | awk '{ print $NF; }')
 cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
   -config=ca-config.json \
-  -hostname=${instance},${EXTERNAL_IP},${INTERNAL_IP} \
+  -hostname=${instance},${INTERNAL_IP} \
   -profile=kubernetes \
   ${instance}-csr.json | cfssljson -bare ${instance}
 done
+```
+
+View the created certificates
+
+```
+ls -lh *.pem
 ```
 
 Results:
@@ -171,7 +206,6 @@ Generate the `kube-controller-manager` client certificate and private key:
 
 ```
 {
-
 cat > kube-controller-manager-csr.json <<EOF
 {
   "CN": "system:kube-controller-manager",
@@ -190,15 +224,19 @@ cat > kube-controller-manager-csr.json <<EOF
   ]
 }
 EOF
-
 cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
   -config=ca-config.json \
   -profile=kubernetes \
   kube-controller-manager-csr.json | cfssljson -bare kube-controller-manager
-
 }
+```
+
+View the created certificates
+
+```
+ls -lh *.pem
 ```
 
 Results:
@@ -214,7 +252,6 @@ Generate the `kube-proxy` client certificate and private key:
 
 ```
 {
-
 cat > kube-proxy-csr.json <<EOF
 {
   "CN": "system:kube-proxy",
@@ -233,15 +270,19 @@ cat > kube-proxy-csr.json <<EOF
   ]
 }
 EOF
-
 cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
   -config=ca-config.json \
   -profile=kubernetes \
   kube-proxy-csr.json | cfssljson -bare kube-proxy
-
 }
+```
+
+View the created certificates
+
+```
+ls -lh *.pem
 ```
 
 Results:
@@ -257,7 +298,6 @@ Generate the `kube-scheduler` client certificate and private key:
 
 ```
 {
-
 cat > kube-scheduler-csr.json <<EOF
 {
   "CN": "system:kube-scheduler",
@@ -276,15 +316,19 @@ cat > kube-scheduler-csr.json <<EOF
   ]
 }
 EOF
-
 cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
   -config=ca-config.json \
   -profile=kubernetes \
   kube-scheduler-csr.json | cfssljson -bare kube-scheduler
-
 }
+```
+
+View the created certificates
+
+```
+ls -lh *.pem
 ```
 
 Results:
@@ -296,19 +340,26 @@ kube-scheduler.pem
 
 ### The Kubernetes API Server Certificate
 
-The `kubernetes-the-hard-way` static IP address will be included in the list of subject alternative names for the Kubernetes API Server certificate. This will ensure the certificate can be validated by remote clients.
+The `kubernetes-the-hard-way` IP addresses will be included in the list of subject alternative names for the Kubernetes API Server certificate. This will ensure the certificate can be validated by remote clients.
+
+First set the variables used in the certificate:
+
+```
+KUBERNETES_PUBLIC_ADDRESS=$(grep kthw-lb /certs/cluster-list.txt | awk '{ print $NF; }')
+echo $KUBERNETES_PUBLIC_ADDRESS
+MASTER1=$(grep kthw-master-1 /certs/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER1
+MASTER2=$(grep kthw-master-2 /certs/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER2
+MASTER3=$(grep kthw-master-3 /certs/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER3
+```
 
 Generate the Kubernetes API Server certificate and private key:
 
 ```
 {
-
-KUBERNETES_PUBLIC_ADDRESS=$(docker inspect \
-  --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' \
-  kthw-lb)
-
 KUBERNETES_HOSTNAMES=kubernetes,kubernetes.default,kubernetes.default.svc,kubernetes.default.svc.cluster,kubernetes.svc.cluster.local
-
 cat > kubernetes-csr.json <<EOF
 {
   "CN": "kubernetes",
@@ -327,19 +378,29 @@ cat > kubernetes-csr.json <<EOF
   ]
 }
 EOF
-
 cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
   -config=ca-config.json \
-  -hostname=10.32.0.1,10.240.0.10,10.240.0.11,10.240.0.12,${KUBERNETES_PUBLIC_ADDRESS},127.0.0.1,${KUBERNETES_HOSTNAMES} \
+  -hostname=10.88.0.1,$MASTER1,$MASTER2,$MASTER3,${KUBERNETES_PUBLIC_ADDRESS},127.0.0.1,${KUBERNETES_HOSTNAMES} \
   -profile=kubernetes \
   kubernetes-csr.json | cfssljson -bare kubernetes
-
 }
 ```
 
 > The Kubernetes API server is automatically assigned the `kubernetes` internal dns name, which will be linked to the first IP address (`10.32.0.1`) from the address range (`10.32.0.0/24`) reserved for internal cluster services during the [control plane bootstrapping](08-bootstrapping-kubernetes-controllers.md#configure-the-kubernetes-api-server) lab.
+
+Check the 'Subject Alternative' field.
+
+```
+openssl x509 -noout -in kubernetes.pem -text | grep "Subject Alt" -A 1
+```
+
+View the created certificates
+
+```
+ls -lh *.pem
+```
 
 Results:
 
@@ -356,7 +417,6 @@ Generate the `service-account` certificate and private key:
 
 ```
 {
-
 cat > service-account-csr.json <<EOF
 {
   "CN": "service-accounts",
@@ -375,15 +435,19 @@ cat > service-account-csr.json <<EOF
   ]
 }
 EOF
-
 cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
   -config=ca-config.json \
   -profile=kubernetes \
   service-account-csr.json | cfssljson -bare service-account
-
 }
+```
+
+View the created certificates
+
+```
+ls -lh *.pem
 ```
 
 Results:
@@ -397,11 +461,31 @@ service-account.pem
 
 Copy the appropriate certificates and private keys to each worker instance:
 
+Log out of the container to copy the files from the host:
+
+```
+exit
+```
+
+Check that all the certs are on the host:
+
+```
+ls kthw-certs
+```
+
+Change to the `kthw-certs` directory:
+
+```
+cd kthw-certs
+```
+
+Copy the appropriate certificates and private keys to each worker instance:
+
 ```
 for instance in kthw-worker-1 kthw-worker-2 kthw-worker-3; do
-  docker cp ca.pem ${instance}:/root
-  docker cp ${instance}-key.pem ${instance}:/root
-  docker cp ${instance}.pem ${instance}:/root
+  sudo podman cp ca.pem ${instance}:/root
+  sudo podman cp ${instance}-key.pem ${instance}:/root
+  sudo podman cp ${instance}.pem ${instance}:/root
 done
 ```
 
@@ -409,12 +493,12 @@ Copy the appropriate certificates and private keys to each controller instance:
 
 ```
 for instance in kthw-master-1 kthw-master-2 kthw-master-3; do
-  docker cp ca.pem ${instance}:/root
-  docker cp ca-key.pem ${instance}:/root
-  docker cp kubernetes-key.pem ${instance}:/root
-  docker cp kubernetes.pem ${instance}:/root
-  docker cp service-account-key.pem ${instance}:/root
-  docker cp service-account.pem ${instance}:/root
+  sudo podman cp ca.pem ${instance}:/root
+  sudo podman cp ca-key.pem ${instance}:/root
+  sudo podman cp kubernetes-key.pem ${instance}:/root
+  sudo podman cp kubernetes.pem ${instance}:/root
+  sudo podman cp service-account-key.pem ${instance}:/root
+  sudo podman cp service-account.pem ${instance}:/root
 done
 ```
 

@@ -99,6 +99,8 @@ To see how `mokctl` was created go to the [docs section](/docs/README.md).
 
 These documents and screencasts show how to use `mokctl` on Fedora 32, with Podman, to create a 6 node kubernetes cluster and external load balancer on your laptop or desktop computer.
 
+> NOTE: This is in progress
+
 | Document                                                                                                               | Transcript + Screencast                |
 | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
 | [01-prerequisites.md](/docs/kubernetes-the-hard-way/01-prerequisites.md)                                               |                                        |

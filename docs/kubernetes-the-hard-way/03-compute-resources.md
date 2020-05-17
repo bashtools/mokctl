@@ -1,11 +1,5 @@
-> **My Own Kind changes:**
+>  **Kubernetes the Hard Way using My Own Kind**
 > 
-> * Removed all GCP sections.
-> 
-> * Changed 'using Ubuntu 18.04' to 'using CentOS 7'.
-> 
-> * Added information for using `mokctl`.
->
 > View a [screencast and transcript](/cmdline-player/kthw-3.md)
 
 # Provisioning Compute Resources
@@ -18,13 +12,15 @@ The Kubernetes [networking model](https://kubernetes.io/docs/concepts/cluster-ad
 
 ## Compute Instances
 
-The compute instances in this lab will be provisioned using [CentOS](https://www.centos.org/) 7, which has good support for the [containerd container runtime](https://github.com/containerd/containerd). Each compute instance will be provisioned with a fixed private IP address to simplify the Kubernetes bootstrapping process.
+The compute instances in this lab will be provisioned using [CentOS](https://www.centos.org/) 7, which has good support for the [containerd container runtime](https://github.com/containerd/containerd).
 
 ### Kubernetes Controllers and Workers
 
-Create three compute instances which will host the Kubernetes control plane and three instances that will host the workers.
+Create three compute instances which will host the Kubernetes control plane and three instances that will host the workers. Also create an instance that will be the external load balancer.
 
 ```
+alias mokctl="sudo mokctl"
+mokctl build image --get-prebuilt-image
 mokctl create cluster --skipmastersetup --skiplbsetup --with-lb kthw 3 3
 ```
 
@@ -36,57 +32,30 @@ List the containers:
 mokctl get cluster kthw
 ```
 
-> output
-
-```
-MOK_Cluster  Docker_ID     Container_Name  IP_Address
-kthw         ab064d51c475  kthw-lb         172.17.0.5
-kthw         23959611c611  kthw-master-1   172.17.0.2
-kthw         e79d16f9ca20  kthw-master-2   172.17.0.3
-kthw         96f1d14fce23  kthw-master-3   172.17.0.4
-kthw         2c1ca0b3a663  kthw-worker-1   172.17.0.6
-kthw         01004a396bd1  kthw-worker-2   172.17.0.7
-kthw         01f56ba29160  kthw-worker-3   172.17.0.8
-```
-
 ## Configuring Access
 
-Use `docker` or `mokctl` to access the containers.  Either specify the name directly, like:
+Use `mokctl` to access the containers.  Either specify the name directly, like:
 
 ```
 mokctl exec kthw-master-1
 ```
 
-> output
-
-```
-root@kthw-master-1 /]#
-```
-
 Type `exit` or control-d to exit the container.
 
+```
+exit
+```
 Or, choose from a list:
 
 ```
 mokctl exec
+5
 ```
 
-> output
+Type `exit` or control-d to exit the container.
 
 ```
-Choose the container to log in to:
-
-   MOK_Cluster  Docker_ID     Container_Name  IP_Address
-1) kthw         8232e08b6a97  kthw-lb         172.17.0.5
-2) kthw         f6b9e8897082  kthw-master-1   172.17.0.2
-3) kthw         d0178800ca8a  kthw-master-2   172.17.0.3
-4) kthw         a5ca66a2ad58  kthw-master-3   172.17.0.4
-5) kthw         ff7bef1f967e  kthw-worker-1   172.17.0.6
-6) kthw         589e0af3e932  kthw-worker-2   172.17.0.7
-7) kthw         a529d0775c9e  kthw-worker-3   172.17.0.8
-
-Choose a number (Enter to cancel)> 4
-[root@kthw-worker-1 /]#
+exit
 ```
 
 Next: [Provisioning a CA and Generating TLS Certificates](04-certificate-authority.md)

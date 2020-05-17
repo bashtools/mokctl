@@ -64,6 +64,7 @@ cfssl gencert -initca ca-csr.json | cfssljson -bare ca
 ```
 
 View the created certificates
+
 ```
 ls -lh *.pem
 ```
@@ -74,6 +75,7 @@ Results:
 ca-key.pem
 ca.pem
 ```
+
 ## Client and Server Certificates
 
 In this section you will generate client and server certificates for each Kubernetes component and a client certificate for the Kubernetes `admin` user.
@@ -123,6 +125,7 @@ Results:
 admin-key.pem
 admin.pem
 ```
+
 ### The Kubelet Client Certificates
 
 Kubernetes uses a [special-purpose authorization mode](https://kubernetes.io/docs/admin/authorization/node/) called Node Authorizer, that specifically authorizes API requests made by [Kubelets](https://kubernetes.io/docs/concepts/overview/components/#kubelet). In order to be authorized by the Node Authorizer, Kubelets must use a credential that identifies them as being in the `system:nodes` group, with a username of `system:node:<nodeName>`. In this section you will create a certificate for each Kubernetes worker node that meets the Node Authorizer requirements.
@@ -140,6 +143,7 @@ Check that the file was created:
 ```
 cat /certs/cluster-list.txt
 ```
+
 Change to the `/certs` directory, which is volume mounted to the host:
 
 ```
@@ -234,6 +238,7 @@ View the created certificates
 ```
 ls -lh *.pem
 ```
+
 Results:
 
 ```
@@ -273,6 +278,7 @@ cfssl gencert \
   kube-proxy-csr.json | cfssljson -bare kube-proxy
 }
 ```
+
 View the created certificates
 
 ```
@@ -285,6 +291,7 @@ Results:
 kube-proxy-key.pem
 kube-proxy.pem
 ```
+
 ### The Scheduler Client Certificate
 
 Generate the `kube-scheduler` client certificate and private key:
@@ -384,6 +391,7 @@ cfssl gencert \
 > The Kubernetes API server is automatically assigned the `kubernetes` internal dns name, which will be linked to the first IP address (`10.32.0.1`) from the address range (`10.32.0.0/24`) reserved for internal cluster services during the [control plane bootstrapping](08-bootstrapping-kubernetes-controllers.md#configure-the-kubernetes-api-server) lab.
 
 Check the 'Subject Alternative' field.
+
 ```
 openssl x509 -noout -in kubernetes.pem -text | grep "Subject Alt" -A 1
 ```
@@ -393,6 +401,7 @@ View the created certificates
 ```
 ls -lh *.pem
 ```
+
 Results:
 
 ```
@@ -492,6 +501,7 @@ for instance in kthw-master-1 kthw-master-2 kthw-master-3; do
   sudo podman cp service-account.pem ${instance}:/root
 done
 ```
+
 > The `kube-proxy`, `kube-controller-manager`, `kube-scheduler`, and `kubelet` client certificates will be used to generate client authentication configuration files in the next lab.
 
 Next: [Generating Kubernetes Configuration Files for Authentication](05-kubernetes-configuration-files.md)

@@ -36,13 +36,13 @@ tmux set status off
 tmux split
 tmux split
 tmux select-layout even-vertical
-tmux select-pane -D
+^aj
 sudo mokctl exec kthw-master-1
-tmux select-pane -D
+^aj
 sudo mokctl exec kthw-master-2
-tmux select-pane -D
+^aj
 sudo mokctl exec kthw-master-3
-tmux set-window-option synchronize-panes
+^a^x
 clear
 ```
 
@@ -171,4 +171,12 @@ ETCDCTL_API=3 etcdctl member list \
 f98dc20bce6225a0, started, controller-0, https://10.240.0.10:2380, https://10.240.0.10:2379
 ffed16798470cab5, started, controller-1, https://10.240.0.11:2380, https://10.240.0.11:2379
 ```
+
+Log out of the master nodes:
+
+```
+exit
+exit
+```
+
 Next: [Bootstrapping the Kubernetes Control Plane](08-bootstrapping-kubernetes-controllers.md)

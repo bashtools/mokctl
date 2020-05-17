@@ -23,12 +23,12 @@ tmux split
 tmux select-layout even-vertical
 tmux select-pane -D
 sudo mokctl exec kthw-master-1
-tmux select-pane -D
+^aj
 sudo mokctl exec kthw-master-2
-tmux select-pane -D
+^aj
 sudo mokctl exec kthw-master-3
 # syncing screens
-tmux set-window-option synchronize-panes
+^a^x
 # Panes are now synced!
 # Clearing the screen
 clear
@@ -183,7 +183,7 @@ kubectl get componentstatuses --kubeconfig admin.kubeconfig
 # RBAC for Kubelet Authorization
 
 # This needs to be done on just one node
-tmux resize-pane -Z
+^az
 cat <<EOF | kubectl apply --kubeconfig admin.kubeconfig -f -
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRole
@@ -225,7 +225,7 @@ EOF
 
 # The Kubernetes Frontend Load Balancer
 # Now we provision our load balancer node so let's log out of the masters
-tmux resize-pane -Z
+^az
 exit
 exit
 # Copy the clusterlist to the load balancer

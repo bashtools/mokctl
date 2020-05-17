@@ -29,5 +29,3 @@
 * `e2e-*` files
   
   Files starting with `e2e` are used for end-to-end testing.
-
-

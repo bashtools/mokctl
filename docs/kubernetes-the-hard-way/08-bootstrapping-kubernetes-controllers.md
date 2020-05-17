@@ -29,11 +29,11 @@ tmux split
 tmux select-layout even-vertical
 tmux select-pane -D
 sudo mokctl exec kthw-master-1
-tmux select-pane -D
+^aj
 sudo mokctl exec kthw-master-2
-tmux select-pane -D
+^aj
 sudo mokctl exec kthw-master-3
-tmux set-window-option synchronize-panes
+^a^x
 clear
 ```
 
@@ -257,7 +257,7 @@ The commands in this section will effect the entire cluster and only need to be 
 
 Make the current pane full-screen:
 ```
-tmux resize-pane -Z
+^az
 ```
 
 Create the `system:kube-apiserver-to-kubelet` [ClusterRole](https://kubernetes.io/docs/admin/authorization/rbac/#role-and-clusterrole) with permissions to access the Kubelet API and perform most common tasks associated with managing pods:
@@ -318,7 +318,7 @@ We need to log out of the masters and log in to the load balancer instance.
 Log out of the masters:
 
 ```
-tmux resize-pane -Z
+^az
 exit
 exit
 ```

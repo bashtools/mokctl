@@ -46,8 +46,8 @@ echo $ENCRYPTION_KEY
 .MD ```
 .MD
 
-# Need to be in the directory where the certs are so it can be copied from
-# the host later on
+# Need to be in the directory where the certs are so it can be
+# copied from the host later on
 .MD Change to the `/certs` directory, which is volume mounted to the host:
 .MD
 .MD ```
@@ -86,10 +86,11 @@ ls -lh *.yaml
 .MD ```
 .MD
 
-# Copy the encryption-config.yaml encryption config file to each controller instance:
+# Copy the encryption-config.yaml encryption config file to each
+# controller instance:
 
-# We need to log out of this container then copy the encryption key to the
-# kubernetes master nodes
+# We need to log out of this container then copy the encryption
+# key to the kubernetes master nodes
 .MD Log out of the container to copy the kubeconfigs to the masters from the host:
 .MD ```
 exit
@@ -124,9 +125,11 @@ screencast prompt %$#>
 .MD 
 .MD ```
 # Copy to the masters
+screencast paste begin
 for instance in kthw-master-1 kthw-master-2 kthw-master-3; do
   sudo podman cp encryption-config.yaml ${instance}:/root
 done
+screencast paste end
 .MD ```
 # All done :)
 

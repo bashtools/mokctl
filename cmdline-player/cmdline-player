@@ -127,7 +127,7 @@ main() {
 
 wait_for_prompt() {
   while true; do
-    sleep .1
+    sleep .4
     screen -S screencast -p 0 -X hardcopy latest.hardcopy
     if prompt_found "$PROMPTLIST"; then break; fi
   done

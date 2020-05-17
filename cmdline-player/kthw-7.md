@@ -25,14 +25,14 @@ tmux set status off
 tmux split
 tmux split
 tmux select-layout even-vertical
-tmux select-pane -D
+^aj
 sudo mokctl exec kthw-master-1
-tmux select-pane -D
+^aj
 sudo mokctl exec kthw-master-2
-tmux select-pane -D
+^aj
 sudo mokctl exec kthw-master-3
 # syncing screens
-tmux set-window-option synchronize-panes
+^a^x
 # Panes are now synced!
 # Clearing the screen
 clear
@@ -110,10 +110,12 @@ ETCDCTL_API=3 etcdctl member list \
   --cert=/etc/etcd/kubernetes.pem \
   --key=/etc/etcd/kubernetes-key.pem
 # It works!
+# Log out of the masters
+exit
+exit
 # All done :)
 
 # ------------------------------------------------
 # Next: Bootstrapping the Kubernetes Control Plane
 # ------------------------------------------------
-Next: [Bootstrapping the Kubernetes Control Plane](08-bootstrapping-kubernetes-controllers.md)
 ```

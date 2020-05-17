@@ -21,8 +21,8 @@ podman exec -ti kthw bash
 ENCRYPTION_KEY=$(head -c 32 /dev/urandom | base64)
 echo $ENCRYPTION_KEY
 
-# Need to be in the directory where the certs are so it can be copied from
-# the host later on
+# Need to be in the directory where the certs are so it can be
+# copied from the host later on
 cd /certs
 
 # The Encryption Config File
@@ -42,10 +42,11 @@ resources:
 EOF
 ls -lh *.yaml
 
-# Copy the encryption-config.yaml encryption config file to each controller instance:
+# Copy the encryption-config.yaml encryption config file to each
+# controller instance:
 
-# We need to log out of this container then copy the encryption key to the
-# kubernetes master nodes
+# We need to log out of this container then copy the encryption
+# key to the kubernetes master nodes
 exit
 # The encryption key should be in the kthw-certs directory
 ls kthw-certs/*.yaml

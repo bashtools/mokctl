@@ -53,16 +53,16 @@ tmux select-pane -D
 screencast sleep 1
 sudo mokctl exec kthw-master-1
 screencast sleep 1
-tmux select-pane -D
+^aj
 screencast sleep 1
 sudo mokctl exec kthw-master-2
 screencast sleep 1
-tmux select-pane -D
+^aj
 screencast sleep 1
 sudo mokctl exec kthw-master-3
 # syncing screens
 screencast sleep 1
-tmux set-window-option synchronize-panes
+^a^x
 screencast sleep 1
 # Panes are now synced!
 # Clearing the screen
@@ -354,7 +354,7 @@ kubectl get componentstatuses --kubeconfig admin.kubeconfig
 .MD 
 .MD Make the current pane full-screen:
 .MD ```
-tmux resize-pane -Z
+^az
 .MD ```
 .MD 
 .MD Create the `system:kube-apiserver-to-kubelet` [ClusterRole](https://kubernetes.io/docs/admin/authorization/rbac/#role-and-clusterrole) with permissions to access the Kubelet API and perform most common tasks associated with managing pods:
@@ -424,7 +424,7 @@ screencast paste end
 .MD Log out of the masters:
 .MD
 .MD ```
-tmux resize-pane -Z
+^az
 exit
 exit
 .MD ```

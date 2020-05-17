@@ -115,4 +115,5 @@ ETCDCTL_API=3 etcdctl member list \
 # ------------------------------------------------
 # Next: Bootstrapping the Kubernetes Control Plane
 # ------------------------------------------------
+Next: [Bootstrapping the Kubernetes Control Plane](08-bootstrapping-kubernetes-controllers.md)
 ```

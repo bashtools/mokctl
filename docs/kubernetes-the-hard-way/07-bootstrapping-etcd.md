@@ -1,8 +1,5 @@
-> **My Own Kind changes:**
+>  **Kubernetes the Hard Way using My Own Kind**
 > 
-> * ETCD set up is identical
-> * Changed commands from `gcloud` to `mokctl`
->
 > View a [screencast and transcript](/cmdline-player/kthw-7.md)
 
 # Bootstrapping the etcd Cluster
@@ -23,38 +20,86 @@ mokctl exec kthw-master-1
 
 ## Bootstrapping an etcd Cluster Member
 
+Before logging in to the masters we need to copy the cluster-list to each master node:
+
+```
+for instance in kthw-master-1 kthw-master-2 kthw-master-3; do
+  sudo podman cp kthw-certs/cluster-list.txt ${instance}:/root/
+done
+```
+
+Use `tmux` to log in to all three masters at the same time:
+
+```
+tmux
+tmux set status off
+tmux split
+tmux split
+tmux select-layout even-vertical
+^aj
+sudo mokctl exec kthw-master-1
+^aj
+sudo mokctl exec kthw-master-2
+^aj
+sudo mokctl exec kthw-master-3
+^a^x
+clear
+```
+
+Install `wget` using `yum`:
+
+```
+yum -y install wget
+```
+
 ### Download and Install the etcd Binaries
+
+Change directory to the HOME directory:
+
+```
+cd
+```
 
 Download the official etcd release binaries from the [etcd](https://github.com/etcd-io/etcd) GitHub project:
 
 ```
-wget -q --show-progress --https-only --timestamping \
-  "https://github.com/etcd-io/etcd/releases/download/v3.4.0/etcd-v3.4.0-linux-amd64.tar.gz"
+wget "https://github.com/etcd-io/etcd/releases/download/v3.4.0/etcd-v3.4.0-linux-amd64.tar.gz"
 ```
 
 Extract and install the `etcd` server and the `etcdctl` command line utility:
 
 ```
 {
-  tar -xvf etcd-v3.4.0-linux-amd64.tar.gz
-  sudo mv etcd-v3.4.0-linux-amd64/etcd* /usr/local/bin/
+  tar -xvf etcd-v3.4.0-linux-amd64.tar.gz 2>/dev/null
+  mv etcd-v3.4.0-linux-amd64/etcd* /usr/local/bin/
 }
 ```
-
 ### Configure the etcd Server
 
 ```
 {
-  sudo mkdir -p /etc/etcd /var/lib/etcd
-  sudo cp ca.pem kubernetes-key.pem kubernetes.pem /etc/etcd/
+  mkdir -p /etc/etcd /var/lib/etcd
+  cp ca.pem kubernetes-key.pem kubernetes.pem /etc/etcd/
 }
 ```
 
 The instance internal IP address will be used to serve client requests and communicate with etcd cluster peers. Retrieve the internal IP address for the current compute instance:
 
+
 ```
-INTERNAL_IP=$(curl -s -H "Metadata-Flavor: Google" \
-  http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip)
+INTERNAL_IP=$(ip ro get default 8.8.8.8 | head -n 1 | cut -f 7 -d " ")
+echo $INTERNAL_IP
+```
+
+Also set some variables for all of the master nodes:
+
+```
+IP_MASTER_1=$(grep kthw-master-1 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $IP_MASTER_1
+IP_MASTER_2=$(grep kthw-master-2 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $IP_MASTER_2
+IP_MASTER_3=$(grep kthw-master-3 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $IP_MASTER_3
 ```
 
 Each etcd member must have a unique name within an etcd cluster. Set the etcd name to match the hostname of the current compute instance:
@@ -66,11 +111,10 @@ ETCD_NAME=$(hostname -s)
 Create the `etcd.service` systemd unit file:
 
 ```
-cat <<EOF | sudo tee /etc/systemd/system/etcd.service
+cat <<EOF | tee /etc/systemd/system/etcd.service
 [Unit]
 Description=etcd
 Documentation=https://github.com/coreos
-
 [Service]
 Type=notify
 ExecStart=/usr/local/bin/etcd \\
@@ -88,12 +132,11 @@ ExecStart=/usr/local/bin/etcd \\
   --listen-client-urls https://${INTERNAL_IP}:2379,https://127.0.0.1:2379 \\
   --advertise-client-urls https://${INTERNAL_IP}:2379 \\
   --initial-cluster-token etcd-cluster-0 \\
-  --initial-cluster controller-0=https://10.240.0.10:2380,controller-1=https://10.240.0.11:2380,controller-2=https://10.240.0.12:2380 \\
+  --initial-cluster kthw-master-1=https://$IP_MASTER_1:2380,kthw-master-2=https://$IP_MASTER_2:2380,kthw-master-3=https://$IP_MASTER_3:2380 \\
   --initial-cluster-state new \\
   --data-dir=/var/lib/etcd
 Restart=on-failure
 RestartSec=5
-
 [Install]
 WantedBy=multi-user.target
 EOF
@@ -103,20 +146,18 @@ EOF
 
 ```
 {
-  sudo systemctl daemon-reload
-  sudo systemctl enable etcd
-  sudo systemctl start etcd
+  systemctl daemon-reload
+  systemctl enable etcd
+  systemctl start etcd
 }
 ```
-
-> Remember to run the above commands on each controller node: `controller-0`, `controller-1`, and `controller-2`.
 
 ## Verification
 
 List the etcd cluster members:
 
 ```
-sudo ETCDCTL_API=3 etcdctl member list \
+ETCDCTL_API=3 etcdctl member list \
   --endpoints=https://127.0.0.1:2379 \
   --cacert=/etc/etcd/ca.pem \
   --cert=/etc/etcd/kubernetes.pem \
@@ -130,5 +171,4 @@ sudo ETCDCTL_API=3 etcdctl member list \
 f98dc20bce6225a0, started, controller-0, https://10.240.0.10:2380, https://10.240.0.10:2379
 ffed16798470cab5, started, controller-1, https://10.240.0.11:2380, https://10.240.0.11:2379
 ```
-
 Next: [Bootstrapping the Kubernetes Control Plane](08-bootstrapping-kubernetes-controllers.md)

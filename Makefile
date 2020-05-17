@@ -27,7 +27,8 @@ docs:
 		$$PWD/docs/kubernetes-the-hard-way/06-data-encryption-keys.md
 
 	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-7.scr \
-	  "KTHW 07 Bootstrapping the etcd Cluster"
+	  "KTHW 07 Bootstrapping the etcd Cluster" \
+		$$PWD/docs/kubernetes-the-hard-way/07-bootstrapping-etcd.md
 
 mokctl-docker: all
 	cp mokctl.deploy package/

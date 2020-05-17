@@ -4,7 +4,7 @@
   
   This script plays back files ending in `.scr` and starts a recording with `byzanz-record`. GIF output is created by default but byzanz supports other formats.
   
-  Example: `cmdline-player kthw-2.scr` - will start a playback and recording session.
+  Example: `cmdline-player kthw-2.scr` - will start a playback and recording session. The animated GIF file will be saved as `screencast.gif`.
 
 * `scr2md.sh`
   

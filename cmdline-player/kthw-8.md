@@ -263,6 +263,7 @@ systemctl restart haproxy
 # Check that haproxy works
 curl  https://$INTERNAL_IP:6443/version -k
 # Exit from the load balancer
+exit
 # It works!
 # All done :)
 

@@ -329,6 +329,8 @@ sleep 10
 kubectl get componentstatuses --kubeconfig admin.kubeconfig
 .MD ```
 .MD
+.MD > output
+.MD
 .MD ```
 .MD NAME                 STATUS    MESSAGE              ERROR
 .MD controller-manager   Healthy   ok
@@ -525,6 +527,7 @@ curl  https://$INTERNAL_IP:6443/version -k
 .MD
 .MD ```
 # Exit from the load balancer
+exit
 # It works!
 # All done :)
 .MD ```

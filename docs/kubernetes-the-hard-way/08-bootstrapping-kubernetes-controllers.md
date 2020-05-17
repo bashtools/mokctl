@@ -236,6 +236,8 @@ sleep 10
 kubectl get componentstatuses --kubeconfig admin.kubeconfig
 ```
 
+> output
+
 ```
 NAME                 STATUS    MESSAGE              ERROR
 controller-manager   Healthy   ok
@@ -404,6 +406,7 @@ curl  https://$INTERNAL_IP:6443/version -k
 Exit from the load balancer
 
 ```
+exit
 ```
 
 Next: [Bootstrapping the Kubernetes Worker Nodes](09-bootstrapping-kubernetes-workers.md)

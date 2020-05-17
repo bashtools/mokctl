@@ -36,13 +36,13 @@ tmux set status off
 tmux split
 tmux split
 tmux select-layout even-vertical
-^aj
+tmux select-pane -D
 sudo mokctl exec kthw-master-1
-^aj
+tmux select-pane -D
 sudo mokctl exec kthw-master-2
-^aj
+tmux select-pane -D
 sudo mokctl exec kthw-master-3
-^a^x
+tmux set-window-option synchronize-panes
 clear
 ```
 

@@ -62,20 +62,20 @@ screencast prompt %$#
 tmux split
 tmux split
 tmux select-layout even-vertical
-^aj
+tmux select-pane -D
 screencast sleep 1
 sudo mokctl exec kthw-master-1
 screencast sleep 1
-^aj
+tmux select-pane -D
 screencast sleep 1
 sudo mokctl exec kthw-master-2
 screencast sleep 1
-^aj
+tmux select-pane -D
 screencast sleep 1
 sudo mokctl exec kthw-master-3
 # syncing screens
 screencast sleep 1
-^a^x
+tmux set-window-option synchronize-panes
 screencast sleep 1
 # Panes are now synced!
 # Clearing the screen

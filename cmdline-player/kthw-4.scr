@@ -482,7 +482,7 @@ screencast paste end
 .MD
 .MD > The Kubernetes API server is automatically assigned the `kubernetes` internal dns name, which will be linked to the first IP address (`10.32.0.1`) from the address range (`10.32.0.0/24`) reserved for internal cluster services during the [control plane bootstrapping](08-bootstrapping-kubernetes-controllers.md#configure-the-kubernetes-api-server) lab.
 .MD
-.MD Check the 'Subject Alternative' field.
+.MD Check the 'Subject Alternative' field, which should match the `--hostname` line above:
 .MD ```
 # Quick verification of the cert
 openssl x509 -noout -in kubernetes.pem -text | grep "Subject Alt" -A 1

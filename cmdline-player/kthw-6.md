@@ -13,12 +13,11 @@ View the [screencast file](../cmdline-player/kthw-6.scr)
 
 # We need to log back into the podman container, 'kthw', then
 # paste the command blocks
-
 podman exec -ti kthw bash
 
 # The Encryption Key
 
-# Set the public address variable to the load balancer address
+# Set the encryption key variable
 ENCRYPTION_KEY=$(head -c 32 /dev/urandom | base64)
 echo $ENCRYPTION_KEY
 

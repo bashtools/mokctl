@@ -1,3 +1,6 @@
+.MD >  **Kubernetes the Hard Way using My Own Kind**
+.MD > 
+.MD > View a [screencast and transcript](/cmdline-player/kthw-5.md)
 screencast delay 10
 screencast clear
 screencast paste
@@ -11,26 +14,54 @@ screencast paste
 screencast paste
 # Create encryption config and key
 
+.MD 
+.MD # Generating the Data Encryption Config and Key
+.MD 
+.MD Kubernetes stores a variety of data including cluster state, application configurations, and secrets. Kubernetes supports the ability to [encrypt](https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data) cluster data at rest.
+.MD 
+.MD In this lab you will generate an encryption key and an [encryption config](https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/#understanding-the-encryption-at-rest-configuration) suitable for encrypting Kubernetes Secrets.
+.MD 
 screencast prompt %$#
 screencast delay 5
 # We need to log back into the podman container, 'kthw', then
 # paste the command blocks
 screencast delay 18
-
+.MD First 'log in' to the podman container that we created earlier:
+.MD
+.MD ```
 podman exec -ti kthw bash
+.MD ```
+.MD
 
 # The Encryption Key
 
-# Set the public address variable to the load balancer address
+# Set the encryption key variable
+.MD ## The Encryption Key
+.MD 
+.MD Generate an encryption key:
+.MD 
+.MD ```
 ENCRYPTION_KEY=$(head -c 32 /dev/urandom | base64)
 echo $ENCRYPTION_KEY
+.MD ```
+.MD
 
 # Need to be in the directory where the certs are so it can be copied from
 # the host later on
+.MD Change to the `/certs` directory, which is volume mounted to the host:
+.MD
+.MD ```
 cd /certs
+.MD ```
+.MD
 
 # The Encryption Config File
 
+.MD ## The Encryption Config File
+.MD 
+.MD Create the `encryption-config.yaml` encryption config file:
+.MD 
+.MD ```
 screencast paste start
 cat > encryption-config.yaml <<EOF
 kind: EncryptionConfig
@@ -47,28 +78,56 @@ resources:
 EOF
 screencast paste end
 screencast sleep 2
+.MD ```
+.MD
+.MD Check that the encryption-config.yaml file was created:
+.MD ```
 ls -lh *.yaml
+.MD ```
+.MD
 
 # Copy the encryption-config.yaml encryption config file to each controller instance:
 
 # We need to log out of this container then copy the encryption key to the
 # kubernetes master nodes
+.MD Log out of the container to copy the kubeconfigs to the masters from the host:
+.MD ```
 exit
+.MD ```
+.MD
 # The encryption key should be in the kthw-certs directory
+.MD Check that the file exists on the host:
+.MD
+.MD ```
 ls kthw-certs/*.yaml
+.MD ```
+.MD
 # It is, good! Let's have a quick look at it:
+.MD Take a quick look at the file:
+.MD
+.MD ```
 cat kthw-certs/*.yaml
+.MD ```
 # Now to copy it to the Masters:
 screencast delay 1
 # NOTE that 'sudo' is required as these are privileged containers
 # that were created with 'sudo mokctl'.
 screencast delay 18
+.MD Change to the `kthw-certs` directory:
+.MD
+.MD ```
 cd kthw-certs
+.MD ```
+.MD
 screencast prompt %$#>
+.MD Copy the `encryption-config.yaml` encryption config file to each controller instance:
+.MD 
+.MD ```
 # Copy to the masters
 for instance in kthw-master-1 kthw-master-2 kthw-master-3; do
   sudo podman cp encryption-config.yaml ${instance}:/root
 done
+.MD ```
 # All done :)
 
 screencast paste
@@ -76,3 +135,4 @@ screencast paste
 # Next: Bootstrapping the etcd Cluster
 screencast paste
 # ------------------------------------
+.MD Next: [Bootstrapping the etcd Cluster](07-bootstrapping-etcd.md)

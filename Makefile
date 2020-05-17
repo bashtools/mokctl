@@ -23,7 +23,8 @@ docs:
 		$$PWD/docs/kubernetes-the-hard-way/05-kubernetes-configuration-files.md
 
 	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-6.scr \
-	  "KTHW 06 Generating the Data Encryption Config and Key"
+	  "KTHW 06 Generating the Data Encryption Config and Key" \
+		$$PWD/docs/kubernetes-the-hard-way/06-data-encryption-keys.md
 
 	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-7.scr \
 	  "KTHW 07 Bootstrapping the etcd Cluster"

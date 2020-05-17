@@ -1,7 +1,12 @@
 >  **Kubernetes the Hard Way using My Own Kind**
 > 
 > View a [screencast and transcript](/cmdline-player/kthw-5.md)
+
+Log in to the podman container we created earlier
+
+```
 podman exec -ti kthw bash
+```
 
 # Generating Kubernetes Configuration Files for Authentication
 

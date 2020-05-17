@@ -20,7 +20,12 @@ screencast prompt %$#
 # paste the command blocks
 screencast delay 18
 
+.MD
+.MD Log in to the podman container we created earlier
+.MD
+.MD ```
 podman exec -ti kthw bash
+.MD ```
 
 # Kubernetes Public IP Address
 

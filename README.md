@@ -102,7 +102,7 @@ These documents and screencasts show how to use `mokctl` on Fedora 32, with Podm
 > NOTE: This is in progress
 
 | Document                                                                                                               | Transcript + Screencast                |
-| ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------:|
 | [01-prerequisites.md](/docs/kubernetes-the-hard-way/01-prerequisites.md)                                               |                                        |
 | [02-client-tools.md](/docs/kubernetes-the-hard-way/02-client-tools.md)                                                 | [kthw-2.md](/cmdline-player/kthw-2.md) |
 | [03-compute-resources.md](/docs/kubernetes-the-hard-way/03-compute-resources.md)                                       | [kthw-3.md](/cmdline-player/kthw-3.md) |

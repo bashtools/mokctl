@@ -1875,7 +1875,8 @@ systemctl restart crio
 # then edited.
 
 ipaddr=$(ip ro get default 8.8.8.8 | head -n 1 | cut -f 7 -d " ")
-hostnet=$(ip ro | grep "$ipaddr *$" | cut -f 1 -d " ")
+podsubnet="10.244.0.0/16"
+servicesubnet="10.96.0.0/16"
 
 cat <<EOF >kubeadm-init-defaults.yaml
 apiVersion: kubeadm.k8s.io/v1beta2
@@ -1923,8 +1924,8 @@ imageRepository: k8s.gcr.io
 kubernetesVersion: v1.18.2
 networking:
   dnsDomain: cluster.local
-  podSubnet: 10.244.0.0/16
-  serviceSubnet: $hostnet
+  podSubnet: $podsubnet
+  serviceSubnet: $servicesubnet
 scheduler: {}
 EOF
 

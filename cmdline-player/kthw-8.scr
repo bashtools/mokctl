@@ -1,0 +1,538 @@
+.MD >  **Kubernetes the Hard Way using My Own Kind**
+.MD > 
+.MD > View a [screencast and transcript](/cmdline-player/kthw-8.md)
+screencast delay 10
+screencast clear
+screencast paste
+# ---------------------------------------------------------
+screencast paste
+# Kubernetes the Hard Way - using `mokctl` from My Own Kind
+screencast paste
+# ---------------------------------------------------------
+screencast paste
+# 08-bootstrapping-the-kubernetes-control-plane
+screencast paste
+# Start up the kubernetes cluster
+
+.MD # Bootstrapping the Kubernetes Control Plane
+.MD 
+.MD In this lab you will bootstrap the Kubernetes control plane across three compute instances and configure it for high availability. You will also create an external load balancer that exposes the Kubernetes API Servers to remote clients. The following components will be installed on each node: Kubernetes API Server, Scheduler, and Controller Manager.
+.MD 
+.MD ## Prerequisites
+.MD 
+.MD The commands in this lab must be run on each controller instance: `kthw-master-1`, `kthw-master-2`, and `kthw-master-3`. Login to each controller instance using the `mokctl` command. Example:
+.MD 
+.MD ```
+.MD mokctl exec kthw-master-1
+.MD ```
+.MD 
+.MD ### Running commands in parallel with tmux
+.MD 
+.MD [tmux](https://github.com/tmux/tmux/wiki) can be used to run commands on multiple compute instances at the same time. See the [Running commands in parallel with tmux](01-prerequisites.md#running-commands-in-parallel-with-tmux) section in the Prerequisites lab.
+.MD 
+.MD ## Provision the Kubernetes Control Plane
+.MD 
+## Provision the Kubernetes Control Plane
+
+screencast prompt %$#
+# We will use 'tmux' to log in to three containers and then
+# execute the commands in parallel.
+screencast delay 18
+
+.MD Use `tmux` to log in to all three masters at the same time:
+.MD
+.MD ```
+screencast subshell
+tmux
+tmux set status off
+screencast prompt %$#
+tmux split
+tmux split
+tmux select-layout even-vertical
+tmux select-pane -D
+screencast sleep 1
+sudo mokctl exec kthw-master-1
+screencast sleep 1
+tmux select-pane -D
+screencast sleep 1
+sudo mokctl exec kthw-master-2
+screencast sleep 1
+tmux select-pane -D
+screencast sleep 1
+sudo mokctl exec kthw-master-3
+# syncing screens
+screencast sleep 1
+tmux set-window-option synchronize-panes
+screencast sleep 1
+# Panes are now synced!
+# Clearing the screen
+clear
+.MD ```
+.MD
+.MD Change to root's home directory, where the certs are:
+.MD
+.MD ```
+cd # <- All our certs are in root's home
+.MD ```
+.MD
+# Create the Kubernetes configuration directory:
+.MD Create the Kubernetes configuration directory:
+.MD 
+.MD ```
+screencast paste
+mkdir -p /etc/kubernetes/config
+.MD ```
+.MD
+# Download the official Kubernetes release binaries:
+.MD Download the official Kubernetes release binaries:
+.MD 
+.MD ```
+screencast waitforsilence
+screencast paste begin
+wget "https://storage.googleapis.com/kubernetes-release/release/v1.15.3/bin/linux/amd64/kube-apiserver" \
+  "https://storage.googleapis.com/kubernetes-release/release/v1.15.3/bin/linux/amd64/kube-controller-manager" \
+  "https://storage.googleapis.com/kubernetes-release/release/v1.15.3/bin/linux/amd64/kube-scheduler" \
+  "https://storage.googleapis.com/kubernetes-release/release/v1.15.3/bin/linux/amd64/kubectl"
+screencast paste end
+.MD ```
+.MD
+.MD Install the Kubernetes binaries:
+.MD 
+.MD ```
+# Install the Kubernetes binaries:
+screencast paste begin
+{
+  chmod +x kube-apiserver kube-controller-manager kube-scheduler kubectl
+  mv kube-apiserver kube-controller-manager kube-scheduler kubectl /usr/local/bin/
+}
+screencast paste end
+.MD ```
+.MD
+
+# Configure the Kubernetes API Server
+
+.MD ### Configure the Kubernetes API Server
+.MD 
+.MD ```
+screencast prompt %$#
+screencast paste begin
+{
+  mkdir -p /var/lib/kubernetes/
+
+  mv ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem \
+    service-account-key.pem service-account.pem \
+    encryption-config.yaml /var/lib/kubernetes/
+}
+screencast paste end
+.MD ```
+.MD
+.MD The instance internal IP address will be used to advertise the API Server to members of the cluster. Retrieve the internal IP address for the current compute instance:
+.MD 
+.MD ```
+screencast paste
+INTERNAL_IP=$(ip ro get default 8.8.8.8 | head -n 1 | cut -f 7 -d " ")
+echo $INTERNAL_IP
+.MD ```
+.MD
+.MD Set some variables to hold the master's IP addresses:
+.MD
+.MD ```
+screencast sleep 1
+# Create the kube-apiserver.service systemd unit file:
+screencast sleep 2
+screencast paste
+MASTER1=$(grep kthw-master-1 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER1
+screencast sleep 2
+screencast paste
+MASTER2=$(grep kthw-master-2 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER2
+screencast sleep 2
+screencast paste
+MASTER3=$(grep kthw-master-3 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER3
+screencast sleep 2
+.MD ```
+.MD
+
+.MD Create the `kube-apiserver.service` systemd unit file:
+.MD 
+.MD ```
+screencast paste begin
+cat <<EOF | tee /etc/systemd/system/kube-apiserver.service
+[Unit]
+Description=Kubernetes API Server
+Documentation=https://github.com/kubernetes/kubernetes
+
+[Service]
+ExecStart=/usr/local/bin/kube-apiserver \\
+  --advertise-address=${INTERNAL_IP} \\
+  --allow-privileged=true \\
+  --apiserver-count=3 \\
+  --audit-log-maxage=30 \\
+  --audit-log-maxbackup=3 \\
+  --audit-log-maxsize=100 \\
+  --audit-log-path=/var/log/audit.log \\
+  --authorization-mode=Node,RBAC \\
+  --bind-address=0.0.0.0 \\
+  --client-ca-file=/var/lib/kubernetes/ca.pem \\
+  --enable-admission-plugins=NamespaceLifecycle,NodeRestriction,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota \\
+  --etcd-cafile=/var/lib/kubernetes/ca.pem \\
+  --etcd-certfile=/var/lib/kubernetes/kubernetes.pem \\
+  --etcd-keyfile=/var/lib/kubernetes/kubernetes-key.pem \\
+  --etcd-servers=https://$MASTER1:2379,https://$MASTER2:2379,https://$MASTER3:2379 \\
+  --event-ttl=1h \\
+  --encryption-provider-config=/var/lib/kubernetes/encryption-config.yaml \\
+  --kubelet-certificate-authority=/var/lib/kubernetes/ca.pem \\
+  --kubelet-client-certificate=/var/lib/kubernetes/kubernetes.pem \\
+  --kubelet-client-key=/var/lib/kubernetes/kubernetes-key.pem \\
+  --kubelet-https=true \\
+  --runtime-config=api/all \\
+  --service-account-key-file=/var/lib/kubernetes/service-account.pem \\
+  --service-cluster-ip-range=10.32.0.0/24 \\
+  --service-node-port-range=30000-32767 \\
+  --tls-cert-file=/var/lib/kubernetes/kubernetes.pem \\
+  --tls-private-key-file=/var/lib/kubernetes/kubernetes-key.pem \\
+  --v=2
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+screencast paste end
+.MD ```
+.MD
+
+.MD ### Configure the Kubernetes Controller Manager
+.MD
+# Configure the Kubernetes Controller Manager
+
+# Move the kube-controller-manager kubeconfig into place:
+.MD Move the `kube-controller-manager` kubeconfig into place:
+.MD 
+.MD ```
+screencast paste
+mv kube-controller-manager.kubeconfig /var/lib/kubernetes/
+.MD ```
+.MD
+.MD Create the `kube-controller-manager.service` systemd unit file:
+.MD 
+.MD ```
+# Create the kube-controller-manager.service systemd unit file:
+screencast paste begin
+cat <<EOF | tee /etc/systemd/system/kube-controller-manager.service
+[Unit]
+Description=Kubernetes Controller Manager
+Documentation=https://github.com/kubernetes/kubernetes
+
+[Service]
+ExecStart=/usr/local/bin/kube-controller-manager \\
+  --address=0.0.0.0 \\
+  --cluster-cidr=10.200.0.0/16 \\
+  --cluster-name=kubernetes \\
+  --cluster-signing-cert-file=/var/lib/kubernetes/ca.pem \\
+  --cluster-signing-key-file=/var/lib/kubernetes/ca-key.pem \\
+  --kubeconfig=/var/lib/kubernetes/kube-controller-manager.kubeconfig \\
+  --leader-elect=true \\
+  --root-ca-file=/var/lib/kubernetes/ca.pem \\
+  --service-account-private-key-file=/var/lib/kubernetes/service-account-key.pem \\
+  --service-cluster-ip-range=10.32.0.0/24 \\
+  --use-service-account-credentials=true \\
+  --v=2
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+screencast paste end
+.MD ```
+.MD 
+.MD ### Configure the Kubernetes Scheduler
+.MD 
+.MD Move the `kube-scheduler` kubeconfig into place:
+.MD 
+.MD ```
+
+# Configure the Kubernetes Scheduler
+
+# Move the kube-scheduler kubeconfig into place:
+screencast paste
+mv kube-scheduler.kubeconfig /var/lib/kubernetes/
+.MD ```
+.MD
+# Create the kube-scheduler.yaml configuration file:
+.MD Create the `kube-scheduler.yaml` configuration file:
+.MD 
+.MD ```
+screencast paste begin
+cat <<EOF | tee /etc/kubernetes/config/kube-scheduler.yaml
+apiVersion: kubescheduler.config.k8s.io/v1alpha1
+kind: KubeSchedulerConfiguration
+clientConnection:
+  kubeconfig: "/var/lib/kubernetes/kube-scheduler.kubeconfig"
+leaderElection:
+  leaderElect: true
+EOF
+screencast paste end
+.MD ```
+.MD 
+.MD Create the `kube-scheduler.service` systemd unit file:
+.MD 
+.MD ```
+# Create the kube-scheduler.service systemd unit file:
+screencast paste begin
+cat <<EOF | tee /etc/systemd/system/kube-scheduler.service
+[Unit]
+Description=Kubernetes Scheduler
+Documentation=https://github.com/kubernetes/kubernetes
+
+[Service]
+ExecStart=/usr/local/bin/kube-scheduler \\
+  --config=/etc/kubernetes/config/kube-scheduler.yaml \\
+  --v=2
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+screencast paste end
+.MD ```
+.MD 
+.MD ### Start the Controller Services
+.MD 
+.MD ```
+
+# Start the Controller Services
+screencast paste begin
+{
+  systemctl daemon-reload
+  systemctl enable kube-apiserver kube-controller-manager kube-scheduler
+  systemctl start kube-apiserver kube-controller-manager kube-scheduler
+}
+screencast paste end
+.MD ```
+.MD
+.MD > Allow up to 10 seconds for the Kubernetes API Server to fully initialize.
+.MD ```
+# Allow up to 10 seconds for the Kubernetes API Server to fully initialize.
+sleep 10
+.MD ```
+.MD 
+.MD ### Verification
+.MD 
+.MD ```
+
+# Verification
+kubectl get componentstatuses --kubeconfig admin.kubeconfig
+.MD ```
+.MD
+.MD ```
+.MD NAME                 STATUS    MESSAGE              ERROR
+.MD controller-manager   Healthy   ok
+.MD scheduler            Healthy   ok
+.MD etcd-2               Healthy   {"health": "true"}
+.MD etcd-0               Healthy   {"health": "true"}
+.MD etcd-1               Healthy   {"health": "true"}
+.MD ```
+
+# RBAC for Kubelet Authorization
+
+# This needs to be done on just one node
+.MD 
+.MD ## RBAC for Kubelet Authorization
+.MD 
+.MD In this section you will configure RBAC permissions to allow the Kubernetes API Server to access the Kubelet API on each worker node. Access to the Kubelet API is required for retrieving metrics, logs, and executing commands in pods.
+.MD 
+.MD > This tutorial sets the Kubelet `--authorization-mode` flag to `Webhook`. Webhook mode uses the [SubjectAccessReview](https://kubernetes.io/docs/admin/authorization/#checking-api-access) API to determine authorization.
+.MD 
+.MD The commands in this section will effect the entire cluster and only need to be run once from one of the controller nodes.
+.MD 
+.MD Make the current pane full-screen:
+.MD ```
+tmux resize-pane -Z
+.MD ```
+.MD 
+.MD Create the `system:kube-apiserver-to-kubelet` [ClusterRole](https://kubernetes.io/docs/admin/authorization/rbac/#role-and-clusterrole) with permissions to access the Kubelet API and perform most common tasks associated with managing pods:
+.MD 
+.MD ```
+screencast paste begin
+cat <<EOF | kubectl apply --kubeconfig admin.kubeconfig -f -
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: "true"
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults
+  name: system:kube-apiserver-to-kubelet
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - nodes/proxy
+      - nodes/stats
+      - nodes/log
+      - nodes/spec
+      - nodes/metrics
+    verbs:
+      - "*"
+EOF
+screencast paste end
+.MD ```
+.MD
+
+.MD The Kubernetes API Server authenticates to the Kubelet as the `kubernetes` user using the client certificate as defined by the `--kubelet-client-certificate` flag.
+.MD 
+.MD Bind the `system:kube-apiserver-to-kubelet` ClusterRole to the `kubernetes` user:
+.MD 
+.MD ```
+# Bind the system:kube-apiserver-to-kubelet ClusterRole to the kubernetes user:
+screencast paste begin
+cat <<EOF | kubectl apply --kubeconfig admin.kubeconfig -f -
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: system:kube-apiserver
+  namespace: ""
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:kube-apiserver-to-kubelet
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: User
+    name: kubernetes
+EOF
+screencast paste end
+.MD ```
+.MD
+.MD ## The Kubernetes Frontend Load Balancer
+.MD 
+.MD In this section you will provision an external load balancer to front the Kubernetes API Servers. The kubernetes-the-hard-way static IP address will be attached to the resulting load balancer.
+.MD ### Provision a Network Load Balancer
+
+# The Kubernetes Frontend Load Balancer
+# Now we provision our load balancer node so let's log out of the masters
+.MD
+.MD We need to log out of the masters and log in to the load balancer instance.
+.MD
+.MD Log out of the masters:
+.MD
+.MD ```
+tmux resize-pane -Z
+exit
+exit
+.MD ```
+.MD
+.MD Before logging in to the load balancer we need to copy over the clusterlist file:
+.MD
+.MD ```
+# Copy the clusterlist to the load balancer
+screencast paste
+sudo podman cp kthw-certs/cluster-list.txt kthw-lb:/root/
+.MD ```
+.MD
+.MD Log into the load balancer
+.MD
+.MD ```
+# Log in to the load balancer
+sudo mokctl exec kthw-lb
+.MD ```
+.MD
+.MD Install HAProxy
+.MD
+.MD ```
+# Install HAProxy
+yum -y install haproxy
+.MD ```
+.MD
+.MD Set some variables we will use to configure HAProxy:
+.MD 
+.MD ```
+screencast paste
+INTERNAL_IP=$(ip ro get default 8.8.8.8 | head -n 1 | cut -f 7 -d " ")
+echo $INTERNAL_IP
+screencast paste
+IP_MASTER_1=$(grep kthw-master-1 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $IP_MASTER_1
+screencast paste
+IP_MASTER_2=$(grep kthw-master-2 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $IP_MASTER_2
+screencast paste
+IP_MASTER_3=$(grep kthw-master-3 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $IP_MASTER_3
+.MD ```
+.MD
+.MD Configure HAProxy
+.MD
+.MD ```
+# Configure HAProxy
+screencast paste begin
+cat <<EOF | tee /etc/haproxy/haproxy.cfg 
+frontend kubernetes
+    bind $INTERNAL_IP:6443
+    option tcplog
+    mode tcp
+    default_backend kubernetes-master-nodes
+
+backend kubernetes-master-nodes
+    mode tcp
+    balance roundrobin
+    option tcp-check
+    server master-1 $IP_MASTER_1:6443 check fall 3 rise 2
+    server master-2 $IP_MASTER_2:6443 check fall 3 rise 2
+    server master-3 $IP_MASTER_3:6443 check fall 3 rise 2
+EOF
+screencast paste end
+.MD ```
+.MD
+.MD Start the HAProxy systemd unit file:
+.MD
+.MD ```
+# Start haproxy
+systemctl restart haproxy
+.MD ```
+.MD 
+.MD ### Verification
+.MD 
+.MD Make a HTTP request for the Kubernetes version info:
+.MD 
+.MD ```
+# Check that haproxy works
+curl  https://$INTERNAL_IP:6443/version -k
+.MD ```
+.MD 
+.MD > output
+.MD 
+.MD ```
+.MD {
+.MD   "major": "1",
+.MD   "minor": "13",
+.MD   "gitVersion": "v1.13.0",
+.MD   "gitCommit": "ddf47ac13c1a9483ea035a79cd7c10005ff21a6d",
+.MD   "gitTreeState": "clean",
+.MD   "buildDate": "2018-12-03T20:56:12Z",
+.MD   "goVersion": "go1.11.2",
+.MD   "compiler": "gc",
+.MD   "platform": "linux/amd64"
+.MD }
+.MD ```
+.MD 
+.MD Exit from the load balancer
+.MD
+.MD ```
+# Exit from the load balancer
+# It works!
+# All done :)
+.MD ```
+.MD
+
+screencast paste
+# -----------------------------------------------
+# Next: Bootstrapping the Kubernetes Worker Nodes
+screencast paste
+# -----------------------------------------------
+.MD Next: [Bootstrapping the Kubernetes Worker Nodes](09-bootstrapping-kubernetes-workers.md)

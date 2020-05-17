@@ -514,12 +514,12 @@ curl  https://$INTERNAL_IP:6443/version -k
 .MD ```
 .MD {
 .MD   "major": "1",
-.MD   "minor": "13",
-.MD   "gitVersion": "v1.13.0",
-.MD   "gitCommit": "ddf47ac13c1a9483ea035a79cd7c10005ff21a6d",
+.MD   "minor": "15",
+.MD   "gitVersion": "v1.15.3",
+.MD   "gitCommit": "2d3c76f9091b6bec110a5e63777c332469e0cba2",
 .MD   "gitTreeState": "clean",
-.MD   "buildDate": "2018-12-03T20:56:12Z",
-.MD   "goVersion": "go1.11.2",
+.MD   "buildDate": "2019-08-19T11:05:50Z",
+.MD   "goVersion": "go1.12.9",
 .MD   "compiler": "gc",
 .MD   "platform": "linux/amd64"
 .MD }

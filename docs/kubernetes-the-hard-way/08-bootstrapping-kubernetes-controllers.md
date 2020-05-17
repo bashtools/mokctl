@@ -394,12 +394,12 @@ curl  https://$INTERNAL_IP:6443/version -k
 ```
 {
 "major": "1",
-"minor": "13",
-"gitVersion": "v1.13.0",
-"gitCommit": "ddf47ac13c1a9483ea035a79cd7c10005ff21a6d",
+"minor": "15",
+"gitVersion": "v1.15.3",
+"gitCommit": "2d3c76f9091b6bec110a5e63777c332469e0cba2",
 "gitTreeState": "clean",
-"buildDate": "2018-12-03T20:56:12Z",
-"goVersion": "go1.11.2",
+"buildDate": "2019-08-19T11:05:50Z",
+"goVersion": "go1.12.9",
 "compiler": "gc",
 "platform": "linux/amd64"
 }

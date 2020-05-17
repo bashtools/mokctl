@@ -21,7 +21,7 @@ cat <<EnD >"${file%.*}.md"
 View the [screencast file](../cmdline-player/$(basename "${file%.*}.scr"))
 
 \`\`\`bash
-$(grep -Ev '(^screencast |^.MD )' "$file")
+$(grep -Ev '(^screencast|^.MD)' "$file")
 \`\`\`
 EnD
 

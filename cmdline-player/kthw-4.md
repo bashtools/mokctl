@@ -14,15 +14,11 @@ View the [screencast file](../cmdline-player/kthw-4.scr)
 # We need to log back into the podman container, 'kthw' then
 # paste the command blocks
 
-.MD
 podman exec -ti kthw bash
 
 # Creating the certificate authority (CA)
 
-.MD
 cd /certs
-.MD
-.MD
 {
 
 cat > ca-config.json <<EOF
@@ -63,9 +59,7 @@ EOF
 cfssl gencert -initca ca-csr.json | cfssljson -bare ca
 
 }
-.MD
 ls -lh *.pem
-.MD
 
 # Client and Server Certificates
 # The Admin Client Certificate
@@ -98,29 +92,21 @@ cfssl gencert \
   admin-csr.json | cfssljson -bare admin
 
 }
-.MD
-.MD
 ls -lh *.pem
-.MD
 
 # The Kubelet Client Certificates
 
 # First we'll log out of this container, get the list of IPs from
 # `mokctl` and save them in the volume mount, then log back in
 # and carry on creating certs.
-.MD
 exit
 sudo mokctl get clusters | tee kthw-certs/cluster-list.txt
 podman exec -ti kthw bash
-.MD
-.MD
 # We're back in. Is the file created?
 cat /certs/cluster-list.txt
 # Yes! good.
 # Now to create the client certs
 cd /certs
-.MD
-.MD
 for instance in kthw-worker-1 kthw-worker-2 kthw-worker-3; do
 
 cat > ${instance}-csr.json <<EOF
@@ -152,11 +138,7 @@ cfssl gencert \
   -profile=kubernetes \
   ${instance}-csr.json | cfssljson -bare ${instance}
 done
-.MD
-.MD
 ls -lh *.pem
-.MD
-.MD
 # The Controller Manager Client Certificate
 
 {
@@ -188,8 +170,6 @@ cfssl gencert \
   kube-controller-manager-csr.json | cfssljson -bare kube-controller-manager
 
 }
-.MD
-.MD
 ls -lh *.pem
 
 # The Kube Proxy Client Certificate
@@ -223,9 +203,7 @@ cfssl gencert \
   kube-proxy-csr.json | cfssljson -bare kube-proxy
 
 }
-.MD
 ls -lh *.pem
-.MD
 
 # The Scheduler Client Certificate
 
@@ -258,11 +236,7 @@ cfssl gencert \
   kube-scheduler-csr.json | cfssljson -bare kube-scheduler
 
 }
-.MD
-.MD
 ls -lh *.pem
-.MD
-.MD
 
 # The Kubernetes API Server Certificate
 
@@ -274,7 +248,6 @@ MASTER2=$(grep kthw-master-2 /certs/cluster-list.txt | awk '{ print $NF; }')
 echo $MASTER2
 MASTER3=$(grep kthw-master-3 /certs/cluster-list.txt | awk '{ print $NF; }')
 echo $MASTER3
-.MD
 
 # Create the certificate
 
@@ -310,12 +283,8 @@ cfssl gencert \
   kubernetes-csr.json | cfssljson -bare kubernetes
 
 }
-.MD
-.MD
 # Quick verification of the cert
 openssl x509 -noout -in kubernetes.pem -text | grep "Subject Alt" -A 1
-.MD
-.MD
 ls -lh *.pem
 # The Service Account Key Pair
 
@@ -348,39 +317,25 @@ cfssl gencert \
   service-account-csr.json | cfssljson -bare service-account
 
 }
-.MD
-.MD
 ls -lh *.pem
-.MD
-.MD
-.MD
 
 # Distribute the Client and Server Certificates
 
-.MD
 # We need to log out of this container then copy the certs to the
 # kubernetes nodes
 exit
 # All the certs should be in the kthw-certs directory
-.MD
-.MD
 ls kthw-certs
-.MD
 # They are, good!
 # Now to copy them, workers first:
 # NOTE that 'sudo' is required as these are privileged containers
 # that were created with 'sudo mokctl'.
-.MD
 cd kthw-certs
-.MD
-.MD
 for instance in kthw-worker-1 kthw-worker-2 kthw-worker-3; do
   sudo podman cp ca.pem ${instance}:/root
   sudo podman cp ${instance}-key.pem ${instance}:/root
   sudo podman cp ${instance}.pem ${instance}:/root
 done
-.MD
-.MD
 # Copy to the masters
 for instance in kthw-master-1 kthw-master-2 kthw-master-3; do
   sudo podman cp ca.pem ${instance}:/root

@@ -357,6 +357,7 @@ echo $IP_MASTER_3
 Configure HAProxy
 
 ```
+{
 cat <<EOF | tee /etc/haproxy/haproxy.cfg 
 frontend kubernetes
     bind $INTERNAL_IP:6443
@@ -371,6 +372,7 @@ backend kubernetes-master-nodes
     server master-2 $IP_MASTER_2:6443 check fall 3 rise 2
     server master-3 $IP_MASTER_3:6443 check fall 3 rise 2
 EOF
+}
 ```
 
 Start the HAProxy systemd unit file:

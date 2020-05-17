@@ -19,7 +19,8 @@ docs:
 		$$PWD/docs/kubernetes-the-hard-way/04-certificate-authority.md
 
 	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-5.scr \
-	  "KTHW 05 Generating Kubernetes Configuration Files for Authentication"
+	  "KTHW 05 Generating Kubernetes Configuration Files for Authentication" \
+		$$PWD/docs/kubernetes-the-hard-way/05-kubernetes-configuration-files.md
 
 	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-6.scr \
 	  "KTHW 06 Generating the Data Encryption Config and Key"

@@ -15,6 +15,8 @@ cat <<EnD >"${file%.*}.md"
 
 ![](../docs/images/$(basename ${file%.*}.gif))
 
+View the [screencast file](../cmdline-player/$(basename ${file%.*}.scr))
+
 \`\`\`bash
 $(grep -v '^screencast' "$file")
 \`\`\`

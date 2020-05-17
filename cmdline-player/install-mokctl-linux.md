@@ -2,6 +2,8 @@
 
 ![](../docs/images/install-mokctl-linux.gif)
 
+View the [screencast file](../cmdline-player/install-mokctl-linux.scr)
+
 ```bash
 # How to install and use mokctl
 lsb_release -d

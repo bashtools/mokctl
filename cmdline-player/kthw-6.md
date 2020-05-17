@@ -2,6 +2,8 @@
 
 ![](../docs/images/kthw-6.gif)
 
+View the [screencast file](../cmdline-player/kthw-6.scr)
+
 ```bash
 # ---------------------------------------------------------
 # Kubernetes the Hard Way - using `mokctl` from My Own Kind

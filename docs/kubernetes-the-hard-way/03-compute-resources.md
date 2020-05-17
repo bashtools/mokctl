@@ -5,6 +5,8 @@
 > * Changed 'using Ubuntu 18.04' to 'using CentOS 7'.
 > 
 > * Added information for using `mokctl`.
+>
+> View a [screencast and transcript](/cmdline-player/kthw-3.md)
 
 # Provisioning Compute Resources
 

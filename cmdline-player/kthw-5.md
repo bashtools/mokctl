@@ -1,5 +1,7 @@
 # KTHW 05 Generating Kubernetes Configuration Files for Authentication
 
+![](../docs/images/kthw-5.gif)
+
 ```bash
 # ---------------------------------------------------------
 # Kubernetes the Hard Way - using `mokctl` from My Own Kind
@@ -168,5 +170,4 @@ done
 # ---------------------------------------------------
 # Next: Generating the Data Encryption Config and Key
 # ---------------------------------------------------
-
 ```

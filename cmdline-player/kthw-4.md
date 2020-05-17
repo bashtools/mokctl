@@ -1,5 +1,7 @@
 # KTHW 04 Provisioning a CA and Generating TLS Certificates
 
+![](../docs/images/kthw-4.gif)
+
 ```bash
 # ---------------------------------------------------------
 # Kubernetes the Hard Way - using `mokctl` from My Own Kind
@@ -350,5 +352,4 @@ done
 # ------------------------------------------------------------------
 # Next: Generating Kubernetes Configuration Files for Authentication
 # ------------------------------------------------------------------
-
 ```

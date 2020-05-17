@@ -1,5 +1,7 @@
 # KTHW 03 Compute Resources
 
+![](../docs/images/kthw-3.gif)
+
 ```bash
 # ---------------------------------------------------------
 # Kubernetes the Hard Way - using `mokctl` from My Own Kind
@@ -24,5 +26,4 @@ exit
 # ------------------------------------
 # Next: Certificate Authority
 # ------------------------------------
-
 ```

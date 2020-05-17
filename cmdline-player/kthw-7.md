@@ -1,5 +1,7 @@
 # KTHW 07 Bootstrapping the etcd Cluster
 
+![](../docs/images/kthw-7.gif)
+
 ```bash
 # ---------------------------------------------------------
 # Kubernetes the Hard Way - using `mokctl` from My Own Kind
@@ -17,9 +19,9 @@ done
 # execute the commands in parallel.
 
 tmux
-^a:set status off
-^ab
-^ab
+tmux set status off
+tmux split
+tmux split
 tmux select-layout even-vertical
 ^aj
 sudo mokctl exec kthw-master-1
@@ -111,5 +113,4 @@ ETCDCTL_API=3 etcdctl member list \
 # ------------------------------------------------
 # Next: Bootstrapping the Kubernetes Control Plane
 # ------------------------------------------------
-
 ```

@@ -10,8 +10,12 @@ set -e
 file="$1"
 title="$2"
 
-(
-  printf '# %s\n\n```bash\n' "$2"
-  grep -v '^screencast' "$file"
-  printf '\n```\n'
-) >"${file%.*}.md"
+cat <<EnD >"${file%.*}.md"
+# $title
+
+![](../docs/images/$(basename ${file%.*}.gif))
+
+\`\`\`bash
+$(grep -v '^screencast' "$file")
+\`\`\`
+EnD

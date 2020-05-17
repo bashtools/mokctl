@@ -1,5 +1,7 @@
 # Install mokctl on Linux
 
+![](../docs/images/install-mokctl-linux.gif)
+
 ```bash
 # How to install and use mokctl
 lsb_release -d
@@ -46,5 +48,4 @@ cd ..
 rm -rf my-own-kind
 # That's it for now...
 # Thanks for watching!
-
 ```

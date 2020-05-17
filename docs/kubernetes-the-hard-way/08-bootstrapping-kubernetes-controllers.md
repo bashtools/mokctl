@@ -2,6 +2,8 @@
 > 
 > * blah
 > * Changed commands from `gcloud` to `mokctl`
+>
+> View a [screencast and transcript](/cmdline-player/kthw-8.md)
 
 # Bootstrapping the Kubernetes Control Plane
 

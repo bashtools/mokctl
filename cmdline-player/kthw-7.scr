@@ -27,10 +27,10 @@ screencast delay 18
 
 screencast subshell
 tmux
-^a:set status off
+tmux set status off
 screencast prompt %$#
-^ab
-^ab
+tmux split
+tmux split
 tmux select-layout even-vertical
 ^aj
 screencast sleep 1

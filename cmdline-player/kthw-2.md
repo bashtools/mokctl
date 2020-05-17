@@ -1,5 +1,7 @@
 # KTHW 02 Client Tools
 
+![](../docs/images/kthw-2.gif)
+
 ```bash
 # ---------------------------------------------------------
 # Kubernetes the Hard Way - using `mokctl` from My Own Kind
@@ -40,5 +42,4 @@ ls kthw-certs
 # ------------------------------------
 # Next: Provisioning Compute Resources
 # ------------------------------------
-
 ```

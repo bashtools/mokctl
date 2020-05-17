@@ -1,5 +1,7 @@
 # KTHW 06 Generating the Data Encryption Config and Key
 
+![](../docs/images/kthw-6.gif)
+
 ```bash
 # ---------------------------------------------------------
 # Kubernetes the Hard Way - using `mokctl` from My Own Kind
@@ -61,5 +63,4 @@ done
 # ------------------------------------
 # Next: Bootstrapping the etcd Cluster
 # ------------------------------------
-
 ```

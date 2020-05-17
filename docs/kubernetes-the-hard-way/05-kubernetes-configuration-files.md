@@ -2,6 +2,8 @@
 > 
 > * Changed node names
 > * Changed commands from `gcloud` to `docker`
+>
+> View a [screencast and transcript](/cmdline-player/kthw-5.md)
 
 # Generating Kubernetes Configuration Files for Authentication
 

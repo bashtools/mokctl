@@ -30,6 +30,10 @@ docs:
 	  "KTHW 07 Bootstrapping the etcd Cluster" \
 		$$PWD/docs/kubernetes-the-hard-way/07-bootstrapping-etcd.md
 
+	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-8.scr \
+	  "KTHW 08 Bootstrapping Kubernetes Controllers" \
+		$$PWD/docs/kubernetes-the-hard-way/08-bootstrapping-kubernetes-controllers.md
+
 mokctl-docker: all
 	cp mokctl.deploy package/
 	sudo podman build --force-rm -t local/mokctl package

@@ -370,7 +370,7 @@ create_lb_node() {
 
   # Ceate container
   run_with_progress \
-    "    Creating LB container, '$CREATE_CLUSTER_NAME-lb'" \
+    "    Creating load balancer container, '$CREATE_CLUSTER_NAME-lb'" \
     create_docker_container \
     "$CREATE_CLUSTER_NAME-lb" \
     "$LABELKEY=$CREATE_CLUSTER_NAME"

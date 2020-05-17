@@ -167,9 +167,9 @@ ETCDCTL_API=3 etcdctl member list \
 > output
 
 ```
-3a57933972cb5131, started, controller-2, https://10.240.0.12:2380, https://10.240.0.12:2379
-f98dc20bce6225a0, started, controller-0, https://10.240.0.10:2380, https://10.240.0.10:2379
-ffed16798470cab5, started, controller-1, https://10.240.0.11:2380, https://10.240.0.11:2379
+3a57933972cb5131, started, kthw-master-3, https://10.240.0.12:2380, https://10.240.0.12:2379
+f98dc20bce6225a0, started, kthw-master-1, https://10.240.0.10:2380, https://10.240.0.10:2379
+ffed16798470cab5, started, kthw-master-2, https://10.240.0.11:2380, https://10.240.0.11:2379
 ```
 
 Log out of the master nodes:

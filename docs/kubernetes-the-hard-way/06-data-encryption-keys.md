@@ -1,6 +1,6 @@
 >  **Kubernetes the Hard Way using My Own Kind**
 > 
-> View a [screencast and transcript](/cmdline-player/kthw-5.md)
+> View a [screencast and transcript](/cmdline-player/kthw-6.md)
 
 # Generating the Data Encryption Config and Key
 

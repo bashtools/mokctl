@@ -109,8 +109,8 @@ kubectl get nodes
 .MD ```
 .MD 
 
-# -----------------------------------------------
-# Next: Bootstrapping the Kubernetes Worker Nodes
+# --------------------------------------
+# Next: Deploying the DNS Cluster Add-on
 screencast paste
-# -----------------------------------------------
-.MD Next: [Provisioning Pod Network Routes](11-pod-network-routes.md)
+# --------------------------------------
+.MD Next: [Deploying the DNS Cluster Add-on](11-dns-addon.md)

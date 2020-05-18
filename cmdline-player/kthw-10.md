@@ -44,7 +44,7 @@ kubectl get componentstatuses
 kubectl get nodes
 # Great!
 
-# -----------------------------------------------
-# Next: Bootstrapping the Kubernetes Worker Nodes
-# -----------------------------------------------
+# --------------------------------------
+# Next: Deploying the DNS Cluster Add-on
+# --------------------------------------
 ```

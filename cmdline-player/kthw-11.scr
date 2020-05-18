@@ -1,0 +1,133 @@
+.MD >  **Kubernetes the Hard Way using My Own Kind**
+.MD > 
+.MD > View a [screencast and transcript](/cmdline-player/kthw-10.md)
+screencast delay 18
+screencast clear
+screencast paste
+# ---------------------------------------------------------
+screencast paste
+# Kubernetes the Hard Way - using `mokctl` from My Own Kind
+screencast paste
+# ---------------------------------------------------------
+screencast paste
+# 10-configuring-kubectl.md
+screencast paste
+# Deploying the DNS Cluster Add-on
+screencast prompt %$#
+
+.MD # Deploying the DNS Cluster Add-on
+.MD 
+.MD In this lab you will deploy the [DNS add-on](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/) which provides DNS based service discovery, backed by [CoreDNS](https://coredns.io/), to applications running inside the Kubernetes cluster.
+.MD 
+.MD ## The DNS Cluster Add-on
+.MD 
+.MD First we need to log back in to the podman container we created earlier:
+.MD
+.MD ```
+# Log into the podman container:
+screencast paste
+podman exec -ti kthw bash
+.MD ```
+.MD 
+.MD Deploy the `coredns` cluster add-on:
+.MD 
+.MD ```
+# Deploy coredns:
+screencast paste
+kubectl apply -f https://storage.googleapis.com/kubernetes-the-hard-way/coredns.yaml
+.MD ```
+.MD 
+.MD > output
+.MD 
+.MD ```
+.MD serviceaccount/coredns created
+.MD clusterrole.rbac.authorization.k8s.io/system:coredns created
+.MD clusterrolebinding.rbac.authorization.k8s.io/system:coredns created
+.MD configmap/coredns created
+.MD deployment.extensions/coredns created
+.MD service/kube-dns created
+.MD ```
+.MD 
+.MD List the pods created by the `kube-dns` deployment:
+.MD 
+.MD ```
+# List kube-dns pods:
+screencast paste
+kubectl get pods -l k8s-app=kube-dns -n kube-system
+.MD ```
+.MD 
+.MD > output
+.MD 
+.MD ```
+.MD NAME                       READY   STATUS    RESTARTS   AGE
+.MD coredns-699f8ddd77-94qv9   1/1     Running   0          20s
+.MD coredns-699f8ddd77-gtcgb   1/1     Running   0          20s
+.MD ```
+.MD 
+.MD ## Verification
+
+# Verification
+
+.MD 
+.MD Create a `busybox` deployment:
+.MD 
+.MD ```
+# Create a busybox deployment:
+screencast paste
+kubectl run --generator=run-pod/v1 busybox --image=busybox:1.28 --command -- sleep 3600
+.MD ```
+.MD 
+.MD List the pod created by the `busybox` deployment:
+.MD 
+.MD ```
+# List the created pods:
+screencast paste
+kubectl get pods -l run=busybox
+.MD ```
+.MD 
+.MD > output
+.MD 
+.MD ```
+.MD NAME      READY   STATUS    RESTARTS   AGE
+.MD busybox   1/1     Running   0          3s
+.MD ```
+.MD 
+.MD Retrieve the full name of the `busybox` pod:
+.MD 
+.MD ```
+# Get its name:
+screencast paste
+POD_NAME=$(kubectl get pods -l run=busybox -o jsonpath="{.items[0].metadata.name}")
+echo $POD_NAME
+.MD ```
+.MD 
+.MD Execute a DNS lookup for the `kubernetes` service inside the `busybox` pod:
+.MD 
+.MD ```
+# Test DNS
+screencast paste
+kubectl exec -ti $POD_NAME -- nslookup kubernetes
+.MD ```
+.MD 
+.MD > output
+.MD 
+.MD ```
+.MD Server:    10.32.0.10
+.MD Address 1: 10.32.0.10 kube-dns.kube-system.svc.cluster.local
+.MD 
+.MD Name:      kubernetes
+.MD Address 1: 10.32.0.1 kubernetes.default.svc.cluster.local
+.MD ```
+.MD 
+# All looks good :)
+.MD Exit from the podman container:
+.MD
+.MD ```
+exit
+.MD ```
+
+# --------------------------------------
+# Next: Deploying the DNS Cluster Add-on
+screencast paste
+# --------------------------------------
+.MD Next: [Smoke Test](13-smoke-test.md)

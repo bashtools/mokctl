@@ -1,8 +1,18 @@
+>  **Kubernetes the Hard Way using My Own Kind**
+> 
+> View a [screencast and transcript](/cmdline-player/kthw-10.md)
+
 # Deploying the DNS Cluster Add-on
 
 In this lab you will deploy the [DNS add-on](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/) which provides DNS based service discovery, backed by [CoreDNS](https://coredns.io/), to applications running inside the Kubernetes cluster.
 
 ## The DNS Cluster Add-on
+
+First we need to log back in to the podman container we created earlier:
+
+```
+podman exec -ti kthw bash
+```
 
 Deploy the `coredns` cluster add-on:
 
@@ -60,6 +70,7 @@ Retrieve the full name of the `busybox` pod:
 
 ```
 POD_NAME=$(kubectl get pods -l run=busybox -o jsonpath="{.items[0].metadata.name}")
+echo $POD_NAME
 ```
 
 Execute a DNS lookup for the `kubernetes` service inside the `busybox` pod:
@@ -76,6 +87,12 @@ Address 1: 10.32.0.10 kube-dns.kube-system.svc.cluster.local
 
 Name:      kubernetes
 Address 1: 10.32.0.1 kubernetes.default.svc.cluster.local
+```
+
+Exit from the podman container:
+
+```
+exit
 ```
 
 Next: [Smoke Test](13-smoke-test.md)

@@ -42,6 +42,10 @@ docs:
 	  "KTHW 10 Configuring kubetcl for Remote Access" \
 		$$PWD/docs/kubernetes-the-hard-way/10-configuring-kubectl.md
 
+	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-11.scr \
+	  "KTHW 10 Deploying the DNS Cluster Add-on" \
+		$$PWD/docs/kubernetes-the-hard-way/11-dns-addon.md
+
 mokctl-docker: all
 	cp mokctl.deploy package/
 	sudo podman build --force-rm -t local/mokctl package

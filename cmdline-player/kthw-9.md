@@ -111,7 +111,7 @@ cat <<EOF | tee /etc/cni/net.d/99-loopback.conf
 EOF
 # Containerd config:
 mkdir -p /etc/containerd/
-containerd config default >/etc/containerd/config.toml
+containerd config default | sed 's/overlayfs/native/' >/etc/containerd/config.toml
 # Create the systemd unit file:
 cat <<EOF | tee /etc/systemd/system/containerd.service
 [Unit]
@@ -157,7 +157,6 @@ clusterDomain: "cluster.local"
 clusterDNS:
   - "10.32.0.10"
 podCIDR: "${POD_CIDR}"
-resolvConf: "/run/systemd/resolve/resolv.conf"
 runtimeRequestTimeout: "15m"
 tlsCertFile: "/var/lib/kubelet/${HOSTNAME}.pem"
 tlsPrivateKeyFile: "/var/lib/kubelet/${HOSTNAME}-key.pem"

@@ -109,6 +109,8 @@ kubectl get nodes
 .MD ```
 .MD 
 
+# All done :)
+
 # --------------------------------------
 # Next: Deploying the DNS Cluster Add-on
 screencast paste

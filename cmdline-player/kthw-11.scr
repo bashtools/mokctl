@@ -126,6 +126,8 @@ kubectl exec -ti $POD_NAME -- nslookup kubernetes
 exit
 .MD ```
 
+# All done :)
+
 # --------------------------------------
 # Next: Deploying the DNS Cluster Add-on
 screencast paste

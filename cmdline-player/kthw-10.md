@@ -44,6 +44,8 @@ kubectl get componentstatuses
 kubectl get nodes
 # Great!
 
+# All done :)
+
 # --------------------------------------
 # Next: Deploying the DNS Cluster Add-on
 # --------------------------------------

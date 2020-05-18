@@ -228,6 +228,7 @@ kubectl get nodes --kubeconfig admin.kubeconfig
 # It worked!
 # Log out of the master container
 exit
+
 # All done :)
 
 # -------------------------------------------

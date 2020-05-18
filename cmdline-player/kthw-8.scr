@@ -507,6 +507,7 @@ systemctl restart haproxy
 .MD ```
 # Check that haproxy works
 curl  https://$INTERNAL_IP:6443/version -k
+# It works!
 .MD ```
 .MD 
 .MD > output
@@ -530,7 +531,7 @@ curl  https://$INTERNAL_IP:6443/version -k
 .MD ```
 # Exit from the load balancer
 exit
-# It works!
+
 # All done :)
 .MD ```
 .MD

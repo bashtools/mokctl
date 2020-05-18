@@ -535,7 +535,6 @@ exit
 .MD ```
 .MD
 
-screencast paste
 # -----------------------------------------------
 # Next: Bootstrapping the Kubernetes Worker Nodes
 screencast paste

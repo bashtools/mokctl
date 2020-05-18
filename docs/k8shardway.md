@@ -2,7 +2,7 @@
 > 
 > This tutorial is a modified version of the original developed by [Kelsey Hightower](https://github.com/kelseyhightower/kubernetes-the-hard-way).
 > While the original one uses GCP as the platform to deploy kubernetes, 
-> we use My Own Kind's `mokctl` to deploy a cluster on a local machine.
+> we use My Own Kind's `mokctl` to deploy a cluster in containers on a local machine.
 > 
 > If you prefer the cloud version, refer to the original one [here](https://github.com/kelseyhightower/kubernetes-the-hard-way).
 > 

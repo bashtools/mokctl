@@ -34,6 +34,10 @@ docs:
 	  "KTHW 08 Bootstrapping Kubernetes Controllers" \
 		$$PWD/docs/kubernetes-the-hard-way/08-bootstrapping-kubernetes-controllers.md
 
+	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-9.scr \
+	  "KTHW 09 Bootstrapping Kubernetes Workers" \
+		$$PWD/docs/kubernetes-the-hard-way/09-bootstrapping-kubernetes-workers.md
+
 mokctl-docker: all
 	cp mokctl.deploy package/
 	sudo podman build --force-rm -t local/mokctl package

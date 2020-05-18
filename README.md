@@ -1,6 +1,6 @@
 # My Own Kind
 
-![](docs/images/mokctl-demo.gif)
+![](docs/images/install-mokctl-linux.gif)
 
 View a [Transcript of the screenscast](/cmdline-player/install-mokctl-linux.md).
 

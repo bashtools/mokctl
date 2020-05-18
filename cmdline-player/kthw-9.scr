@@ -20,7 +20,7 @@ screencast paste
 .MD 
 .MD ## Prerequisites
 .MD 
-.MD The commands in this lab must be run on each controller instance: `kthw-master-1`, `kthw-master-2`, and `kthw-master-3`. Login to each controller instance using the `mokctl` command. Example:
+.MD The commands in this lab must be run on each controller instance: `kthw-master-1`, `kthw-master-2`, and `kthw-master-3`. Log in to each controller instance using the `mokctl` command. Example:
 .MD 
 .MD ```
 .MD mokctl exec kthw-master-1
@@ -73,8 +73,6 @@ clear
 .MD
 .MD ```
 cd # <- All our certs are in root's home
-.MD ```
-.MD
 .MD ```
 .MD
 .MD Install the OS dependencies:
@@ -168,8 +166,8 @@ screencast paste end
 .MD We will use the following subnets from the 10.200.0.0/16 range:
 .MD
 .MD *  10.200.1.0/24 for kthw-worker-1
-.MD *  10.200.2.0/24 for kthw-worker-1
-.MD *  10.200.3.0/24 for kthw-worker-1
+.MD *  10.200.2.0/24 for kthw-worker-2
+.MD *  10.200.3.0/24 for kthw-worker-3
 .MD
 .MD ```
 # Work out the pod subnet for this host:
@@ -428,7 +426,7 @@ kubectl get nodes --kubeconfig admin.kubeconfig
 .MD ```
 # Log out of the masters
 .MD
-.MD Log out of the masters.
+.MD Log out of the masters:
 .MD
 .MD ```
 ^az
@@ -437,7 +435,6 @@ exit
 .MD ```
 .MD
 # All done :)
-.MD ```
 .MD
 
 # -----------------------------------------------

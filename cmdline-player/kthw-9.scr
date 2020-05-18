@@ -20,10 +20,10 @@ screencast paste
 .MD 
 .MD ## Prerequisites
 .MD 
-.MD The commands in this lab must be run on each controller instance: `kthw-master-1`, `kthw-master-2`, and `kthw-master-3`. Log in to each controller instance using the `mokctl` command. Example:
+.MD The commands in this lab must be run on each worker instance: `kthw-worker-1`, `kthw-worker-2`, and `kthw-worker-3`. Log in to each controller instance using the `mokctl` command. Example:
 .MD 
 .MD ```
-.MD mokctl exec kthw-master-1
+.MD mokctl exec kthw-worker-1
 .MD ```
 .MD 
 .MD ### Running commands in parallel with tmux
@@ -32,14 +32,14 @@ screencast paste
 .MD 
 .MD ## Provisioning a Kubernetes Worker Node
 .MD 
-# Provision the Kubernetes Worker Node
+# Provision the Kubernetes Worker Nodes
 
 screencast prompt %$#
 # We will use 'tmux' to log in to three containers and then
 # execute the commands in parallel.
 screencast delay 18
 
-.MD Use `tmux` to log in to all three masters at the same time:
+.MD Use `tmux` to log in to all three worker at the same time:
 .MD
 .MD ```
 screencast subshell
@@ -51,15 +51,17 @@ tmux split
 tmux select-layout even-vertical
 tmux select-pane -D
 screencast sleep 1
-sudo mokctl exec kthw-master-1
+sudo mokctl exec kthw-worker-1
 screencast sleep 1
 ^aj
 screencast sleep 1
-sudo mokctl exec kthw-master-2
+sudo mokctl exec kthw-worker-2
 screencast sleep 1
 ^aj
 screencast sleep 1
-sudo mokctl exec kthw-master-3
+tmux select-layout tiled
+tmux resize-pane -y 25
+sudo mokctl exec kthw-worker-3
 # syncing screens
 screencast sleep 1
 ^a^x
@@ -67,6 +69,16 @@ screencast sleep 1
 # Panes are now synced!
 # Clearing the screen
 clear
+.MD ```
+.MD
+.MD `mokctl` installed a few kubernetes services ready for set up.
+.MD
+.MD Ensure all existing kubernetes services are deleted:
+.MD
+.MD ```
+# Remove the existing k8s services:
+screencast paste
+yum -y remove kubelet kubeadm cri-o cri-tools runc criu
 .MD ```
 .MD
 .MD Change to root's home directory, where the certs are:
@@ -81,7 +93,7 @@ cd # <- All our certs are in root's home
 # Install OS dependencies
 screencast paste begin
 {
-  yum -y install socat conntrack ipset
+  yum -y install socat conntrack ipset wget
 }
 screencast paste end
 .MD ```
@@ -104,11 +116,22 @@ swapon --show
 .MD 
 .MD ```
 # `mokctl` uses a kubeadm configuration file to get components to ignore swap.
-# For this lab the following lines will trick kubernetes into thinking that swap is off.
+# For this lab the following lines will trick kubernetes into
+# thinking that swap is off instead:
 touch /swapoff
 mount --bind /swapoff /proc/swaps
 # We don't want to turn swap off on our laptop.
 .MD ```
+.MD 
+.MD Verify again if swap is enabled:
+.MD 
+.MD ```
+# Is swap on?
+swapon --show
+# Seems to be off now :)
+.MD ```
+.MD 
+.MD Swap should now return no output, meaning, it's off.
 .MD 
 .MD > To ensure swap remains off after reboot consult your Linux distro documentation.
 .MD 
@@ -116,6 +139,7 @@ mount --bind /swapoff /proc/swaps
 .MD 
 .MD ```
 # Download the worker binaries
+screencast waitforsilence
 screencast paste begin
 wget https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.15.0/crictl-v1.15.0-linux-amd64.tar.gz \
   https://github.com/opencontainers/runc/releases/download/v1.0.0-rc8/runc.amd64 \
@@ -146,17 +170,18 @@ screencast paste end
 .MD 
 .MD ```
 # Install the worker binaries:
+screencast paste begin
 {
-  systemctl disable crio
   mkdir containerd
   tar -xvf crictl-v1.15.0-linux-amd64.tar.gz
   tar -xvf containerd-1.2.9.linux-amd64.tar.gz -C containerd
   tar -xvf cni-plugins-linux-amd64-v0.8.2.tgz -C /opt/cni/bin/
   mv runc.amd64 runc
   chmod +x crictl kubectl kube-proxy kubelet runc 
-  mv crictl kubectl kube-proxy kubelet runc /usr/local/bin/
-  mv containerd/bin/* /bin/
+  mv -f crictl kubectl kube-proxy kubelet runc /usr/local/bin/
+  mv -f containerd/bin/* /bin/
 }
+screencast paste end
 .MD ```
 .MD 
 .MD ### Configure CNI Networking
@@ -230,15 +255,7 @@ mkdir -p /etc/containerd/
 .MD 
 .MD ```
 screencast paste begin
-cat << EOF | tee /etc/containerd/config.toml
-[plugins]
-  [plugins.cri.containerd]
-    snapshotter = "vfs"
-    [plugins.cri.containerd.default_runtime]
-      runtime_type = "io.containerd.runtime.v1.linux"
-      runtime_engine = "/usr/local/bin/runc"
-      runtime_root = ""
-EOF
+containerd config default >/etc/containerd/config.toml
 screencast paste end
 .MD ```
 .MD 
@@ -350,7 +367,7 @@ screencast paste end
 .MD 
 # Configure the kube-proxy:
 .MD ```
-sceencast paste
+screencast paste
 mv kube-proxy.kubeconfig /var/lib/kube-proxy/kubeconfig
 .MD ```
 .MD 
@@ -395,50 +412,68 @@ screencast paste end
 .MD 
 .MD ```
 # Start worker services:
+screencast paste begin
 {
   systemctl daemon-reload
   systemctl enable containerd kubelet kube-proxy
   systemctl start containerd kubelet kube-proxy
 }
+screencast paste end
 .MD ```
 .MD 
 .MD > Remember to run the above commands on each worker node: `kthw-worker-1`, `kthw-worker-2`, and `kthw-worker-3`.
 .MD 
 .MD ## Verification
 .MD 
-.MD > The compute instances created in this tutorial will not have permission to complete this section. Run the following commands from the same machine used to create the compute instances.
+.MD > The compute instances created in this tutorial will not have permission to complete this section. Run the following commands from one of the master nodes.
 .MD 
+.MD Log out of the workers:
+.MD
+.MD ```
+# Log out of the workers:
+exit
+exit
+.MD ```
+.MD
+.MD Log in to one of the master nodes to run kubectl:
+.MD
+.MD ```
+# And log in to kthw-master-1
+screencast paste
+sudo mokctl exec kthw-master-1
+cd    # <- our admin.kubeconfig is in root's home (/root)
+.MD ```
+.MD
 .MD List the registered Kubernetes nodes:
 .MD 
 .MD ```
 # Verification - list the nodes:
+screencast paste
 kubectl get nodes --kubeconfig admin.kubeconfig
-# It works!
+# It worked!
 .MD ```
 .MD 
 .MD > output
 .MD 
 .MD ```
-.MD NAME       STATUS   ROLES    AGE   VERSION
-.MD worker-0   Ready    <none>   15s   v1.15.3
-.MD worker-1   Ready    <none>   15s   v1.15.3
-.MD worker-2   Ready    <none>   15s   v1.15.3
+.MD NAME            STATUS   ROLES    AGE   VERSION
+.MD kthw-worker-1   Ready    <none>   15s   v1.15.3
+.MD kthw-worker-2   Ready    <none>   15s   v1.15.3
+.MD kthw-worker-3   Ready    <none>   15s   v1.15.3
 .MD ```
-# Log out of the masters
+# Log out of the master container
 .MD
-.MD Log out of the masters:
+.MD Log out of the master container:
 .MD
 .MD ```
-^az
-exit
 exit
 .MD ```
 .MD
 # All done :)
 .MD
 
-# -----------------------------------------------
-# Next: Bootstrapping the Kubernetes Worker Nodes
+# -------------------------------------------
+# Next: Configuring kubectl for Remote Access
 screencast paste
-# -----------------------------------------------
-.MD Next: [Bootstrapping the Kubernetes Worker Nodes](09-bootstrapping-kubernetes-workers.md)
+# -------------------------------------------
+.MD Next: [Configuring kubectl for Remote Access](10-configuring-kubectl.md)

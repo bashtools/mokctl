@@ -36,6 +36,8 @@ sudo mokctl exec kthw-master-3
 # Panes are now synced!
 # Clearing the screen
 clear
+# Remove the existing k8s services:
+yum -y remove kubelet kubeadm cri-o cri-tools runc criu
 # Install wget
 yum -y install wget
 # Download and Install the etcd Binaries

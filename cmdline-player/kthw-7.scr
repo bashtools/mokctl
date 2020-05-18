@@ -82,11 +82,20 @@ screencast sleep 1
 clear
 .MD ```
 .MD
-screencast waitforsilence
-# Install wget
+.MD `mokctl` installed a few kubernetes services ready for set up.
+.MD
+.MD Ensure all existing kubernetes services are deleted:
+.MD
+.MD ```
+# Remove the existing k8s services:
+screencast paste
+yum -y remove kubelet kubeadm cri-o cri-tools runc criu
+.MD ```
+.MD
 .MD Install `wget` using `yum`:
 .MD
 .MD ```
+# Install wget
 yum -y install wget
 # Download and Install the etcd Binaries
 .MD ```
@@ -102,6 +111,7 @@ cd
 .MD Download the official etcd release binaries from the [etcd](https://github.com/etcd-io/etcd) GitHub project:
 .MD
 .MD ```
+screencast waitforsilence
 screencast paste
 wget "https://github.com/etcd-io/etcd/releases/download/v3.4.0/etcd-v3.4.0-linux-amd64.tar.gz"
 .MD ```
@@ -239,9 +249,9 @@ screencast paste end
 .MD > output
 .MD 
 .MD ```
-.MD 3a57933972cb5131, started, kthw-master-3, https://10.88.0.22:2380, https://10.240.0.12:2379
-.MD f98dc20bce6225a0, started, kthw-master-1, https://10.88.0.20:2380, https://10.240.0.10:2379
-.MD ffed16798470cab5, started, kthw-master-2, https://10.88.0.21:2380, https://10.240.0.11:2379
+.MD 3a57933972cb5131, started, kthw-master-3, https://10.88.1.22:2380, https://10.88.1.22:2379
+.MD f98dc20bce6225a0, started, kthw-master-1, https://10.88.1.20:2380, https://10.88.1.20:2379
+.MD ffed16798470cab5, started, kthw-master-2, https://10.88.1.21:2380, https://10.88.1.21:2379
 .MD ```
 screencast sleep 2
 # It works!

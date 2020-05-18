@@ -11,7 +11,7 @@ View the [screencast file](../cmdline-player/kthw-9.scr)
 # 09-bootstrapping-kubernetes-workers
 # Configure and start the kubernetes workers
 
-# Provision the Kubernetes Worker Node
+# Provision the Kubernetes Worker Nodes
 
 # We will use 'tmux' to log in to three containers and then
 # execute the commands in parallel.
@@ -22,29 +22,37 @@ tmux split
 tmux split
 tmux select-layout even-vertical
 tmux select-pane -D
-sudo mokctl exec kthw-master-1
+sudo mokctl exec kthw-worker-1
 ^aj
-sudo mokctl exec kthw-master-2
+sudo mokctl exec kthw-worker-2
 ^aj
-sudo mokctl exec kthw-master-3
+tmux select-layout tiled
+tmux resize-pane -y 25
+sudo mokctl exec kthw-worker-3
 # syncing screens
 ^a^x
 # Panes are now synced!
 # Clearing the screen
 clear
+# Remove the existing k8s services:
+yum -y remove kubelet kubeadm cri-o cri-tools runc criu
 cd # <- All our certs are in root's home
 # Install OS dependencies
 {
-  yum -y install socat conntrack ipset
+  yum -y install socat conntrack ipset wget
 }
 # Is swap on?
 swapon --show
 # Yes, and so it should be for a laptop.
 # `mokctl` uses a kubeadm configuration file to get components to ignore swap.
-# For this lab the following lines will trick kubernetes into thinking that swap is off.
+# For this lab the following lines will trick kubernetes into
+# thinking that swap is off instead:
 touch /swapoff
 mount --bind /swapoff /proc/swaps
 # We don't want to turn swap off on our laptop.
+# Is swap on?
+swapon --show
+# Seems to be off now :)
 # Download the worker binaries
 wget https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.15.0/crictl-v1.15.0-linux-amd64.tar.gz \
   https://github.com/opencontainers/runc/releases/download/v1.0.0-rc8/runc.amd64 \
@@ -63,15 +71,14 @@ mkdir -p \
   /var/run/kubernetes
 # Install the worker binaries:
 {
-  systemctl disable crio
   mkdir containerd
   tar -xvf crictl-v1.15.0-linux-amd64.tar.gz
   tar -xvf containerd-1.2.9.linux-amd64.tar.gz -C containerd
   tar -xvf cni-plugins-linux-amd64-v0.8.2.tgz -C /opt/cni/bin/
   mv runc.amd64 runc
   chmod +x crictl kubectl kube-proxy kubelet runc 
-  mv crictl kubectl kube-proxy kubelet runc /usr/local/bin/
-  mv containerd/bin/* /bin/
+  mv -f crictl kubectl kube-proxy kubelet runc /usr/local/bin/
+  mv -f containerd/bin/* /bin/
 }
 # Work out the pod subnet for this host:
 POD_CIDR="10.200.$(hostname -s | grep -o '.$').0/24"
@@ -104,15 +111,7 @@ cat <<EOF | tee /etc/cni/net.d/99-loopback.conf
 EOF
 # Containerd config:
 mkdir -p /etc/containerd/
-cat << EOF | tee /etc/containerd/config.toml
-[plugins]
-  [plugins.cri.containerd]
-    snapshotter = "vfs"
-    [plugins.cri.containerd.default_runtime]
-      runtime_type = "io.containerd.runtime.v1.linux"
-      runtime_engine = "/usr/local/bin/runc"
-      runtime_root = ""
-EOF
+containerd config default >/etc/containerd/config.toml
 # Create the systemd unit file:
 cat <<EOF | tee /etc/systemd/system/containerd.service
 [Unit]
@@ -188,7 +187,6 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 # Configure the kube-proxy:
-sceencast paste
 mv kube-proxy.kubeconfig /var/lib/kube-proxy/kubeconfig
 # Write the kube-proxy-config.yaml file:
 cat <<EOF | tee /var/lib/kube-proxy/kube-proxy-config.yaml
@@ -220,16 +218,20 @@ EOF
   systemctl enable containerd kubelet kube-proxy
   systemctl start containerd kubelet kube-proxy
 }
+# Log out of the workers:
+exit
+exit
+# And log in to kthw-master-1
+sudo mokctl exec kthw-master-1
+cd    # <- our admin.kubeconfig is in root's home (/root)
 # Verification - list the nodes:
 kubectl get nodes --kubeconfig admin.kubeconfig
-# It works!
-# Log out of the masters
-^az
-exit
+# It worked!
+# Log out of the master container
 exit
 # All done :)
 
-# -----------------------------------------------
-# Next: Bootstrapping the Kubernetes Worker Nodes
-# -----------------------------------------------
+# -------------------------------------------
+# Next: Configuring kubectl for Remote Access
+# -------------------------------------------
 ```

@@ -1,17 +1,16 @@
 >  **Kubernetes the Hard Way using My Own Kind**
 > 
 > View a [screencast and transcript](/cmdline-player/kthw-9.md)
-
 # Bootstrapping the Kubernetes Worker Nodes
 
 In this lab you will bootstrap three Kubernetes worker nodes. The following components will be installed on each node: [runc](https://github.com/opencontainers/runc), [container networking plugins](https://github.com/containernetworking/cni), [containerd](https://github.com/containerd/containerd), [kubelet](https://kubernetes.io/docs/admin/kubelet), and [kube-proxy](https://kubernetes.io/docs/concepts/cluster-administration/proxies).
 
 ## Prerequisites
 
-The commands in this lab must be run on each controller instance: `kthw-master-1`, `kthw-master-2`, and `kthw-master-3`. Log in to each controller instance using the `mokctl` command. Example:
+The commands in this lab must be run on each worker instance: `kthw-worker-1`, `kthw-worker-2`, and `kthw-worker-3`. Log in to each controller instance using the `mokctl` command. Example:
 
 ```
-mokctl exec kthw-master-1
+mokctl exec kthw-worker-1
 ```
 
 ### Running commands in parallel with tmux
@@ -20,7 +19,7 @@ mokctl exec kthw-master-1
 
 ## Provisioning a Kubernetes Worker Node
 
-Use `tmux` to log in to all three masters at the same time:
+Use `tmux` to log in to all three worker at the same time:
 
 ```
 tmux
@@ -29,13 +28,23 @@ tmux split
 tmux split
 tmux select-layout even-vertical
 tmux select-pane -D
-sudo mokctl exec kthw-master-1
+sudo mokctl exec kthw-worker-1
 ^aj
-sudo mokctl exec kthw-master-2
+sudo mokctl exec kthw-worker-2
 ^aj
-sudo mokctl exec kthw-master-3
+tmux select-layout tiled
+tmux resize-pane -y 25
+sudo mokctl exec kthw-worker-3
 ^a^x
 clear
+```
+
+`mokctl` installed a few kubernetes services ready for set up.
+
+Ensure all existing kubernetes services are deleted:
+
+```
+yum -y remove kubelet kubeadm cri-o cri-tools runc criu
 ```
 
 Change to root's home directory, where the certs are:
@@ -48,7 +57,7 @@ Install the OS dependencies:
 
 ```
 {
-  yum -y install socat conntrack ipset
+  yum -y install socat conntrack ipset wget
 }
 ```
 
@@ -70,6 +79,14 @@ If output is empty then swap is not enabled. If swap is enabled run the followin
 touch /swapoff
 mount --bind /swapoff /proc/swaps
 ```
+
+Verify again if swap is enabled:
+
+```
+swapon --show
+```
+
+Swap should now return no output, meaning, it's off.
 
 > To ensure swap remains off after reboot consult your Linux distro documentation.
 
@@ -101,15 +118,14 @@ Install the worker binaries:
 
 ```
 {
-  systemctl disable crio
   mkdir containerd
   tar -xvf crictl-v1.15.0-linux-amd64.tar.gz
   tar -xvf containerd-1.2.9.linux-amd64.tar.gz -C containerd
   tar -xvf cni-plugins-linux-amd64-v0.8.2.tgz -C /opt/cni/bin/
   mv runc.amd64 runc
   chmod +x crictl kubectl kube-proxy kubelet runc 
-  mv crictl kubectl kube-proxy kubelet runc /usr/local/bin/
-  mv containerd/bin/* /bin/
+  mv -f crictl kubectl kube-proxy kubelet runc /usr/local/bin/
+  mv -f containerd/bin/* /bin/
 }
 ```
 
@@ -119,9 +135,9 @@ Work out the Pod CIDR range for the current compute instance.
 
 We will use the following subnets from the 10.200.0.0/16 range:
 
-* 10.200.1.0/24 for kthw-worker-1
-* 10.200.2.0/24 for kthw-worker-2
-* 10.200.3.0/24 for kthw-worker-3
+*  10.200.1.0/24 for kthw-worker-1
+*  10.200.2.0/24 for kthw-worker-2
+*  10.200.3.0/24 for kthw-worker-3
 
 ```
 POD_CIDR="10.200.$(hostname -s | grep -o '.$').0/24"
@@ -173,15 +189,7 @@ mkdir -p /etc/containerd/
 ```
 
 ```
-cat << EOF | tee /etc/containerd/config.toml
-[plugins]
-  [plugins.cri.containerd]
-    snapshotter = "vfs"
-    [plugins.cri.containerd.default_runtime]
-      runtime_type = "io.containerd.runtime.v1.linux"
-      runtime_engine = "/usr/local/bin/runc"
-      runtime_root = ""
-EOF
+containerd config default >/etc/containerd/config.toml
 ```
 
 Create the `containerd.service` systemd unit file:
@@ -275,7 +283,6 @@ EOF
 ### Configure the Kubernetes Proxy
 
 ```
-sceencast paste
 mv kube-proxy.kubeconfig /var/lib/kube-proxy/kubeconfig
 ```
 
@@ -323,7 +330,21 @@ EOF
 
 ## Verification
 
-> The compute instances created in this tutorial will not have permission to complete this section. Run the following commands from the same machine used to create the compute instances.
+> The compute instances created in this tutorial will not have permission to complete this section. Run the following commands from one of the master nodes.
+
+Log out of the workers:
+
+```
+exit
+exit
+```
+
+Log in to one of the master nodes to run kubectl:
+
+```
+sudo mokctl exec kthw-master-1
+cd    # <- our admin.kubeconfig is in root's home (/root)
+```
 
 List the registered Kubernetes nodes:
 
@@ -334,18 +355,17 @@ kubectl get nodes --kubeconfig admin.kubeconfig
 > output
 
 ```
-NAME       STATUS   ROLES    AGE   VERSION
-worker-0   Ready    <none>   15s   v1.15.3
-worker-1   Ready    <none>   15s   v1.15.3
-worker-2   Ready    <none>   15s   v1.15.3
+NAME            STATUS   ROLES    AGE   VERSION
+kthw-worker-1   Ready    <none>   15s   v1.15.3
+kthw-worker-2   Ready    <none>   15s   v1.15.3
+kthw-worker-3   Ready    <none>   15s   v1.15.3
 ```
 
-Log out of the masters:
+Log out of the master container:
 
 ```
-^az
-exit
 exit
 ```
 
-Next: [Bootstrapping the Kubernetes Worker Nodes](09-bootstrapping-kubernetes-workers.md)
+
+Next: [Configuring kubectl for Remote Access](10-configuring-kubectl.md)

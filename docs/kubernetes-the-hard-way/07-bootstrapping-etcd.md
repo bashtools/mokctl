@@ -46,6 +46,14 @@ sudo mokctl exec kthw-master-3
 clear
 ```
 
+`mokctl` installed a few kubernetes services ready for set up.
+
+Ensure all existing kubernetes services are deleted:
+
+```
+yum -y remove kubelet kubeadm cri-o cri-tools runc criu
+```
+
 Install `wget` using `yum`:
 
 ```
@@ -167,9 +175,9 @@ ETCDCTL_API=3 etcdctl member list \
 > output
 
 ```
-3a57933972cb5131, started, kthw-master-3, https://10.88.0.22:2380, https://10.240.0.12:2379
-f98dc20bce6225a0, started, kthw-master-1, https://10.88.0.20:2380, https://10.240.0.10:2379
-ffed16798470cab5, started, kthw-master-2, https://10.88.0.21:2380, https://10.240.0.11:2379
+3a57933972cb5131, started, kthw-master-3, https://10.88.1.22:2380, https://10.88.1.22:2379
+f98dc20bce6225a0, started, kthw-master-1, https://10.88.1.20:2380, https://10.88.1.20:2379
+ffed16798470cab5, started, kthw-master-2, https://10.88.1.21:2380, https://10.88.1.21:2379
 ```
 
 Log out of the master nodes:

@@ -6,6 +6,7 @@
 DELAY=18 # not <-- less than 1
 FILE=
 WAITING=
+E2E=
 PID=
 VIDEO="screencast.gif"
 PROMPTLIST='$#%>'
@@ -15,9 +16,9 @@ main() {
   parse_options "$@" || return
 
   kill_old_gnu_screencasts
-  choose_recording_window # <- using xwininfo
+  [[ -z $E2E ]] && choose_recording_window # <- using xwininfo
   start_gnu_screen
-  start_recording &
+  [[ -z $E2E ]] && start_recording &
 
   OLDWAITING="$WAITING"
 
@@ -121,7 +122,7 @@ main() {
   done
 
   sleep 4
-  end_recording
+  [[ -z $E2E ]] && end_recording
   echo
 }
 
@@ -215,6 +216,12 @@ parse_options() {
   }
 
   FILE="$1"
+
+  [[ $2 == "e2e" ]] && {
+    E2E=yes
+  }
+
+  return 0
 }
 
 start_gnu_screen() {
@@ -225,7 +232,8 @@ start_gnu_screen() {
   sleep 1
   WAITING=$(fingerprint)
 
-  cat <<EnD
+  [[ -z $E2E ]] && {
+    cat <<EnD
 In another terminal type:
 
   screen -r screencast
@@ -234,8 +242,9 @@ Then press 'enter' here and the screencast will start
 in the other terminal.
 EnD
 
-  printf '>'
-  read -r
+    printf '>'
+    read -r
+  }
 }
 
 fingerprint() {

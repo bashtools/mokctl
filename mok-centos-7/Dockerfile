@@ -22,6 +22,9 @@ RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do \
       iptables \
       iproute-tc \
       openssl \
+      socat \
+      conntrack \
+      ipset \
       kubelet$K8SBINVER \
       kubeadm$K8SBINVER \
       kubectl$K8SBINVER \

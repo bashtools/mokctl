@@ -38,6 +38,10 @@ docs:
 	  "KTHW 09 Bootstrapping Kubernetes Workers" \
 		$$PWD/docs/kubernetes-the-hard-way/09-bootstrapping-kubernetes-workers.md
 
+	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-10.scr \
+	  "KTHW 10 Configuring kubetcl for Remote Access" \
+		$$PWD/docs/kubernetes-the-hard-way/10-configuring-kubectl.md
+
 mokctl-docker: all
 	cp mokctl.deploy package/
 	sudo podman build --force-rm -t local/mokctl package

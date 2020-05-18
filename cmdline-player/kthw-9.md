@@ -1,27 +1,21 @@
->  **Kubernetes the Hard Way using My Own Kind**
-> 
-> View a [screencast and transcript](/cmdline-player/kthw-9.md)
-# Bootstrapping the Kubernetes Worker Nodes
+# KTHW 09 Bootstrapping Kubernetes Workers
 
-In this lab you will bootstrap three Kubernetes worker nodes. The following components will be installed on each node: [runc](https://github.com/opencontainers/runc), [container networking plugins](https://github.com/containernetworking/cni), [containerd](https://github.com/containerd/containerd), [kubelet](https://kubernetes.io/docs/admin/kubelet), and [kube-proxy](https://kubernetes.io/docs/concepts/cluster-administration/proxies).
+![](../docs/images/kthw-9.gif)
 
-## Prerequisites
+View the [screencast file](../cmdline-player/kthw-9.scr)
 
-The commands in this lab must be run on each controller instance: `kthw-master-1`, `kthw-master-2`, and `kthw-master-3`. Login to each controller instance using the `mokctl` command. Example:
+```bash
+# ---------------------------------------------------------
+# Kubernetes the Hard Way - using `mokctl` from My Own Kind
+# ---------------------------------------------------------
+# 09-bootstrapping-kubernetes-workers
+# Configure and start the kubernetes workers
 
-```
-mokctl exec kthw-master-1
-```
+# Provision the Kubernetes Worker Node
 
-### Running commands in parallel with tmux
+# We will use 'tmux' to log in to three containers and then
+# execute the commands in parallel.
 
-[tmux](https://github.com/tmux/tmux/wiki) can be used to run commands on multiple compute instances at the same time. See the [Running commands in parallel with tmux](01-prerequisites.md#running-commands-in-parallel-with-tmux) section in the Prerequisites lab.
-
-## Provisioning a Kubernetes Worker Node
-
-Use `tmux` to log in to all three masters at the same time:
-
-```
 tmux
 tmux set status off
 tmux split
@@ -33,50 +27,25 @@ sudo mokctl exec kthw-master-1
 sudo mokctl exec kthw-master-2
 ^aj
 sudo mokctl exec kthw-master-3
+# syncing screens
 ^a^x
+# Panes are now synced!
+# Clearing the screen
 clear
-```
-
-Change to root's home directory, where the certs are:
-
-```
 cd # <- All our certs are in root's home
-```
-
-```
-
-Install the OS dependencies:
-
-```
+# Install OS dependencies
 {
   yum -y install socat conntrack ipset
 }
-```
-
-> The socat binary enables support for the `kubectl port-forward` command.
-
-### Disable Swap
-
-By default the kubelet will fail to start if [swap](https://help.ubuntu.com/community/SwapFaq) is enabled. It is [recommended](https://github.com/kubernetes/kubernetes/issues/7294) that swap be disabled to ensure Kubernetes can provide proper resource allocation and quality of service.
-
-Verify if swap is enabled:
-
-```
+# Is swap on?
 swapon --show
-```
-
-If output is empty then swap is not enabled. If swap is enabled run the following command to disable swap immediately:
-
-```
+# Yes, and so it should be for a laptop.
+# `mokctl` uses a kubeadm configuration file to get components to ignore swap.
+# For this lab the following lines will trick kubernetes into thinking that swap is off.
 touch /swapoff
 mount --bind /swapoff /proc/swaps
-```
-
-> To ensure swap remains off after reboot consult your Linux distro documentation.
-
-### Download and Install Worker Binaries
-
-```
+# We don't want to turn swap off on our laptop.
+# Download the worker binaries
 wget https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.15.0/crictl-v1.15.0-linux-amd64.tar.gz \
   https://github.com/opencontainers/runc/releases/download/v1.0.0-rc8/runc.amd64 \
   https://github.com/containernetworking/plugins/releases/download/v0.8.2/cni-plugins-linux-amd64-v0.8.2.tgz \
@@ -84,11 +53,7 @@ wget https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.15.0/cric
   https://storage.googleapis.com/kubernetes-release/release/v1.15.3/bin/linux/amd64/kubectl \
   https://storage.googleapis.com/kubernetes-release/release/v1.15.3/bin/linux/amd64/kube-proxy \
   https://storage.googleapis.com/kubernetes-release/release/v1.15.3/bin/linux/amd64/kubelet
-```
-
-Create the installation directories:
-
-```
+# Create the installation directories:
 mkdir -p \
   /etc/cni/net.d \
   /opt/cni/bin \
@@ -96,11 +61,7 @@ mkdir -p \
   /var/lib/kube-proxy \
   /var/lib/kubernetes \
   /var/run/kubernetes
-```
-
-Install the worker binaries:
-
-```
+# Install the worker binaries:
 {
   systemctl disable crio
   mkdir containerd
@@ -112,26 +73,10 @@ Install the worker binaries:
   mv crictl kubectl kube-proxy kubelet runc /usr/local/bin/
   mv containerd/bin/* /bin/
 }
-```
-
-### Configure CNI Networking
-
-Work out the Pod CIDR range for the current compute instance.
-
-We will use the following subnets from the 10.200.0.0/16 range:
-
-*  10.200.1.0/24 for kthw-worker-1
-*  10.200.2.0/24 for kthw-worker-1
-*  10.200.3.0/24 for kthw-worker-1
-
-```
+# Work out the pod subnet for this host:
 POD_CIDR="10.200.$(hostname -s | grep -o '.$').0/24"
 echo $POD_CIDR
-```
-
-Create the `bridge` network configuration file:
-
-```
+# Write the CNI bridge configuration:
 cat <<EOF | tee /etc/cni/net.d/10-bridge.conf
 {
     "cniVersion": "0.3.1",
@@ -149,11 +94,7 @@ cat <<EOF | tee /etc/cni/net.d/10-bridge.conf
     }
 }
 EOF
-```
-
-Create the `loopback` network configuration file:
-
-```
+# Write the CNI loopback device config:
 cat <<EOF | tee /etc/cni/net.d/99-loopback.conf
 {
     "cniVersion": "0.3.1",
@@ -161,19 +102,8 @@ cat <<EOF | tee /etc/cni/net.d/99-loopback.conf
     "type": "loopback"
 }
 EOF
-```
-
-### Configure containerd
-
-See also: [Docker Storage Drivers](https://docs.docker.com/storage/storagedriver/select-storage-driver/).
-
-Create the `containerd` configuration file:
-
-```
+# Containerd config:
 mkdir -p /etc/containerd/
-```
-
-```
 cat << EOF | tee /etc/containerd/config.toml
 [plugins]
   [plugins.cri.containerd]
@@ -183,16 +113,13 @@ cat << EOF | tee /etc/containerd/config.toml
       runtime_engine = "/usr/local/bin/runc"
       runtime_root = ""
 EOF
-```
-
-Create the `containerd.service` systemd unit file:
-
-```
+# Create the systemd unit file:
 cat <<EOF | tee /etc/systemd/system/containerd.service
 [Unit]
 Description=containerd container runtime
 Documentation=https://containerd.io
 After=network.target
+
 [Service]
 ExecStartPre=/sbin/modprobe overlay
 ExecStart=/bin/containerd
@@ -204,24 +131,17 @@ OOMScoreAdjust=-999
 LimitNOFILE=1048576
 LimitNPROC=infinity
 LimitCORE=infinity
+
 [Install]
 WantedBy=multi-user.target
 EOF
-```
-
-### Configure the Kubelet
-
-```
+# Configure the kubelet:
 {
   mv ${HOSTNAME}-key.pem ${HOSTNAME}.pem /var/lib/kubelet/
   mv ${HOSTNAME}.kubeconfig /var/lib/kubelet/kubeconfig
   mv ca.pem /var/lib/kubernetes/
 }
-```
-
-Create the `kubelet-config.yaml` configuration file:
-
-```
+# Kubelet config:
 cat <<EOF | tee /var/lib/kubelet/kubelet-config.yaml
 kind: KubeletConfiguration
 apiVersion: kubelet.config.k8s.io/v1beta1
@@ -243,19 +163,14 @@ runtimeRequestTimeout: "15m"
 tlsCertFile: "/var/lib/kubelet/${HOSTNAME}.pem"
 tlsPrivateKeyFile: "/var/lib/kubelet/${HOSTNAME}-key.pem"
 EOF
-```
-
-> The `resolvConf` configuration is used to avoid loops when using CoreDNS for service discovery on systems running `systemd-resolved`. 
-
-Create the `kubelet.service` systemd unit file:
-
-```
+# Create systemd unit file for kubelet:
 cat <<EOF | tee /etc/systemd/system/kubelet.service
 [Unit]
 Description=Kubernetes Kubelet
 Documentation=https://github.com/kubernetes/kubernetes
 After=containerd.service
 Requires=containerd.service
+
 [Service]
 ExecStart=/usr/local/bin/kubelet \\
   --config=/var/lib/kubelet/kubelet-config.yaml \\
@@ -268,21 +183,14 @@ ExecStart=/usr/local/bin/kubelet \\
   --v=2
 Restart=on-failure
 RestartSec=5
+
 [Install]
 WantedBy=multi-user.target
 EOF
-```
-
-### Configure the Kubernetes Proxy
-
-```
+# Configure the kube-proxy:
 sceencast paste
 mv kube-proxy.kubeconfig /var/lib/kube-proxy/kubeconfig
-```
-
-Create the `kube-proxy-config.yaml` configuration file:
-
-```
+# Write the kube-proxy-config.yaml file:
 cat <<EOF | tee /var/lib/kube-proxy/kube-proxy-config.yaml
 kind: KubeProxyConfiguration
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
@@ -291,64 +199,37 @@ clientConnection:
 mode: "iptables"
 clusterCIDR: "10.200.0.0/16"
 EOF
-```
-
-Create the `kube-proxy.service` systemd unit file:
-
-```
+# Write the systemd unit file for kube-proxy:
 cat <<EOF | tee /etc/systemd/system/kube-proxy.service
 [Unit]
 Description=Kubernetes Kube Proxy
 Documentation=https://github.com/kubernetes/kubernetes
+
 [Service]
 ExecStart=/usr/local/bin/kube-proxy \\
   --config=/var/lib/kube-proxy/kube-proxy-config.yaml
 Restart=on-failure
 RestartSec=5
+
 [Install]
 WantedBy=multi-user.target
 EOF
-```
-
-### Start the Worker Services
-
-```
+# Start worker services:
 {
   systemctl daemon-reload
   systemctl enable containerd kubelet kube-proxy
   systemctl start containerd kubelet kube-proxy
 }
-```
-
-> Remember to run the above commands on each worker node: `kthw-worker-1`, `kthw-worker-2`, and `kthw-worker-3`.
-
-## Verification
-
-> The compute instances created in this tutorial will not have permission to complete this section. Run the following commands from the same machine used to create the compute instances.
-
-List the registered Kubernetes nodes:
-
-```
+# Verification - list the nodes:
 kubectl get nodes --kubeconfig admin.kubeconfig
-```
-
-> output
-
-```
-NAME       STATUS   ROLES    AGE   VERSION
-worker-0   Ready    <none>   15s   v1.15.3
-worker-1   Ready    <none>   15s   v1.15.3
-worker-2   Ready    <none>   15s   v1.15.3
-```
-
-Log out of the masters.
-
-```
+# It works!
+# Log out of the masters
 ^az
 exit
 exit
-```
+# All done :)
 
+# -----------------------------------------------
+# Next: Bootstrapping the Kubernetes Worker Nodes
+# -----------------------------------------------
 ```
-
-Next: [Bootstrapping the Kubernetes Worker Nodes](09-bootstrapping-kubernetes-workers.md)

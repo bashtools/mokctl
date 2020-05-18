@@ -112,7 +112,7 @@ These documents and screencasts show how to use `mokctl` on Fedora 32, with Podm
 | [06-data-encryption-keys.md](/docs/kubernetes-the-hard-way/06-data-encryption-keys.md)                                 | [kthw-6.md](/cmdline-player/kthw-6.md) |
 | [07-bootstrapping-etcd.md](/docs/kubernetes-the-hard-way/07-bootstrapping-etcd.md)                                     | [kthw-7.md](/cmdline-player/kthw-7.md) |
 | [08-bootstrapping-kubernetes-controllers.md](/docs/kubernetes-the-hard-way/08-bootstrapping-kubernetes-controllers.md) | [kthw-8.md](/cmdline-player/kthw-8.md) |
-| ...                                                                                                                    |                                        |
+| [09-bootstrapping-kubernetes-workers.md](/docs/kubernetes-the-hard-way/09-bootstrapping-kubernetes-workers.md)         | [kthw-9.md](/cmdline-player/kthw-9.md) |
 | ...                                                                                                                    |                                        |
 | ...                                                                                                                    |                                        |
 | ...                                                                                                                    |                                        |

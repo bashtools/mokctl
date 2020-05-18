@@ -1,7 +1,6 @@
 >  **Kubernetes the Hard Way using My Own Kind**
 > 
 > View a [screencast and transcript](/cmdline-player/kthw-10.md)
-
 # Configuring kubectl for Remote Access
 
 In this lab you will generate a kubeconfig file for the `kubectl` command line utility based on the `admin` user credentials.
@@ -16,6 +15,12 @@ First we need to log back in to the podman container we created earlier:
 
 ```
 podman exec -ti kthw bash
+```
+
+Change to the `/certs` directory, which is volume mounted to the host:
+
+```
+cd /certs
 ```
 
 Generate a kubeconfig file suitable for authenticating as the `admin` user:
@@ -65,10 +70,10 @@ kubectl get nodes
 > output
 
 ```
-NAME       STATUS   ROLES    AGE    VERSION
-worker-0   Ready    <none>   2m9s   v1.15.3
-worker-1   Ready    <none>   2m9s   v1.15.3
-worker-2   Ready    <none>   2m9s   v1.15.3
+NAME            STATUS   ROLES    AGE    VERSION
+kthw-worker-1   Ready    <none>   2m9s   v1.15.3
+kthw-worker-2   Ready    <none>   2m9s   v1.15.3
+kthw-worker-3   Ready    <none>   2m9s   v1.15.3
 ```
 
 Next: [Provisioning Pod Network Routes](11-pod-network-routes.md)

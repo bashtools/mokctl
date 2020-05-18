@@ -13,6 +13,7 @@ screencast paste
 # 10-configuring-kubectl.md
 screencast paste
 # Configure kubectl for accessing outside of the cluster
+screencast prompt %$#
 
 .MD # Configuring kubectl for Remote Access
 .MD 
@@ -29,6 +30,13 @@ screencast paste
 .MD ```
 # Log into the podman container:
 podman exec -ti kthw bash
+.MD ```
+.MD 
+.MD Change to the `/certs` directory, which is volume mounted to the host:
+.MD
+.MD ```
+# Change to the directory where the certs were copied:
+cd /certs
 .MD ```
 .MD
 .MD Generate a kubeconfig file suitable for authenticating as the `admin` user:
@@ -58,11 +66,17 @@ screencast paste end
 .MD ```
 .MD 
 .MD ## Verification
+
+# Verification
+
 .MD 
 .MD Check the health of the remote Kubernetes cluster:
 .MD 
 .MD ```
-.MD kubectl get componentstatuses
+# Use kubectl to check cluster health:
+screencast paste
+kubectl get componentstatuses
+# Looks good :)
 .MD ```
 .MD 
 .MD > output
@@ -79,19 +93,21 @@ screencast paste end
 .MD List the nodes in the remote Kubernetes cluster:
 .MD 
 .MD ```
-.MD kubectl get nodes
+# List nodes:
+screencast paste
+kubectl get nodes
+# Great!
 .MD ```
 .MD 
 .MD > output
 .MD 
 .MD ```
-.MD NAME       STATUS   ROLES    AGE    VERSION
-.MD worker-0   Ready    <none>   2m9s   v1.15.3
-.MD worker-1   Ready    <none>   2m9s   v1.15.3
-.MD worker-2   Ready    <none>   2m9s   v1.15.3
+.MD NAME            STATUS   ROLES    AGE    VERSION
+.MD kthw-worker-1   Ready    <none>   2m9s   v1.15.3
+.MD kthw-worker-2   Ready    <none>   2m9s   v1.15.3
+.MD kthw-worker-3   Ready    <none>   2m9s   v1.15.3
 .MD ```
 .MD 
-
 
 # -----------------------------------------------
 # Next: Bootstrapping the Kubernetes Worker Nodes

@@ -1,7 +1,6 @@
 >  **Kubernetes the Hard Way using My Own Kind**
 > 
 > View a [screencast and transcript](/cmdline-player/kthw-10.md)
-
 # Configuring kubectl for Remote Access
 
 In this lab you will generate a kubeconfig file for the `kubectl` command line utility based on the `admin` user credentials.

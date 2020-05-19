@@ -43,7 +43,7 @@ docs:
 		$$PWD/docs/kubernetes-the-hard-way/10-configuring-kubectl.md
 
 	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-11.scr \
-	  "KTHW 10 Deploying the DNS Cluster Add-on" \
+	  "KTHW 11 Deploying the DNS Cluster Add-on" \
 		$$PWD/docs/kubernetes-the-hard-way/11-dns-addon.md
 
 mokctl-docker: all

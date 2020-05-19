@@ -1,4 +1,4 @@
-# KTHW 10 Deploying the DNS Cluster Add-on
+# KTHW 11 Deploying the DNS Cluster Add-on
 
 ![](../docs/images/kthw-11.gif)
 

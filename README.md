@@ -97,9 +97,9 @@ To see how `mokctl` was created go to the [docs section](/docs/README.md).
 
 ## Kubernetes the Hard Way - on your laptop
 
-These documents and screencasts show how to use `mokctl` on Fedora 32, with Podman, to create a 6 node kubernetes cluster and external load balancer on your laptop or desktop computer.
+A remake of the original [Bootstrap Kubernetes the hard way on Google Cloud Platform. No scripts.](https://github.com/kelseyhightower/kubernetes-the-hard-way) with slight configuration changes, only where necessary, to make it work with My Own Kind.
 
-> 
+Mokctl is used to create seven container nodes: a load balancer, 3 controller nodes and 3 worker nodes without melting your laptop.
 
 | Document                                                                                                               | Transcript + Screencast                  |
 | ---------------------------------------------------------------------------------------------------------------------- |:----------------------------------------:|

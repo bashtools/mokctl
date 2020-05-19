@@ -114,9 +114,9 @@ Mokctl is used to create seven container nodes: a load balancer, 3 controller no
 | [08-bootstrapping-kubernetes-controllers.md](/docs/kubernetes-the-hard-way/08-bootstrapping-kubernetes-controllers.md) | [kthw-8.md](/cmdline-player/kthw-8.md)   |
 | [09-bootstrapping-kubernetes-workers.md](/docs/kubernetes-the-hard-way/09-bootstrapping-kubernetes-workers.md)         | [kthw-9.md](/cmdline-player/kthw-9.md)   |
 | [10-configuring-kubectl.md](/docs/kubernetes-the-hard-way/10-configuring-kubectl.md)                                   | [kthw-10.md](/cmdline-player/kthw-10.md) |
-| [11-dns-addon.md](/docs/kubernetes-the-hard-way/11-dns-addon.md)                                                       | [kthw-11.md](/cmdline-player/kthw-11.md) |
+| [11-pod-network-routes.md](/docs/kubernetes-the-hard-way/11-pod-network-routes.md)                                     | [kthw-11.md](/cmdline-player/kthw-11.md) |
 | [12-dns-addon.md](/docs/kubernetes-the-hard-way/12-dns-addon.md)                                                       | [kthw-12.md](/cmdline-player/kthw-12.md) |
-| [13-smoke-test](/docs/kubernetes-the-hard-way/13-smoke-test)                                                           | [kthw-13.md](/cmdline-player/kthw-13.md) |
+| [13-smoke-test](/docs/kubernetes-the-hard-way/13-smoke-test.md)                                                        | [kthw-13.md](/cmdline-player/kthw-13.md) |
 | [14-cleanup.md](/docs/kubernetes-the-hard-way/14-cleanup.md)                                                           | [kthw-14.md](/cmdline-player/kthw-14.md) |
 
 ## Contributing

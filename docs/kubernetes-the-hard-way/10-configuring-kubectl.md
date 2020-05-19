@@ -1,6 +1,7 @@
 >  **Kubernetes the Hard Way using My Own Kind**
 > 
 > View a [screencast and transcript](/cmdline-player/kthw-10.md)
+
 # Configuring kubectl for Remote Access
 
 In this lab you will generate a kubeconfig file for the `kubectl` command line utility based on the `admin` user credentials.
@@ -74,6 +75,12 @@ NAME            STATUS   ROLES    AGE    VERSION
 kthw-worker-1   Ready    <none>   2m9s   v1.15.3
 kthw-worker-2   Ready    <none>   2m9s   v1.15.3
 kthw-worker-3   Ready    <none>   2m9s   v1.15.3
+```
+
+Finally, log out of the container:
+
+```
+exit
 ```
 
 Next: [Deploying the DNS Cluster Add-on](11-dns-addon.md)

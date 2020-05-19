@@ -1,7 +1,7 @@
 .MD >  **Kubernetes the Hard Way using My Own Kind**
 .MD > 
 .MD > View a [screencast and transcript](/cmdline-player/kthw-10.md)
-screencast delay 10
+screencast delay 18
 screencast clear
 screencast paste
 # ---------------------------------------------------------
@@ -108,6 +108,12 @@ kubectl get nodes
 .MD kthw-worker-3   Ready    <none>   2m9s   v1.15.3
 .MD ```
 .MD 
+.MD Finally, log out of the container:
+.MD
+.MD ```
+exit
+.MD ```
+.MD
 
 # All done :)
 

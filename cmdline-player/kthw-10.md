@@ -43,6 +43,7 @@ kubectl get componentstatuses
 # List nodes:
 kubectl get nodes
 # Great!
+exit
 
 # All done :)
 

@@ -53,8 +53,6 @@ rm -rf kthw-certs
 ip ro | grep 10.200 | xargs -d'\n' -n1 sudo bash -c eval ip ro del
 .MD ```
 .MD 
-.MD ```
-.MD 
 
 # All done :)
 

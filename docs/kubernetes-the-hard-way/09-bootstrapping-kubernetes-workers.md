@@ -88,7 +88,48 @@ swapon --show
 
 Swap should now return no output, meaning, it's off.
 
-> To ensure swap remains off after reboot consult your Linux distro documentation.
+> Swap is not actually turned off, since you don't want to do that on your laptop.
+
+### Configure the `/etc/hosts` file
+
+We need to add name-to-IP DNS resolution for the 'nodes' in the cluster. Adding the mappings to the `/etc/hosts` file is a simple way to do this. Another way would be to add DNS entries to a DNS server on your local network.
+
+Set some variables to hold the masters IP addresses:
+
+```
+MASTER1=$(grep kthw-master-1 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER1
+MASTER2=$(grep kthw-master-2 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER2
+MASTER3=$(grep kthw-master-3 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER3
+```
+
+Set some variables to hold the workers IP addresses:
+
+```
+WORKER1=$(grep kthw-worker-1 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $WORKER1
+WORKER2=$(grep kthw-worker-2 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $WORKER2
+WORKER3=$(grep kthw-worker-3 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $WORKER3
+```
+
+Add names to `/etc/hosts`:
+
+```
+{
+cat <<EnD | tee -a /etc/hosts
+$MASTER1 kthw-master-1
+$MASTER2 kthw-master-2
+$MASTER3 kthw-master-3
+$WORKER1 kthw-worker-1
+$WORKER2 kthw-worker-2
+$WORKER3 kthw-worker-3
+EnD
+}
+```
 
 ### Download and Install Worker Binaries
 
@@ -187,6 +228,8 @@ Create the `containerd` configuration file:
 ```
 mkdir -p /etc/containerd/
 ```
+
+Write a default configuration using the 'native' storage driver:
 
 ```
 containerd config default | sed 's/overlayfs/native/' >/etc/containerd/config.toml

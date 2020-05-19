@@ -67,6 +67,47 @@ Install the Kubernetes binaries:
 }
 ```
 
+### Configure the `/etc/hosts` file
+
+We need to add name-to-IP DNS resolution for the 'nodes' in the cluster. Adding the mappings to the `/etc/hosts` file is a simple way to do this. Another way would be to add DNS entries to a DNS server on your local network.
+
+Set some variables to hold the masters IP addresses:
+
+```
+MASTER1=$(grep kthw-master-1 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER1
+MASTER2=$(grep kthw-master-2 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER2
+MASTER3=$(grep kthw-master-3 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER3
+```
+
+Set some variables to hold the workers IP addresses:
+
+```
+WORKER1=$(grep kthw-worker-1 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $WORKER1
+WORKER2=$(grep kthw-worker-2 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $WORKER2
+WORKER3=$(grep kthw-worker-3 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $WORKER3
+```
+
+Add names to `/etc/hosts`:
+
+```
+{
+cat <<EnD | tee -a /etc/hosts
+$MASTER1 kthw-master-1
+$MASTER2 kthw-master-2
+$MASTER3 kthw-master-3
+$WORKER1 kthw-worker-1
+$WORKER2 kthw-worker-2
+$WORKER3 kthw-worker-3
+EnD
+}
+```
+
 ### Configure the Kubernetes API Server
 
 ```
@@ -84,18 +125,6 @@ The instance internal IP address will be used to advertise the API Server to mem
 INTERNAL_IP=$(ip ro get default 8.8.8.8 | head -n 1 | cut -f 7 -d " ")
 echo $INTERNAL_IP
 ```
-
-Set some variables to hold the master's IP addresses:
-
-```
-MASTER1=$(grep kthw-master-1 /root/cluster-list.txt | awk '{ print $NF; }')
-echo $MASTER1
-MASTER2=$(grep kthw-master-2 /root/cluster-list.txt | awk '{ print $NF; }')
-echo $MASTER2
-MASTER3=$(grep kthw-master-3 /root/cluster-list.txt | awk '{ print $NF; }')
-echo $MASTER3
-```
-
 Create the `kube-apiserver.service` systemd unit file:
 
 ```

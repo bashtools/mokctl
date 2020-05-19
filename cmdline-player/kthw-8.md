@@ -46,6 +46,34 @@ wget "https://storage.googleapis.com/kubernetes-release/release/v1.15.3/bin/linu
   mv kube-apiserver kube-controller-manager kube-scheduler kubectl /usr/local/bin/
 }
 
+# Configure /etc/hosts
+
+# Set master IP variables
+MASTER1=$(grep kthw-master-1 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER1
+MASTER2=$(grep kthw-master-2 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER2
+MASTER3=$(grep kthw-master-3 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER3
+# Set worker IP variables
+WORKER1=$(grep kthw-worker-1 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $WORKER1
+WORKER2=$(grep kthw-worker-2 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $WORKER2
+WORKER3=$(grep kthw-worker-3 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $WORKER3
+# write /etc/hosts
+{
+cat <<EnD | tee -a /etc/hosts
+$MASTER1 kthw-master-1
+$MASTER2 kthw-master-2
+$MASTER3 kthw-master-3
+$WORKER1 kthw-worker-1
+$WORKER2 kthw-worker-2
+$WORKER3 kthw-worker-3
+EnD
+}
+
 # Configure the Kubernetes API Server
 
 {
@@ -58,13 +86,6 @@ wget "https://storage.googleapis.com/kubernetes-release/release/v1.15.3/bin/linu
 INTERNAL_IP=$(ip ro get default 8.8.8.8 | head -n 1 | cut -f 7 -d " ")
 echo $INTERNAL_IP
 # Create the kube-apiserver.service systemd unit file:
-MASTER1=$(grep kthw-master-1 /root/cluster-list.txt | awk '{ print $NF; }')
-echo $MASTER1
-MASTER2=$(grep kthw-master-2 /root/cluster-list.txt | awk '{ print $NF; }')
-echo $MASTER2
-MASTER3=$(grep kthw-master-3 /root/cluster-list.txt | awk '{ print $NF; }')
-echo $MASTER3
-
 cat <<EOF | tee /etc/systemd/system/kube-apiserver.service
 [Unit]
 Description=Kubernetes API Server

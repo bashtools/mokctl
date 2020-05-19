@@ -82,4 +82,4 @@ Finally, log out of the container:
 exit
 ```
 
-Next: [Deploying the DNS Cluster Add-on](11-dns-addon.md)
+Next: [Provisioning Pod Network Routes](11-pod-network-routes.md)

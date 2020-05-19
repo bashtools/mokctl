@@ -10,121 +10,85 @@ screencast paste
 screencast paste
 # ---------------------------------------------------------
 screencast paste
-# 10-configuring-kubectl.md
+# 11-pod-network-routes.md
 screencast paste
-# Deploying the DNS Cluster Add-on
+# Provisioning Pod Network Routes
 screencast prompt %$#
 
-.MD # Deploying the DNS Cluster Add-on
-.MD 
-.MD In this lab you will deploy the [DNS add-on](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/) which provides DNS based service discovery, backed by [CoreDNS](https://coredns.io/), to applications running inside the Kubernetes cluster.
-.MD 
-.MD ## The DNS Cluster Add-on
-.MD 
-.MD First we need to log back in to the podman container we created earlier:
-.MD
-.MD ```
-# Log into the podman container:
-screencast paste
-podman exec -ti kthw bash
-.MD ```
-.MD 
-.MD Deploy the `coredns` cluster add-on:
-.MD 
-.MD ```
-# Deploy coredns:
-screencast paste
-kubectl apply -f https://storage.googleapis.com/kubernetes-the-hard-way/coredns.yaml
-.MD ```
-.MD 
-.MD > output
-.MD 
-.MD ```
-.MD serviceaccount/coredns created
-.MD clusterrole.rbac.authorization.k8s.io/system:coredns created
-.MD clusterrolebinding.rbac.authorization.k8s.io/system:coredns created
-.MD configmap/coredns created
-.MD deployment.extensions/coredns created
-.MD service/kube-dns created
-.MD ```
-.MD 
-.MD List the pods created by the `kube-dns` deployment:
-.MD 
-.MD ```
-# List kube-dns pods:
-screencast paste
-kubectl get pods -l k8s-app=kube-dns -n kube-system
-.MD ```
-.MD 
-.MD > output
-.MD 
-.MD ```
-.MD NAME                       READY   STATUS    RESTARTS   AGE
-.MD coredns-699f8ddd77-94qv9   1/1     Running   0          20s
-.MD coredns-699f8ddd77-gtcgb   1/1     Running   0          20s
-.MD ```
-.MD 
-.MD ## Verification
+# Commands here should be run on the host - your laptop.
+# Don't 'log in' to any containers.
 
-# Verification
-
+.MD # Provisioning Pod Network Routes
 .MD 
-.MD Create a `busybox` deployment:
+.MD Pods scheduled to a node receive an IP address from the node's Pod CIDR range. At this point pods can not communicate with other pods running on different nodes due to missing network routes to internal subnets on other worker nodes.
 .MD 
-.MD ```
-# Create a busybox deployment:
-screencast paste
-kubectl run --generator=run-pod/v1 busybox --image=busybox:1.28 --command -- sleep 3600
-.MD ```
+.MD In this lab you will create a route on the host for each worker node that maps the node's Pod CIDR range to the node's internal IP address.
 .MD 
-.MD List the pod created by the `busybox` deployment:
+.MD > There are [other ways](https://kubernetes.io/docs/concepts/cluster-administration/networking/#how-to-achieve-this) to implement the Kubernetes networking model.
 .MD 
-.MD ```
-# List the created pods:
-screencast paste
-kubectl get pods -l run=busybox
-.MD ```
+.MD ## The Routing Table
 .MD 
-.MD > output
+.MD In this section you will gather the information required to create routes in the host's networking stack on your laptop.
+.MD 
+.MD Print and save variables for the internal IP addresses for each worker instance:
 .MD 
 .MD ```
-.MD NAME      READY   STATUS    RESTARTS   AGE
-.MD busybox   1/1     Running   0          3s
-.MD ```
-.MD 
-.MD Retrieve the full name of the `busybox` pod:
-.MD 
-.MD ```
-# Get its name:
-screencast paste
-POD_NAME=$(kubectl get pods -l run=busybox -o jsonpath="{.items[0].metadata.name}")
-echo $POD_NAME
-.MD ```
-.MD 
-.MD Execute a DNS lookup for the `kubernetes` service inside the `busybox` pod:
-.MD 
-.MD ```
-# Test DNS
-screencast paste
-kubectl exec -ti $POD_NAME -- nslookup kubernetes
+screencast sleep 1
+# Set worker IP variables
+screencast sleep 1
+screencast paste begin
+{
+WORKER1=$(sudo podman inspect kthw-worker-1 --format "{{.NetworkSettings.IPAddress}}")
+WORKER2=$(sudo podman inspect kthw-worker-2 --format "{{.NetworkSettings.IPAddress}}")
+WORKER3=$(sudo podman inspect kthw-worker-3 --format "{{.NetworkSettings.IPAddress}}")
+echo $WORKER1
+echo $WORKER2
+echo $WORKER3
+}
+screencast paste end
+screencast sleep 3
 .MD ```
 .MD 
 .MD > output
 .MD 
 .MD ```
-.MD Server:    10.32.0.10
-.MD Address 1: 10.32.0.10 kube-dns.kube-system.svc.cluster.local
-.MD 
-.MD Name:      kubernetes
-.MD Address 1: 10.32.0.1 kubernetes.default.svc.cluster.local
+.MD 10.88.1.43
+.MD 10.88.1.44
+.MD 10.88.1.45
 .MD ```
 .MD 
-# All looks good :)
-.MD Exit from the podman container:
-.MD
+.MD ## Routes
+.MD 
+.MD Create network routes for each worker instance:
+.MD 
 .MD ```
-exit
+# create the routes
+screencast sleep 1
+screencast paste begin
+{
+  sudo ip ro add 10.200.1.0/24 via $WORKER1
+  sudo ip ro add 10.200.2.0/24 via $WORKER2
+  sudo ip ro add 10.200.3.0/24 via $WORKER3
+}
+screencast paste end
 .MD ```
+.MD 
+.MD List the routes in the `kubernetes-the-hard-way` network:
+.MD 
+.MD ```
+# Check the routes:
+ip ro | grep 10.200
+# Looks good
+.MD ```
+.MD 
+.MD > output
+.MD 
+.MD ```
+.MD 10.200.1.0/24 via 10.88.1.43 dev cni-podman0 
+.MD 10.200.2.0/24 via 10.88.1.44 dev cni-podman0 
+.MD 10.200.3.0/24 via 10.88.1.45 dev cni-podman0 
+.MD ```
+.MD 
 
 # All done :)
 
@@ -132,4 +96,4 @@ exit
 # Next: Deploying the DNS Cluster Add-on
 screencast paste
 # --------------------------------------
-.MD Next: [Smoke Test](13-smoke-test.md)
+.MD Next: [Deploying the DNS Cluster Add-on](12-dns-addon.md)

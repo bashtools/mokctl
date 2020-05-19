@@ -53,6 +53,35 @@ mount --bind /swapoff /proc/swaps
 # Is swap on?
 swapon --show
 # Seems to be off now :)
+
+# Configure /etc/hosts
+
+# Set master IP variables
+MASTER1=$(grep kthw-master-1 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER1
+MASTER2=$(grep kthw-master-2 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER2
+MASTER3=$(grep kthw-master-3 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER3
+# Set worker IP variables
+WORKER1=$(grep kthw-worker-1 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $WORKER1
+WORKER2=$(grep kthw-worker-2 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $WORKER2
+WORKER3=$(grep kthw-worker-3 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $WORKER3
+# write /etc/hosts
+{
+cat <<EnD | tee -a /etc/hosts
+$MASTER1 kthw-master-1
+$MASTER2 kthw-master-2
+$MASTER3 kthw-master-3
+$WORKER1 kthw-worker-1
+$WORKER2 kthw-worker-2
+$WORKER3 kthw-worker-3
+EnD
+}
+
 # Download the worker binaries
 wget https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.15.0/crictl-v1.15.0-linux-amd64.tar.gz \
   https://github.com/opencontainers/runc/releases/download/v1.0.0-rc8/runc.amd64 \
@@ -111,6 +140,7 @@ cat <<EOF | tee /etc/cni/net.d/99-loopback.conf
 EOF
 # Containerd config:
 mkdir -p /etc/containerd/
+# Overlayfs won't work, use VFS (called 'native' now):
 containerd config default | sed 's/overlayfs/native/' >/etc/containerd/config.toml
 # Create the systemd unit file:
 cat <<EOF | tee /etc/systemd/system/containerd.service

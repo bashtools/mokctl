@@ -1,4 +1,4 @@
-# KTHW 11 Deploying the DNS Cluster Add-on
+# KTHW 11 Provisioning Pod Network Routes
 
 ![](../docs/images/kthw-11.gif)
 
@@ -8,29 +8,30 @@ View the [screencast file](../cmdline-player/kthw-11.scr)
 # ---------------------------------------------------------
 # Kubernetes the Hard Way - using `mokctl` from My Own Kind
 # ---------------------------------------------------------
-# 10-configuring-kubectl.md
-# Deploying the DNS Cluster Add-on
+# 11-pod-network-routes.md
+# Provisioning Pod Network Routes
 
-# Log into the podman container:
-podman exec -ti kthw bash
-# Deploy coredns:
-kubectl apply -f https://storage.googleapis.com/kubernetes-the-hard-way/coredns.yaml
-# List kube-dns pods:
-kubectl get pods -l k8s-app=kube-dns -n kube-system
+# Commands here should be run on the host - your laptop.
+# Don't 'log in' to any containers.
 
-# Verification
-
-# Create a busybox deployment:
-kubectl run --generator=run-pod/v1 busybox --image=busybox:1.28 --command -- sleep 3600
-# List the created pods:
-kubectl get pods -l run=busybox
-# Get its name:
-POD_NAME=$(kubectl get pods -l run=busybox -o jsonpath="{.items[0].metadata.name}")
-echo $POD_NAME
-# Test DNS
-kubectl exec -ti $POD_NAME -- nslookup kubernetes
-# All looks good :)
-exit
+# Set worker IP variables
+{
+WORKER1=$(sudo podman inspect kthw-worker-1 --format "{{.NetworkSettings.IPAddress}}")
+WORKER2=$(sudo podman inspect kthw-worker-2 --format "{{.NetworkSettings.IPAddress}}")
+WORKER3=$(sudo podman inspect kthw-worker-3 --format "{{.NetworkSettings.IPAddress}}")
+echo $WORKER1
+echo $WORKER2
+echo $WORKER3
+}
+# create the routes
+{
+  sudo ip ro add 10.200.1.0/24 via $WORKER1
+  sudo ip ro add 10.200.2.0/24 via $WORKER2
+  sudo ip ro add 10.200.3.0/24 via $WORKER3
+}
+# Check the routes:
+ip ro | grep 10.200
+# Looks good
 
 # All done :)
 

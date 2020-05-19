@@ -99,7 +99,7 @@ To see how `mokctl` was created go to the [docs section](/docs/README.md).
 
 These documents and screencasts show how to use `mokctl` on Fedora 32, with Podman, to create a 6 node kubernetes cluster and external load balancer on your laptop or desktop computer.
 
-> NOTE: This is in progress
+> 
 
 | Document                                                                                                               | Transcript + Screencast                  |
 | ---------------------------------------------------------------------------------------------------------------------- |:----------------------------------------:|
@@ -115,7 +115,9 @@ These documents and screencasts show how to use `mokctl` on Fedora 32, with Podm
 | [09-bootstrapping-kubernetes-workers.md](/docs/kubernetes-the-hard-way/09-bootstrapping-kubernetes-workers.md)         | [kthw-9.md](/cmdline-player/kthw-9.md)   |
 | [10-configuring-kubectl.md](/docs/kubernetes-the-hard-way/10-configuring-kubectl.md)                                   | [kthw-10.md](/cmdline-player/kthw-10.md) |
 | [11-dns-addon.md](/docs/kubernetes-the-hard-way/11-dns-addon.md)                                                       | [kthw-11.md](/cmdline-player/kthw-11.md) |
-| ...                                                                                                                    |                                          |
+| [12-dns-addon.md](/docs/kubernetes-the-hard-way/12-dns-addon.md)                                                       | [kthw-12.md](/cmdline-player/kthw-12.md) |
+| [13-smoke-test](/docs/kubernetes-the-hard-way/13-smoke-test)                                                           | [kthw-13.md](/cmdline-player/kthw-13.md) |
+| [14-cleanup.md](/docs/kubernetes-the-hard-way/14-cleanup.md)                                                           | [kthw-14.md](/cmdline-player/kthw-14.md) |
 
 ## Contributing
 

@@ -133,8 +133,71 @@ swapon --show
 .MD 
 .MD Swap should now return no output, meaning, it's off.
 .MD 
-.MD > To ensure swap remains off after reboot consult your Linux distro documentation.
+.MD > Swap is not actually turned off, since you don't want to do that on your laptop.
+.MD
+
+# Configure /etc/hosts
+
+.MD ### Configure the `/etc/hosts` file
 .MD 
+screencast delay 8
+.MD We need to add name-to-IP DNS resolution for the 'nodes' in the cluster. Adding the mappings to the `/etc/hosts` file is a simple way to do this. Another way would be to add DNS entries to a DNS server on your local network.
+screencast delay 18
+.MD
+.MD Set some variables to hold the masters IP addresses:
+.MD
+.MD ```
+screencast sleep 1
+# Set master IP variables
+screencast sleep 1
+screencast paste
+MASTER1=$(grep kthw-master-1 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER1
+screencast paste
+MASTER2=$(grep kthw-master-2 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER2
+screencast paste
+MASTER3=$(grep kthw-master-3 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $MASTER3
+screencast sleep 1
+.MD ```
+.MD
+.MD Set some variables to hold the workers IP addresses:
+.MD
+.MD ```
+screencast sleep 1
+# Set worker IP variables
+screencast paste
+WORKER1=$(grep kthw-worker-1 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $WORKER1
+screencast paste
+WORKER2=$(grep kthw-worker-2 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $WORKER2
+screencast paste
+WORKER3=$(grep kthw-worker-3 /root/cluster-list.txt | awk '{ print $NF; }')
+echo $WORKER3
+screencast sleep 1
+.MD ```
+.MD
+.MD Add names to `/etc/hosts`:
+.MD
+.MD ```
+# write /etc/hosts
+screencast paste begin
+{
+cat <<EnD | tee -a /etc/hosts
+$MASTER1 kthw-master-1
+$MASTER2 kthw-master-2
+$MASTER3 kthw-master-3
+$WORKER1 kthw-worker-1
+$WORKER2 kthw-worker-2
+$WORKER3 kthw-worker-3
+EnD
+}
+screencast paste end
+.MD ```
+.MD
+
 .MD ### Download and Install Worker Binaries
 .MD 
 .MD ```
@@ -253,7 +316,10 @@ screencast paste
 mkdir -p /etc/containerd/
 .MD ```
 .MD 
+.MD Write a default configuration using the 'native' storage driver:
+.MD
 .MD ```
+# Overlayfs won't work, use VFS (called 'native' now):
 screencast paste begin
 containerd config default | sed 's/overlayfs/native/' >/etc/containerd/config.toml
 screencast paste end

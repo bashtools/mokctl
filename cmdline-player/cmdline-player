@@ -165,7 +165,8 @@ kill_old_gnu_screencasts() {
 choose_recording_window() {
   printf 'Click on the window to be recorded\n'
   eval "$(awk 'BEGIN  {X=0;Y=0;} /Abs.*left X/ {X=$NF;} /Abs.*left Y/ {Y=$NF;} /Width/ {W=$NF;} /Height/ {H=$NF;} END { printf "X=%d\nY=%d\nW=%d\nH=%d\n",X,Y,W,H; }' \
-    <<<"$(xwininfo -name "Kubernetes the Hard Way - using My Own Kind")")"
+    <<<"$(xwininfo)")"
+  #  <<<"$(xwininfo -name "Kubernetes the Hard Way - using My Own Kind")")"
 }
 
 start_recording() {

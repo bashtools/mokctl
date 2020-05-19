@@ -35,5 +35,3 @@ Delete the host routing rules:
 ip ro | grep 10.200 | xargs -d'\n' -n1 sudo bash -c eval ip ro del
 ```
 
-```
-

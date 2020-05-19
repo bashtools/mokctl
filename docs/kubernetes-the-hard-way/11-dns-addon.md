@@ -1,6 +1,6 @@
 >  **Kubernetes the Hard Way using My Own Kind**
 > 
-> View a [screencast and transcript](/cmdline-player/kthw-10.md)
+> View a [screencast and transcript](/cmdline-player/kthw-11.md)
 # Deploying the DNS Cluster Add-on
 
 In this lab you will deploy the [DNS add-on](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/) which provides DNS based service discovery, backed by [CoreDNS](https://coredns.io/), to applications running inside the Kubernetes cluster.

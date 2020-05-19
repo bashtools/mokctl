@@ -43,8 +43,20 @@ docs:
 		$$PWD/docs/kubernetes-the-hard-way/10-configuring-kubectl.md
 
 	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-11.scr \
-	  "KTHW 11 Deploying the DNS Cluster Add-on" \
-		$$PWD/docs/kubernetes-the-hard-way/11-dns-addon.md
+	  "KTHW 11 Provisioning Pod Network Routes" \
+		$$PWD/docs/kubernetes-the-hard-way/11-pod-network-routes.md
+
+	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-12.scr \
+	  "KTHW 12 Deploying the DNS Cluster Add-on" \
+		$$PWD/docs/kubernetes-the-hard-way/12-dns-addon.md
+
+	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-13.scr \
+	  "KTHW 13 Smoke Test" \
+		$$PWD/docs/kubernetes-the-hard-way/13-smoke-test.md
+
+	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-14.scr \
+	  "KTHW 14 Cleaning Up" \
+		$$PWD/docs/kubernetes-the-hard-way/14-cleanup.md
 
 mokctl-docker: all
 	cp mokctl.deploy package/

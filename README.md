@@ -99,7 +99,9 @@ To see how `mokctl` was created go to the [docs section](/docs/README.md).
 
 A remake of the original [Bootstrap Kubernetes the hard way on Google Cloud Platform. No scripts.](https://github.com/kelseyhightower/kubernetes-the-hard-way) with slight configuration changes, only where necessary, to make it work with My Own Kind.
 
-Mokctl is used to create seven container nodes: a load balancer, 3 controller nodes and 3 worker nodes without melting your laptop.
+The labs are guaranteed to work if using the same setup as used in the screencasts (Fedora 32 and Podman), as the documentation, screencasts and transcripts are all created by  `cmdline-player`, which takes about 50 minutes.
+
+Mokctl is used to create seven bare container nodes: a load balancer, 3 controller nodes and 3 worker nodes without melting your laptop.
 
 | Document                                                                                                               | Transcript + Screencast                  |
 | ---------------------------------------------------------------------------------------------------------------------- |:----------------------------------------:|

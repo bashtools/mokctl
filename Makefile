@@ -1,5 +1,5 @@
 .PHONY: all
-all: mokctl.deploy tags
+all: mokctl.deploy ctags
 
 .PHONY: docs
 docs:
@@ -99,7 +99,7 @@ test: clean mokctl.deploy
 buildtest: clean mokctl.deploy
 	./tests/build-tests.sh
 
-tags: mokctl
-	ctags --language-force=sh mokctl/mokctl tests/unit-tests.sh
+ctags: mokctl
+	ctags --language-force=sh mokctl/*.sh tests/unit-tests.sh
 
 # vim:noet:ts=2:sw=2

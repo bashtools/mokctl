@@ -26,8 +26,9 @@ BI_init() {
   BI[subcommand]=
   BI[build_image_k8sver]=
   BI[baseimagename]="mok-centos-7"
-  # TODO TODO
+  # TODO:
   BI[E]="/dev/stderr"
+  # TODO:
   BI[podmanimgprefix]=
   BI[useprebuiltimage]=
   BI[dockerbuildtmpdir]=
@@ -35,6 +36,7 @@ BI_init() {
 
   declare -i OK=0
   declare -i ERROR=1
+  E=
 }
 
 # BI_build_usage outputs help text for the build image component.
@@ -81,12 +83,12 @@ BI_check_valid_options() {
   )
 
   for opt in "${validopts[@]}"; do
-    [[ $1 == "$opt" ]] && return $OK
+    [[ $1 == "${opt}" ]] && return "${OK}"
   done
 
   usage
-  printf 'ERROR: "%s" is not a valid "build image" option.\n' "$1" >"$E"
-  return $ERROR
+  printf 'ERROR: "%s" is not a valid "build image" option.\n' "${1}" >"${E}"
+  return "${ERROR}"
 }
 
 # BI_sanity_checks is expected to run some quick and simple checks to
@@ -105,13 +107,13 @@ BI_build_image() {
   _BI_build_container_image
   retval=$?
 
-  if [[ $retval -eq 0 ]]; then
+  if [[ ${retval} -eq 0 ]]; then
     : # We only need the tick - no text
   else
-    printf 'Image build failed\n' >"$E"
+    printf 'Image build failed\n' >"${E}"
   fi
 
-  return $retval
+  return "${retval}"
 }
 
 # Private Functions -----------------------------------------------------------
@@ -130,9 +132,9 @@ _BI_build_container_image() {
 
   if [[ -z ${BI[useprebuiltimage]} ]]; then
     cmd="docker build \
-    -t "${PODMANIMGPREFIX}local/$tagname" \
+    -t "${PODMANIMGPREFIX}local/${tagname}" \
     --force-rm \
-    $buildargs \
+    ${buildargs} \
     ${BI[DOCKERBUILDTMPDIR]}/${BI[baseimagename]}"
     text="Creating"
   else
@@ -141,17 +143,17 @@ _BI_build_container_image() {
   fi
 
   run_with_progress \
-    "    $text base image, '$tagname'" "$cmd"
+    "    ${text} base image, '${tagname}'" "${cmd}"
 
   retval=$?
-  [[ $retval -ne 0 ]] && {
-    printf 'ERROR: Docker returned an error, shown below\n\n' >"$E"
-    cat "$RUNWITHPROGRESS_OUTPUT" >"$E"
-    printf '\n' >"$E"
-    return $ERROR
+  [[ ${retval} -ne 0 ]] && {
+    printf 'ERROR: Docker returned an error, shown below\n\n' >"${E}"
+    cat "${RUNWITHPROGRESS_OUTPUT}" >"${E}"
+    printf '\n' >"${E}"
+    return "${ERROR}"
   }
 
-  return $retval
+  return "${retval}"
 }
 
 # _BI_get_build_args_for_k8s_ver sets the buildargs variable that is added
@@ -164,15 +166,19 @@ _BI_get_build_args_for_k8s_ver() {
   case "${BI[build_image_k8sver]}" in
   "1.18.2")
     buildargs="--build-arg"
-    buildargs="$buildargs CRIO_VERSION=1.18"
-    buildargs="$buildargs --build-arg"
-    buildargs="$buildargs CRICTL_VERSION=v1.18.0"
-    buildargs="$buildargs --build-arg"
-    buildargs="$buildargs K8SBINVER=-1.18.2"
+    buildargs="${buildargs} CRIO_VERSION=1.18"
+    buildargs="${buildargs} --build-arg"
+    buildargs="${buildargs} CRICTL_VERSION=v1.18.0"
+    buildargs="${buildargs} --build-arg"
+    buildargs="${buildargs} K8SBINVER=-1.18.2"
+    ;;
+  *)
+    printf 'INTERNAL ERROR: This should not happen.'
+    err || return "${ERROR}"
     ;;
   esac
 
-  printf '%s' "$buildargs"
+  printf '%s' "${buildargs}"
 }
 
 # _BI_create_docker_build_dir creates a docker build directory in
@@ -181,7 +187,7 @@ _BI_get_build_args_for_k8s_ver() {
 _BI_create_docker_build_dir() {
 
   BI[dockerbuildtmpdir]="$(mktemp -d -p /var/tmp)" || {
-    printf 'ERROR: mktmp failed.\n' >"$E"
+    printf 'ERROR: mktmp failed.\n' >"${E}"
     err || return
   }
 

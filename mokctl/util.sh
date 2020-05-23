@@ -3,15 +3,16 @@ UT_init() {
   colgreen=$(tput setaf 2)
   colred=$(tput setaf 1)
   colreset=$(tput sgr0)
-  probablysuccess="$colyellow✓$colreset"
-  success="$colgreen✓$colreset"
-  failure="$colred✕$colreset"
+  probablysuccess="${colyellow}✓${colreset}"
+  success="${colgreen}✓${colreset}"
+  failure="${colred}✕${colreset}"
 
   declare -i OK=0
   declare -i ERROR=1
   #declare -i FALSE=0
   declare -i TRUE=1
   #declare -i STOP=2
+  E=
 }
 
 # ---------------------------------------------------------------------------
@@ -20,15 +21,15 @@ err() {
   # In case of error print the function call stack
   # No args expected
 
-  [[ $ERR_CALLED == "$TRUE" ]] && return $ERROR
-  ERR_CALLED=$TRUE
+  [[ ${ERR_CALLED} == "${TRUE}" ]] && return "${ERROR}"
+  ERR_CALLED=${TRUE}
   local frame=0
-  printf '\n' >"$E"
-  while caller $frame; do
+  printf '\n' >"${E}"
+  while caller "${frame}"; do
     ((frame++))
-  done | tac >"$E"
-  printf '\n' >"$E"
-  return $ERROR
+  done | tac >"${E}"
+  printf '\n' >"${E}"
+  return ${ERROR}
 }
 
 # ---------------------------------------------------------------------------

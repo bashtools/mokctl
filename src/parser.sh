@@ -11,27 +11,27 @@ declare OK ERROR TRUE STOP STDERR
 # Getters/Setters -------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
-usage() {
+PA_usage() {
 
   case "${PA[command]}" in
   create)
-    create_usage
+    CC_usage
     return "${OK}"
     ;;
   delete)
-    delete_usage
+    DE_usage
     return "${OK}"
     ;;
   build)
-    build_usage
+    BI_usage
     return "${OK}"
     ;;
   get)
-    get_usage
+    GE_usage
     return "${OK}"
     ;;
   exec)
-    exec_usage
+    EX_usage
     return "${OK}"
     ;;
   *)
@@ -61,7 +61,7 @@ EnD
 
   # Output individual help pages
   CC_usage # <- create cluster
-  DL_usage # <- delete cluster
+  DE_usage # <- delete cluster
   BI_usage # <- build image
   GE_usage # <- get
   EX_usage # <- exec
@@ -95,7 +95,7 @@ EnD
 }
 
 # ---------------------------------------------------------------------------
-parse_options() {
+PA_parse_options() {
 
   # Uses a state machine to check all command line arguments
   # Args:
@@ -106,88 +106,88 @@ parse_options() {
   while [ "${ARGN}" -ne 0 ]; do
     case "${1}" in
     --skipmastersetup)
-      verify_option '--skipmastersetup' || return "${ERROR}"
+      PA_verify_option '--skipmastersetup' || return "${ERROR}"
       #CREATE_CLUSTER_SKIPMASTERSETUP="${TRUE}"
       ;;
     --skipworkersetup)
-      verify_option '--skipworkersetup' || return "${ERROR}"
+      PA_verify_option '--skipworkersetup' || return "${ERROR}"
       #CREATE_CLUSTER_SKIPWORKERSETUP=$TRUE
       ;;
     --skiplbsetup)
-      verify_option '--skiplbsetup' || return "${ERROR}"
+      PA_verify_option '--skiplbsetup' || return "${ERROR}"
       #CREATE_CLUSTER_SKIPLBSETUP="$TRUE"
       ;;
     --with-lb)
-      verify_option '--with-lb' || return "${ERROR}"
+      PA_verify_option '--with-lb' || return "${ERROR}"
       #CREATE_CLUSTER_WITH_LB="$TRUE"
       ;;
     --k8sver)
-      verify_option '--k8sver' || return "${ERROR}"
+      PA_verify_option '--k8sver' || return "${ERROR}"
       # enable later -> BUILD_IMAGE_K8SVER="$1"
       shift
       ;;
     --get-prebuilt-image)
-      verify_option '--get-prebuilt-image' || return "${ERROR}"
+      PA_verify_option '--get-prebuilt-image' || return "${ERROR}"
       BI_set_useprebuiltimage "${TRUE}"
       ;;
     --help) ;&
     -h)
-      usage
+      PA_usage
       return "${STOP}"
       ;;
     --?*)
-      usage
+      PA_usage
       printf 'Invalid option: "%s"\n' "$1" >"${STDERR}"
       return "${ERROR}"
       ;;
     *)
       case "${STATE}" in
       COMMAND)
-        check_command_token "${1}"
+        PA_check_command_token "${1}"
         [[ $? -eq ${ERROR} ]] && {
-          usage
+          PA_usage
           printf 'Invalid COMMAND, "%s".\n\n' "$1" >"${STDERR}"
           return "${ERROR}"
         }
         ;;
       SUBCOMMAND)
-        check_subcommand_token "${1}"
+        PA_check_subcommand_token "${1}"
         [[ $? -eq ${ERROR} ]] && {
-          usage
+          PA_usage
           printf 'Invalid SUBCOMMAND for %s, "%s".\n\n' "${COMMAND}" "${1}" \
             >"${STDERR}"
           return "${ERROR}"
         }
         ;;
       OPTION)
-        check_option_token "${1}"
+        PA_check_option_token "${1}"
         [[ $? -eq ${ERROR} ]] && {
-          usage
+          PA_usage
           printf 'Invalid OPTION for %s %s, "%s".\n\n' "${COMMAND}" \
             "${SUBCOMMAND}" "${1}" >"${STDERR}"
           return "${ERROR}"
         }
         ;;
       OPTION2)
-        check_option2_token "$1"
+        PA_check_option2_token "$1"
         [[ $? -eq ${ERROR} ]] && {
-          usage
+          PA_usage
           printf 'Invalid OPTION for %s %s, "%s".\n\n' "${COMMAND}" \
             "${SUBCOMMAND}" "${1}" >"${STDERR}"
           return "${ERROR}"
         }
         ;;
       OPTION3)
-        check_option3_token "${1}"
+        PA_check_option3_token "${1}"
         [[ $? -eq ${ERROR} ]] && {
-          usage
+          PA_usage
           printf 'Invalid OPTION for %s %s, "%s".\n\n' "${COMMAND}" \
             "${SUBCOMMAND}" "${1}" >"${STDERR}"
           return "${ERROR}"
         }
         ;;
       END)
-        usage
+        PA_usage
         printf 'ERROR No more options expected, "%s" is unexpected for "%s %s"\n' \
           "${1}" "${COMMAND}" "${SUBCOMMAND}" >"${STDERR}"
         return "${ERROR}"
@@ -204,12 +204,12 @@ parse_options() {
   done
 
   [[ -z ${COMMAND} ]] && {
-    usage
+    PA_usage
     printf 'No COMMAND supplied\n' >"${STDERR}"
     return "${ERROR}"
   }
   [[ -z ${SUBCOMMAND} ]] && {
-    usage
+    PA_usage
     printf 'No SUBCOMMAND supplied\n' >"${STDERR}"
     return "${ERROR}"
   }
@@ -222,7 +222,7 @@ parse_options() {
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
-check_command_token() {
+PA_check_command_token() {
 
   # Check for a valid token in command state
   # Args:
@@ -255,17 +255,17 @@ check_command_token() {
 }
 
 # ---------------------------------------------------------------------------
-check_subcommand_token() {
+PA_check_subcommand_token() {
 
   # Check for a valid token in subcommand state
   # Args:
   #   arg1 - token
 
   case "${COMMAND}" in
-  create) check_create_subcommand_token "$1" ;;
-  delete) check_delete_subcommand_token "$1" ;;
-  build) check_build_subcommand_token "$1" ;;
-  get) check_get_subcommand_token "$1" ;;
+  create) PA_check_create_subcommand_token "$1" ;;
+  delete) PA_check_delete_subcommand_token "$1" ;;
+  build) PA_check_build_subcommand_token "$1" ;;
+  get) PA_check_get_subcommand_token "$1" ;;
   *)
     printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
     err || return "${ERROR}"
@@ -274,7 +274,7 @@ check_subcommand_token() {
 }
 
 # ---------------------------------------------------------------------------
-check_create_subcommand_token() {
+PA_check_create_subcommand_token() {
 
   # Check for a valid token in subcommand state
   # Args:
@@ -291,7 +291,7 @@ check_create_subcommand_token() {
 }
 
 # ---------------------------------------------------------------------------
-check_delete_subcommand_token() {
+PA_check_delete_subcommand_token() {
 
   # Check for a valid token in subcommand state
   # Args:
@@ -306,7 +306,7 @@ check_delete_subcommand_token() {
 }
 
 # ---------------------------------------------------------------------------
-check_build_subcommand_token() {
+PA_check_build_subcommand_token() {
 
   # Check for a valid token in subcommand state
   # Args:
@@ -324,7 +324,7 @@ check_build_subcommand_token() {
 }
 
 # ---------------------------------------------------------------------------
-check_get_subcommand_token() {
+PA_check_get_subcommand_token() {
 
   # Check for a valid token in subcommand state
   # Args:
@@ -340,7 +340,7 @@ check_get_subcommand_token() {
 }
 
 # ---------------------------------------------------------------------------
-check_option_token() {
+PA_check_option_token() {
 
   # Check for a valid token in option state
   # Args:
@@ -395,7 +395,7 @@ check_option_token() {
 }
 
 # ---------------------------------------------------------------------------
-check_option2_token() {
+PA_check_option2_token() {
 
   # Check for a valid token in option2 state
   # Args:
@@ -433,7 +433,7 @@ check_option2_token() {
 }
 
 # ---------------------------------------------------------------------------
-check_option3_token() {
+PA_check_option3_token() {
 
   # Check for a valid token in option3 state
   # Args:
@@ -475,7 +475,7 @@ check_option3_token() {
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
-verify_option() {
+PA_verify_option() {
 
   # Check that the sent option is valid for the command-subcommand or global
   # options.
@@ -488,19 +488,22 @@ verify_option() {
   build) ;&  # as global options.
   get) ;&
   '')
-    check_valid_global_opts "$1"
+    PA_check_valid_global_opts "$1"
     ;;
   createcluster)
-    check_valid_create_cluster_opts "$1"
+    PA_check_valid_create_cluster_opts "$1"
     ;;
   deletecluster)
-    check_valid_delete_cluster_opts "$1"
+    PA_check_valid_delete_cluster_opts "$1"
+    ;;
+  execcluster)
+    PA_check_valid_exec_cluster_opts "$1"
     ;;
   buildimage)
     BI_check_valid_options "$1"
     ;;
   getcluster)
-    check_valid_get_cluster_opts "$1"
+    PA_check_valid_get_cluster_opts "$1"
     ;;
   *)
     printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
@@ -512,7 +515,7 @@ verify_option() {
 }
 
 # ---------------------------------------------------------------------------
-check_valid_global_opts() {
+PA_check_valid_global_opts() {
 
   # Args:
   #   arg1 - The option to check.
@@ -526,13 +529,13 @@ check_valid_global_opts() {
     [[ $1 == "${int}" ]] && return "${OK}"
   done
 
-  usage
+  PA_usage
   printf 'ERROR: "%s" is not a valid global option.\n' "$1" >"${STDERR}"
   return "${ERROR}"
 }
 
 # ---------------------------------------------------------------------------
-check_valid_create_cluster_opts() {
+PA_check_valid_create_cluster_opts() {
 
   # Args:
   #   arg1 - The option to check.
@@ -551,13 +554,13 @@ check_valid_create_cluster_opts() {
     [[ $1 == "${opt}" ]] && return "${OK}"
   done
 
-  usage
+  PA_usage
   printf 'ERROR: "%s" is not a valid "create cluster" option.\n' "$1" >"${STDERR}"
   return "${ERROR}"
 }
 
 # ---------------------------------------------------------------------------
-check_valid_delete_cluster_opts() {
+PA_check_valid_delete_cluster_opts() {
 
   # Args:
   #   arg1 - The option to check.
@@ -571,14 +574,14 @@ check_valid_delete_cluster_opts() {
     [[ $1 == "${opt}" ]] && return "${OK}"
   done
 
-  usage
+  PA_usage
   printf 'ERROR: "%s" is not a valid "delete cluster" option.\n' "$1" \
     >"${STDERR}"
   return "${ERROR}"
 }
 
 # ---------------------------------------------------------------------------
-check_valid_get_cluster_opts() {
+PA_check_valid_get_cluster_opts() {
 
   # Args:
   #   arg1 - The option to check.
@@ -592,13 +595,13 @@ check_valid_get_cluster_opts() {
     [[ $1 == "${opt}" ]] && return "${OK}"
   done
 
-  usage
+  PA_usage
   printf 'ERROR: "%s" is not a valid "get cluster" option.\n' "$1" >"${STDERR}"
   return "${ERROR}"
 }
 
 # ---------------------------------------------------------------------------
-check_valid_exec_cluster_opts() {
+PA_check_valid_exec_cluster_opts() {
 
   # Args:
   #   arg1 - The option to check.
@@ -612,7 +615,7 @@ check_valid_exec_cluster_opts() {
     [[ $1 == "${opt}" ]] && return "${OK}"
   done
 
-  usage
+  PA_usage
   printf 'ERROR: "%s" is not a valid "get cluster" option.\n' "$1" \
     >"${STDERR}"
   return "${ERROR}"

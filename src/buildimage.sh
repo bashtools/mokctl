@@ -6,7 +6,7 @@ declare -A BI
 # Declare externally defined variables ----------------------------------------
 
 # Defined in GL (globals.sh)
-declare OK ERROR
+declare OK ERROR STDERR
 
 # Getters/Setters -------------------------------------------------------------
 
@@ -80,8 +80,9 @@ BI_check_valid_options() {
   done
 
   usage
-  printf 'ERROR: "%s" is not a valid "build image" option.\n' "${1}" >"${ER[E]}"
-  return "${ER[ERROR]}"
+  printf 'ERROR: "%s" is not a valid "build image" option.\n' "${1}" \
+    >"${STDERR}"
+  return "${ERROR}"
 }
 
 # BI_sanity_checks is expected to run some quick and simple checks to
@@ -103,7 +104,7 @@ BI_build_image() {
   if [[ ${retval} -eq 0 ]]; then
     : # We only need the tick - no text
   else
-    printf 'Image build failed\n' >"${E}"
+    printf 'Image build failed\n' >"${STDERR}"
   fi
 
   return "${retval}"
@@ -125,10 +126,10 @@ _BI_build_container_image() {
 
   if [[ -z ${BI[useprebuiltimage]} ]]; then
     cmd="docker build \
-    -t "${CT[imgprefix]}local/${tagname}" \
-    --force-rm \
-    ${buildargs} \
-    ${BI[DOCKERBUILDTMPDIR]}/${BI[baseimagename]}"
+      -t "$(CU_get_imgprefix)local/${tagname}" \
+      --force-rm \
+      ${buildargs} \
+      ${BI[dockerbuildtmpdir]}/${BI[baseimagename]}"
     text="Creating"
   else
     cmd="docker pull mclarkson/mok-centos-7-v1.18.2"
@@ -140,10 +141,10 @@ _BI_build_container_image() {
 
   retval=$?
   [[ ${retval} -ne 0 ]] && {
-    printf 'ERROR: Docker returned an error, shown below\n\n' >"${ER[stderr]}"
-    cat "${RUNWITHPROGRESS_OUTPUT}" >"${ER[stderr]}"
-    printf '\n' >"${ER[stderr]}"
-    return "${ER[ERROR]}"
+    printf 'ERROR: Docker returned an error, shown below\n\n' >"${STDERR}"
+    cat "$(UT_get_runfile)" >"${STDERR}"
+    printf '\n' >"${STDERR}"
+    return "${ERROR}"
   }
 
   return "${retval}"
@@ -166,7 +167,7 @@ _BI_get_build_args_for_k8s_ver() {
     buildargs="${buildargs} K8SBINVER=-1.18.2"
     ;;
   *)
-    printf 'INTERNAL ERROR: This should not happen.'
+    printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
     err || return "${ERROR}"
     ;;
   esac
@@ -180,7 +181,7 @@ _BI_get_build_args_for_k8s_ver() {
 _BI_create_docker_build_dir() {
 
   BI[dockerbuildtmpdir]="$(mktemp -d -p /var/tmp)" || {
-    printf 'ERROR: mktmp failed.\n' >"${ER[E]}"
+    printf 'ERROR: mktmp failed.\n' >"${STDERR}"
     err || return
   }
 

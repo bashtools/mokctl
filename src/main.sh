@@ -66,7 +66,7 @@ do_create() {
     CC_cluster_create
     ;;
   *)
-    printf 'INTERNAL ERROR: This should not happen.'
+    printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
     err || return "${ERROR}"
     ;;
   esac
@@ -83,7 +83,7 @@ do_build() {
     BI_build_image
     ;;
   *)
-    printf 'INTERNAL ERROR: This should not happen.'
+    printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
     err || return "${ERROR}"
     ;;
   esac

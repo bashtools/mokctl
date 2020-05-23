@@ -5,13 +5,24 @@ declare -A UT
 
 # Declare externally defined associative arrays -------------------------------
 
-#declare -A CT  # <- container
-declare -A ER # <- error
+declare OK STDERR
 
 # Getters/Setters -------------------------------------------------------------
 
 UT_get_runfile() {
   printf '%s' "${UT[runfile]}"
+}
+
+UT_get_probablysuccess() {
+  printf '%s' "${UT[success]}"
+}
+
+UT_get_success() {
+  printf '%s' "${UT[success]}"
+}
+
+UT_get_failure() {
+  printf '%s' "${UT[success]}"
 }
 
 # Public Functions ------------------------------------------------------------
@@ -54,7 +65,7 @@ UT_run_with_progress() {
   local displaytext=$1 retval int spinner=()
 
   UT[runfile]=$(mktemp -p /var/tmp) || {
-    printf 'ERROR: mktmp failed.\n' >"${ER[E]}"
+    printf 'ERROR: mktmp failed.\n' >"${STDERR}"
     err || return
   }
   shift
@@ -90,11 +101,11 @@ UT_run_with_progress() {
   # Mark success/fail
   if [[ ${retval} -eq 127 ]]; then
     # The job finished before we started waiting for it
-    printf '\r  %s\n' "${UT[probablysuccess]}"
+    printf '\r  %s\n' "$(UT_get_probablysuccess)"
   elif [[ ${retval} -eq 0 ]]; then
-    printf '\r  %s\n' "${UT[success]}"
+    printf '\r  %s\n' "$(UT_get_success)"
   else
-    printf '\r  %s\n' "${UT[failure]}"
+    printf '\r  %s\n' "$(UT_get_failure)"
   fi
 
   # Restore the cursor
@@ -117,7 +128,7 @@ UT_cleanup() {
   [[ -n $(jobs -p) ]] && printf '%s\r  ✕%s\n' "${UT[red]}" "${UT[normal]}"
   for int in $(jobs -p); do kill "${int}"; done
 
-  return "${ER[OK]}"
+  return "${OK}"
 }
 
 # Private Functions -----------------------------------------------------------

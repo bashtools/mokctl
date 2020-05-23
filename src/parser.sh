@@ -6,15 +6,9 @@ declare -A PA
 # Declare externally defined variables ----------------------------------------
 
 # Defined in ER (error.sh)
-declare OK ERROR #STDOUT STDERR
+declare OK ERROR TRUE STOP STDERR
 
 # Getters/Setters -------------------------------------------------------------
-
-# PA_get_command gets the command string the user requested.
-BI_set_useprebuiltimage() {
-  printf '%s' "${PA[command]}"
-  return "${OK}"
-}
 
 # ---------------------------------------------------------------------------
 usage() {
@@ -41,7 +35,7 @@ usage() {
     return "${OK}"
     ;;
   *)
-    printf 'INTERNAL ERROR: This should not happen.'
+    printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
     err || return "${ERROR}"
     ;;
   esac
@@ -66,11 +60,11 @@ Where command can be one of:
 EnD
 
   # Output individual help pages
-  CC_usage
-  DL_usage
-  BI_usage
-  GE_usage
-  EX_usage
+  CC_usage # <- create cluster
+  DL_usage # <- delete cluster
+  BI_usage # <- build image
+  GE_usage # <- get
+  EX_usage # <- exec
 
   cat <<'EnD'
 EXAMPLES
@@ -109,94 +103,98 @@ parse_options() {
 
   set -- "$@"
   local ARGN=$#
-  while [ "$ARGN" -ne 0 ]; do
-    case $1 in
+  while [ "${ARGN}" -ne 0 ]; do
+    case "${1}" in
     --skipmastersetup)
-      verify_option '--skipmastersetup' || return $ERROR
-      CREATE_CLUSTER_SKIPMASTERSETUP=$TRUE
+      verify_option '--skipmastersetup' || return "${ERROR}"
+      #CREATE_CLUSTER_SKIPMASTERSETUP="${TRUE}"
       ;;
     --skipworkersetup)
-      verify_option '--skipworkersetup' || return $ERROR
-      CREATE_CLUSTER_SKIPWORKERSETUP=$TRUE
+      verify_option '--skipworkersetup' || return "${ERROR}"
+      #CREATE_CLUSTER_SKIPWORKERSETUP=$TRUE
       ;;
     --skiplbsetup)
-      verify_option '--skiplbsetup' || return $ERROR
-      CREATE_CLUSTER_SKIPLBSETUP="$TRUE"
+      verify_option '--skiplbsetup' || return "${ERROR}"
+      #CREATE_CLUSTER_SKIPLBSETUP="$TRUE"
       ;;
     --with-lb)
-      verify_option '--with-lb' || return $ERROR
-      CREATE_CLUSTER_WITH_LB="$TRUE"
+      verify_option '--with-lb' || return "${ERROR}"
+      #CREATE_CLUSTER_WITH_LB="$TRUE"
       ;;
     --k8sver)
-      verify_option '--k8sver' || return $ERROR
+      verify_option '--k8sver' || return "${ERROR}"
       # enable later -> BUILD_IMAGE_K8SVER="$1"
       shift
       ;;
     --get-prebuilt-image)
-      verify_option '--get-prebuilt-image' || return $ERROR
-      BI_set_useprebuiltimage "$TRUE"
+      verify_option '--get-prebuilt-image' || return "${ERROR}"
+      BI_set_useprebuiltimage "${TRUE}"
       ;;
     --help) ;&
     -h)
       usage
-      return $STOP
+      return "${STOP}"
       ;;
     --?*)
       usage
-      printf 'Invalid option: "%s"\n' "$1" >"$E"
-      return $ERROR
+      printf 'Invalid option: "%s"\n' "$1" >"${STDERR}"
+      return "${ERROR}"
       ;;
-    ?*)
-      case "$STATE" in
+    *)
+      case "${STATE}" in
       COMMAND)
-        check_command_token "$1"
-        [[ $? -eq $ERROR ]] && {
+        check_command_token "${1}"
+        [[ $? -eq ${ERROR} ]] && {
           usage
-          printf 'Invalid COMMAND, "%s".\n\n' "$1" >"$E"
-          return $ERROR
+          printf 'Invalid COMMAND, "%s".\n\n' "$1" >"${STDERR}"
+          return "${ERROR}"
         }
         ;;
       SUBCOMMAND)
-        check_subcommand_token "$1"
-        [[ $? -eq $ERROR ]] && {
+        check_subcommand_token "${1}"
+        [[ $? -eq ${ERROR} ]] && {
           usage
-          printf 'Invalid SUBCOMMAND for %s, "%s".\n\n' "$COMMAND" "$1" >"$E"
-          return $ERROR
+          printf 'Invalid SUBCOMMAND for %s, "%s".\n\n' "${COMMAND}" "${1}" \
+            >"${STDERR}"
+          return "${ERROR}"
         }
         ;;
       OPTION)
-        check_option_token "$1"
-        [[ $? -eq $ERROR ]] && {
+        check_option_token "${1}"
+        [[ $? -eq ${ERROR} ]] && {
           usage
-          printf 'Invalid OPTION for %s %s, "%s".\n\n' "$COMMAND" "$SUBCOMMAND" "$1" >"$E"
-          return $ERROR
+          printf 'Invalid OPTION for %s %s, "%s".\n\n' "${COMMAND}" \
+            "${SUBCOMMAND}" "${1}" >"${STDERR}"
+          return "${ERROR}"
         }
         ;;
       OPTION2)
         check_option2_token "$1"
-        [[ $? -eq $ERROR ]] && {
+        [[ $? -eq ${ERROR} ]] && {
           usage
-          printf 'Invalid OPTION for %s %s, "%s".\n\n' "$COMMAND" "$SUBCOMMAND" "$1" >"$E"
-          return $ERROR
+          printf 'Invalid OPTION for %s %s, "%s".\n\n' "${COMMAND}" \
+            "${SUBCOMMAND}" "${1}" >"${STDERR}"
+          return "${ERROR}"
         }
         ;;
       OPTION3)
-        check_option3_token "$1"
-        [[ $? -eq $ERROR ]] && {
+        check_option3_token "${1}"
+        [[ $? -eq ${ERROR} ]] && {
           usage
-          printf 'Invalid OPTION for %s %s, "%s".\n\n' "$COMMAND" "$SUBCOMMAND" "$1" >"$E"
-          return $ERROR
+          printf 'Invalid OPTION for %s %s, "%s".\n\n' "${COMMAND}" \
+            "${SUBCOMMAND}" "${1}" >"${STDERR}"
+          return "${ERROR}"
         }
         ;;
       END)
         usage
         printf 'ERROR No more options expected, "%s" is unexpected for "%s %s"\n' \
-          "$1" "$COMMAND" "$SUBCOMMAND" >"$E"
-        return $ERROR
+          "${1}" "${COMMAND}" "${SUBCOMMAND}" >"${STDERR}"
+        return "${ERROR}"
         ;;
-      ?*)
-        printf 'Internal ERROR. Invalid state "%s"\n' "$STATE" >"$E"
-        return $ERROR
+      *)
+        printf 'Internal ERROR. Invalid state "%s"\n' "${STATE}" >"${STDERR}"
+        return "${ERROR}"
         ;;
       esac
       ;;
@@ -205,18 +203,18 @@ parse_options() {
     ARGN=$((ARGN - 1))
   done
 
-  [[ -z $COMMAND ]] && {
+  [[ -z ${COMMAND} ]] && {
     usage
-    printf 'No COMMAND supplied\n' >"$E"
-    return $ERROR
+    printf 'No COMMAND supplied\n' >"${STDERR}"
+    return "${ERROR}"
   }
-  [[ -z $SUBCOMMAND ]] && {
+  [[ -z ${SUBCOMMAND} ]] && {
     usage
-    printf 'No SUBCOMMAND supplied\n' >"$E"
-    return $ERROR
+    printf 'No SUBCOMMAND supplied\n' >"${STDERR}"
+    return "${ERROR}"
   }
 
-  return $OK
+  return "${OK}"
 }
 
 # ===========================================================================
@@ -230,7 +228,7 @@ check_command_token() {
   # Args:
   #   arg1 - token
 
-  case $1 in
+  case "${1}" in
   create)
     COMMAND="create"
     STATE="SUBCOMMAND"
@@ -252,7 +250,7 @@ check_command_token() {
     SUBCOMMAND="unused"
     STATE="OPTION"
     ;;
-  ?*) return $ERROR ;;
+  *) return "${ERROR}" ;;
   esac
 }
 
@@ -263,11 +261,15 @@ check_subcommand_token() {
   # Args:
   #   arg1 - token
 
-  case $COMMAND in
+  case "${COMMAND}" in
   create) check_create_subcommand_token "$1" ;;
   delete) check_delete_subcommand_token "$1" ;;
   build) check_build_subcommand_token "$1" ;;
   get) check_get_subcommand_token "$1" ;;
+  *)
+    printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
+    err || return "${ERROR}"
+    ;;
   esac
 }
 
@@ -280,12 +282,12 @@ check_create_subcommand_token() {
 
   case $1 in
   cluster) SUBCOMMAND="cluster" ;;
-  ?*) return $ERROR ;;
+  *) return "${ERROR}" ;;
   esac
 
   STATE="OPTION"
 
-  return $OK
+  return "${OK}"
 }
 
 # ---------------------------------------------------------------------------
@@ -297,7 +299,7 @@ check_delete_subcommand_token() {
 
   case $1 in
   cluster) SUBCOMMAND="cluster" ;;
-  ?*) return $ERROR ;;
+  *) return "${ERROR}" ;;
   esac
 
   STATE=OPTION
@@ -315,7 +317,7 @@ check_build_subcommand_token() {
     SUBCOMMAND="image"
     BI_init
     ;;
-  ?*) return $ERROR ;;
+  *) return "${ERROR}" ;;
   esac
 
   STATE=END
@@ -328,10 +330,10 @@ check_get_subcommand_token() {
   # Args:
   #   arg1 - token
 
-  case $1 in
+  case "${1}" in
   clusters) ;&
   cluster) SUBCOMMAND="cluster" ;;
-  ?*) return $ERROR ;;
+  *) return "${ERROR}" ;;
   esac
 
   STATE=OPTION
@@ -344,34 +346,50 @@ check_option_token() {
   # Args:
   #   arg1 - token
 
-  case $COMMAND in
+  case "${COMMAND}" in
   create)
-    case $SUBCOMMAND in
+    case "${SUBCOMMAND}" in
     cluster)
-      CREATE_CLUSTER_NAME="$1"
+      #CREATE_CLUSTER_NAME="${1}"
       STATE="OPTION2"
+      ;;
+    *)
+      printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
+      err || return "${ERROR}"
       ;;
     esac
     ;;
   delete)
-    case $SUBCOMMAND in
+    case "${SUBCOMMAND}" in
     cluster)
-      DELETE_CLUSTER_NAME="$1"
+      #DELETE_CLUSTER_NAME="${1}"
       STATE="END"
+      ;;
+    *)
+      printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
+      err || return "${ERROR}"
       ;;
     esac
     ;;
   get)
-    case $SUBCOMMAND in
+    case "${SUBCOMMAND}" in
     cluster)
-      GET_CLUSTER_NAME="$1"
+      #GET_CLUSTER_NAME="${1}"
       STATE="END"
+      ;;
+    *)
+      printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
+      err || return "${ERROR}"
       ;;
     esac
     ;;
   exec)
-    EXEC_CONTAINER_NAME="$1"
+    ##EXEC_CONTAINER_NAME="${1}"
     STATE="END"
+    ;;
+  *)
+    printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
+    err || return "${ERROR}"
     ;;
   esac
 }
@@ -383,21 +401,33 @@ check_option2_token() {
   # Args:
   #   arg1 - token
 
-  case $COMMAND in
+  case "${COMMAND}" in
   create)
-    case $SUBCOMMAND in
+    case "${SUBCOMMAND}" in
     cluster)
-      CREATE_CLUSTER_NUM_MASTERS="$1"
+      #CREATE_CLUSTER_NUM_MASTERS="$1"
       STATE="OPTION3"
+      ;;
+    *)
+      printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
+      err || return "${ERROR}"
       ;;
     esac
     ;;
   delete)
-    case $SUBCOMMAND in
+    case "${SUBCOMMAND}" in
     cluster)
-      return $ERROR
+      return "${ERROR}"
+      ;;
+    *)
+      printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
+      err || return "${ERROR}"
       ;;
     esac
+    ;;
+  *)
+    printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
+    err || return "${ERROR}"
     ;;
   esac
 }
@@ -409,21 +439,33 @@ check_option3_token() {
   # Args:
   #   arg1 - token
 
-  case $COMMAND in
+  case "${COMMAND}" in
   create)
-    case $SUBCOMMAND in
+    case "${SUBCOMMAND}" in
     cluster)
-      CREATE_CLUSTER_NUM_WORKERS="$1"
+      #CREATE_CLUSTER_NUM_WORKERS="$1"
       STATE="END"
+      ;;
+    *)
+      printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
+      err || return "${ERROR}"
       ;;
     esac
     ;;
   delete)
-    case $SUBCOMMAND in
+    case "${SUBCOMMAND}" in
     cluster)
-      return $ERROR
+      return "${ERROR}"
+      ;;
+    *)
+      printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
+      err || return "${ERROR}"
       ;;
     esac
+    ;;
+  *)
+    printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
+    err || return "${ERROR}"
     ;;
   esac
 }
@@ -440,7 +482,7 @@ verify_option() {
   # Args:
   #   arg1 - The option to check.
 
-  case "$COMMAND$SUBCOMMAND" in
+  case "${COMMAND}${SUBCOMMAND}" in
   create) ;& # Treat flags located just before
   delete) ;& # or just after COMMAND
   build) ;&  # as global options.
@@ -460,9 +502,13 @@ verify_option() {
   getcluster)
     check_valid_get_cluster_opts "$1"
     ;;
-  esac && return $OK
+  *)
+    printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
+    err || return "${ERROR}"
+    ;;
+  esac && return "${OK}"
 
-  return $ERROR
+  return "${ERROR}"
 }
 
 # ---------------------------------------------------------------------------
@@ -477,12 +523,12 @@ check_valid_global_opts() {
   )
 
   for int in "${validopts[@]}"; do
-    [[ $1 == "$int" ]] && return $OK
+    [[ $1 == "${int}" ]] && return "${OK}"
   done
 
   usage
-  printf 'ERROR: "%s" is not a valid global option.\n' "$1" >"$E"
-  return $ERROR
+  printf 'ERROR: "%s" is not a valid global option.\n' "$1" >"${STDERR}"
+  return "${ERROR}"
 }
 
 # ---------------------------------------------------------------------------
@@ -502,12 +548,12 @@ check_valid_create_cluster_opts() {
   )
 
   for opt in "${validopts[@]}"; do
-    [[ $1 == "$opt" ]] && return $OK
+    [[ $1 == "${opt}" ]] && return "${OK}"
   done
 
   usage
-  printf 'ERROR: "%s" is not a valid "create cluster" option.\n' "$1" >"$E"
-  return $ERROR
+  printf 'ERROR: "%s" is not a valid "create cluster" option.\n' "$1" >"${STDERR}"
+  return "${ERROR}"
 }
 
 # ---------------------------------------------------------------------------
@@ -522,12 +568,13 @@ check_valid_delete_cluster_opts() {
   )
 
   for opt in "${validopts[@]}"; do
-    [[ $1 == "$opt" ]] && return $OK
+    [[ $1 == "${opt}" ]] && return "${OK}"
   done
 
   usage
-  printf 'ERROR: "%s" is not a valid "delete cluster" option.\n' "$1" >"$E"
-  return $ERROR
+  printf 'ERROR: "%s" is not a valid "delete cluster" option.\n' "$1" \
+    >"${STDERR}"
+  return "${ERROR}"
 }
 
 # ---------------------------------------------------------------------------
@@ -542,12 +589,12 @@ check_valid_get_cluster_opts() {
   )
 
   for opt in "${validopts[@]}"; do
-    [[ $1 == "$opt" ]] && return $OK
+    [[ $1 == "${opt}" ]] && return "${OK}"
   done
 
   usage
-  printf 'ERROR: "%s" is not a valid "get cluster" option.\n' "$1" >"$E"
-  return $ERROR
+  printf 'ERROR: "%s" is not a valid "get cluster" option.\n' "$1" >"${STDERR}"
+  return "${ERROR}"
 }
 
 # ---------------------------------------------------------------------------
@@ -562,12 +609,13 @@ check_valid_exec_cluster_opts() {
   )
 
   for opt in "${validopts[@]}"; do
-    [[ $1 == "$opt" ]] && return $OK
+    [[ $1 == "${opt}" ]] && return "${OK}"
   done
 
   usage
-  printf 'ERROR: "%s" is not a valid "get cluster" option.\n' "$1" >"$E"
-  return $ERROR
+  printf 'ERROR: "%s" is not a valid "get cluster" option.\n' "$1" \
+    >"${STDERR}"
+  return "${ERROR}"
 }
 
 # vim helpers -----------------------------------------------------------------

@@ -1,18 +1,11 @@
 # CU - Container Utils
 
-# The following lines allow the use of '[Ctrl-i' and '[I' (do ':help [I').
-#include getcluster.sh
-#include createcluster.sh
-#include util.sh
-#include main.sh
-
 # CU is an associative array that holds data specific to containers.
 declare -A CU
 
-# Declare externally defined associative arrays -------------------------------
+# Declare externally defined variables ----------------------------------------
 
-declare -A UT
-declare -A ERR
+declare OK ERROR STDERR
 
 # Getters/Setters -------------------------------------------------------------
 
@@ -24,7 +17,8 @@ CU_get_imgprefix() {
 
 # Public Functions ------------------------------------------------------------
 
-# CU_init sets the initial values for the CU associative array.
+# CU_init sets the initial values for the CU associative array and works
+# out which container runtime to use, podman or docker.
 # This function is called by main().
 # Args: None expected.
 CU_init() {
@@ -46,7 +40,8 @@ CU_cleanup() {
 # and sets the imgprefix array member accordingly, and also defines the
 # function to be used. Podman is preferred if both are installed.
 # This function is called by main().
-CU_podman_or_docker() {
+# Args: No args expected.
+_CU_podman_or_docker() {
 
   local id
 
@@ -56,14 +51,14 @@ CU_podman_or_docker() {
     local id
     id=$(id -u)
     [[ ${id} -ne 0 ]] && {
-      cat <<'EnD' >"${ERR[stderr]}"
+      cat <<'EnD' >"${STDERR}"
 Must run 'podman' as root! Try using:
 
   $ alias mokctl="sudo mokctl"
 
 Then run the command again.
 EnD
-      return "${ERR[error]}"
+      return "${ERROR}"
     }
     docker() {
       podman "$@"
@@ -75,12 +70,14 @@ EnD
       docker "$@"
     }
   else
-    printf 'ERROR: Neither "podman" nor "docker" were found.\n' >"${ERR[E]}"
-    printf 'Please install one of "podman" or "docker".\nAborting.\n' >"${ERR[E]}"
-    return "${UT[ERROR]}"
+    printf 'ERROR: Neither "podman" nor "docker" were found.\n' \
+      >"${STDERR}"
+    printf 'Please install one of "podman" or "docker".\nAborting.\n' \
+      >"${STDERR}"
+    return "${ERROR}"
   fi
 
-  return "${UT[OK]}"
+  return "${OK}"
 }
 
 # ---------------------------------------------------------------------------
@@ -92,7 +89,7 @@ get_docker_container_ip() {
   docker inspect \
     --format='{{.NetworkSettings.IPAddress}}' \
     "$1" || {
-    printf 'ERROR: docker failed\n\n' >"${E}"
+    printf 'ERROR: docker failed\n\n' >"${STDERR}"
     err || return
   }
 
@@ -106,7 +103,7 @@ get_mok_cluster_docker_ids() {
   #   arg1 - mok cluster name, optional
 
   docker ps -a -f label="${CU[label]}${1}" -q || {
-    printf 'ERROR: docker failed\n' >"${E}"
+    printf 'ERROR: docker failed\n' >"${STDERR}"
     err || return
   }
 }
@@ -119,7 +116,7 @@ get_info_about_container_using_docker() {
   #   arg1 - docker container id
 
   docker inspect "$1" || {
-    printf 'ERROR: docker failed\n' >"${E}"
+    printf 'ERROR: docker failed\n' >"${STDERR}"
     err || return
   }
 }

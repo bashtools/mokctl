@@ -5,9 +5,8 @@ declare -A ER
 
 # Declare externally defined associative arrays -------------------------------
 
-#declare -A CT # <- container
-#declare -A UT  # <- utility
-#declare -A ER # <- error
+# Defined in GL (globals.sh)
+declare OK ERROR STOP STDERR
 
 # Getters/Setters -------------------------------------------------------------
 
@@ -48,17 +47,5 @@ fakefunc() {
 }
 
 # vim helpers -----------------------------------------------------------------
-
-# The following lines allow the use of '[C-i' and '[I' (do ':help [I') in vim.
-#include buildimage.sh
-#include container.sh
-#include createcluster.sh
-#include deletecluster.sh
-#include embed-dockerfile.sh
-#include exec.sh
-#include getcluster.sh
 #include globals.sh
-#include main.sh
-#include util.sh
-
 # vim:ft=sh:sw=2:et:ts=2:

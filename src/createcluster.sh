@@ -788,4 +788,6 @@ if [ "$0" = "${BASH_SOURCE[0]}" ] || [ -z "${BASH_SOURCE[0]}" ]; then
   main "$@"
 fi
 
+# vim helpers -----------------------------------------------------------------
+#include globals.sh
 # vim:ft=sh:sw=2:et:ts=2:

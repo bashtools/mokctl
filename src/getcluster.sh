@@ -201,4 +201,6 @@ get_info_about_container_using_docker() {
   }
 }
 
+# vim helpers -----------------------------------------------------------------
+#include globals.sh
 # vim:ft=sh:sw=2:et:ts=2:

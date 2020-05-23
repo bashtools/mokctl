@@ -5,9 +5,8 @@ declare -A BI
 
 # Declare externally defined variables ----------------------------------------
 
-#declare -A CT # <- container
-#declare -A UT  # <- utility
-#declare -A ER # <- error
+# Defined in GL (globals.sh)
+declare OK ERROR
 
 # Getters/Setters -------------------------------------------------------------
 
@@ -77,7 +76,7 @@ BI_check_valid_options() {
   )
 
   for opt in "${validopts[@]}"; do
-    [[ ${1} == "${opt}" ]] && return "${ER[OK]}"
+    [[ ${1} == "${opt}" ]] && return "${OK}"
   done
 
   usage
@@ -194,17 +193,5 @@ _BI_create_docker_build_dir() {
 }
 
 # vim helpers -----------------------------------------------------------------
-
-# The following lines allow the use of '[C-i' and '[I' (do ':help [I') in vim.
-#include container.sh
-#include createcluster.sh
-#include deletecluster.sh
-#include embed-dockerfile.sh
-#include error.sh
-#include exec.sh
-#include getcluster.sh
-#include main.sh
-#include parser.sh
-#include util.sh
-
+#include globals.sh
 # vim:ft=sh:sw=2:et:ts=2:

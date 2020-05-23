@@ -27,4 +27,6 @@ GL_init() {
   dummy="${dummy}"
 }
 
+# vim helpers -----------------------------------------------------------------
+#include globals.sh
 # vim:ft=sh:sw=2:et:ts=2:

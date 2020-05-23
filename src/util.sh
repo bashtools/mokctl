@@ -32,6 +32,16 @@ UT_init() {
   UT[spinnerchars]='◐◓◑◒'
 }
 
+UT_disable_colours() {
+  UT[yellow]=
+  UT[green]=
+  UT[red]=
+  UT[normal]=
+  UT[probablysuccess]="✓"
+  UT[success]="✓"
+  UT[failure]="✕"
+}
+
 # ---------------------------------------------------------------------------
 UT_run_with_progress() {
 
@@ -113,16 +123,5 @@ UT_cleanup() {
 # Private Functions -----------------------------------------------------------
 
 # vim helpers -----------------------------------------------------------------
-
-# The following lines allow the use of '[C-i' and '[I' (do ':help [I') in vim.
-#include buildimage.sh
-#include container.sh
-#include createcluster.sh
-#include deletecluster.sh
-#include embed-dockerfile.sh
-#include error.sh
-#include exec.sh
-#include getcluster.sh
-#include main.sh
-
+#include globals.sh
 # vim:ft=sh:sw=2:et:ts=2:

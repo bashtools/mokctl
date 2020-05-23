@@ -116,4 +116,6 @@ run_docker_exec() {
   fi
 }
 
+# vim helpers -----------------------------------------------------------------
+#include globals.sh
 # vim:ft=sh:sw=2:et:ts=2:

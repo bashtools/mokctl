@@ -164,4 +164,6 @@ delete_docker_container() {
   docker rm "$id" || err
 }
 
+# vim helpers -----------------------------------------------------------------
+#include globals.sh
 # vim:ft=sh:sw=2:et:ts=2:

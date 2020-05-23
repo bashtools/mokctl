@@ -571,17 +571,5 @@ check_valid_exec_cluster_opts() {
 }
 
 # vim helpers -----------------------------------------------------------------
-
-# The following lines allow the use of '[C-i' and '[I' (do ':help [I') in vim.
-#include buildimage.sh
-#include container.sh
-#include createcluster.sh
-#include deletecluster.sh
-#include embed-dockerfile.sh
-#include error.sh
-#include exec.sh
-#include getcluster.sh
-#include main.sh
-#include util.sh
-
+#include globals.sh
 # vim:ft=sh:sw=2:et:ts=2:

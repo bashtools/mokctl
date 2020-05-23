@@ -1,19 +1,14 @@
 # MAIN - execution starts here
 
-# Declare externally defined variables ----------------------------------------
-
 # Defined in GL (globals.sh)
 declare OK ERROR STOP STDERR
 
 # main is the start point for this application.
 main() {
 
-  init || return
-
   trap cleanup EXIT
-
+  init || return
   local retval="${OK}"
-
   sanity_checks || return
 
   parse_options "$@" || retval=$?
@@ -30,32 +25,37 @@ main() {
   get) do_get ;;
   exec) do_exec ;;
   *)
-    printf 'INTERNAL ERROR: This should not happen.'
+    printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
     err || return "${ERROR}"
     ;;
   esac
 }
 
+# init sets start values for variables and calls the init in each 'module'.
+# Args: No args expected.
 init() {
-  GL_init || return
-  UT_init || return
-  CT_init || return
+  GL_init || return # <- init globals
+  UT_init || return # <- init utilities
+  CU_init || return # <- init container utils
+  BI_init || return # <- init build image
 }
 
 # cleanup is called from an EXIT trap only, when the program exits.
 # It calls the cleanup functions from other 'modules'.
+# Args: No args expected.
 cleanup() {
 
   # Called when the script exits.
 
   UT_cleanup
+  CU_cleanup
   BI_cleanup
 
   return "${OK}"
 }
 
 # do_create chooses which function to run for 'create SUBCOMMAND'.
-# Args: None expected.
+# Args: No args expected.
 do_create() {
 
   # Calls the correct command/subcommand function
@@ -74,7 +74,7 @@ do_create() {
 
 # do_build starts the build image process.
 # Calls the correct build command/subcommand function
-# Args: None expected.
+# Args: No args expected.
 do_build() {
 
   case $(PA_get_subcommand) in
@@ -89,7 +89,9 @@ do_build() {
   esac
 }
 
-# ---------------------------------------------------------------------------
+# sanity_checks is expected to run some quick and simple checks to
+# see if key components are available.
+# Args: No args expected.
 sanity_checks() {
 
   # Check our environment
@@ -98,22 +100,15 @@ sanity_checks() {
   local binary
 
   for binary in tac column tput grep sed; do
-    if ! command -v "$binary" >&/dev/null; then
-      printf 'ERROR: "%s" binary not found in path. Aborting.' "$binary" >"$E"
-      return 1
+    if ! command -v "${binary}" >&/dev/null; then
+      printf 'ERROR: "%s" binary not found in path. Aborting.' "${binary}" \
+        >"${STDERR}"
+      return "${ERROR}"
     fi
   done
 
   # Disable terminal escapes (colours) if stdout is not a terminal
-  [ -t 1 ] || {
-    colgreen=
-    colred=
-    colyellow=
-    colreset=
-    success="✓"
-    probablysuccess="$success"
-    failure="✕"
-  }
+  [ -t 1 ] || UT_disable_colours
 }
 
 # Calls main() if we're called from the command line
@@ -121,4 +116,6 @@ if [ "$0" = "${BASH_SOURCE[0]}" ] || [ -z "${BASH_SOURCE[0]}" ]; then
   main "$@"
 fi
 
+# vim helpers -----------------------------------------------------------------
+#include globals.sh
 # vim:ft=sh:sw=2:et:ts=2:

@@ -1,6 +1,18 @@
-# ===========================================================================
-#           FUNCTIONS THAT CAN BE USED BY MORE THAN ONE COMPONENT
-# ===========================================================================
+UT_init() {
+  colyellow=$(tput setaf 3)
+  colgreen=$(tput setaf 2)
+  colred=$(tput setaf 1)
+  colreset=$(tput sgr0)
+  probablysuccess="$colyellow✓$colreset"
+  success="$colgreen✓$colreset"
+  failure="$colred✕$colreset"
+
+  declare -i OK=0
+  declare -i ERROR=1
+  #declare -i FALSE=0
+  declare -i TRUE=1
+  #declare -i STOP=2
+}
 
 # ---------------------------------------------------------------------------
 err() {

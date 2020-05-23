@@ -15,25 +15,27 @@ BI_set_useprebuiltimage() {
   BI[useprebuiltimage]="$1"
 }
 
-# Init ------------------------------------------------------------------------
+# Public Functions ------------------------------------------------------------
 
 # BI_init sets the initial values for the BI assoc-array
-# This function is called by parse_options before it sets any array members.
+# This function is called by parse_options once it knows which component is
+# being requested but before it sets any array members.
 # Args: None expected.
 BI_init() {
 
   BI[subcommand]=
   BI[build_image_k8sver]=
   BI[baseimagename]="mok-centos-7"
-  BI[ERROR]=1
+  # TODO TODO
   BI[E]="/dev/stderr"
   BI[podmanimgprefix]=
   BI[useprebuiltimage]=
   BI[dockerbuildtmpdir]=
   BI[runwithprogress_output]=
-}
 
-# Public Functions ------------------------------------------------------------
+  declare -i OK=0
+  declare -i ERROR=1
+}
 
 # BI_build_usage outputs help text for the build image component.
 # It is called by usage().
@@ -87,9 +89,9 @@ BI_check_valid_options() {
   return $ERROR
 }
 
-# BI_sanity_checks runs some quick and simple checks to
-# see if it has key components. For build image this does nothing.
-# This function should not be deleted as it is called by main().
+# BI_sanity_checks is expected to run some quick and simple checks to
+# see if it has all it's key components. For build image this does nothing.
+# This function should not be deleted as it is called in main.sh.
 # Args: None expected.
 BI_sanity_checks() { :; }
 
@@ -100,7 +102,7 @@ BI_build_image() {
 
   local retval=0
 
-  BI_build_container_image
+  _BI_build_container_image
   retval=$?
 
   if [[ $retval -eq 0 ]]; then
@@ -114,16 +116,16 @@ BI_build_image() {
 
 # Private Functions -----------------------------------------------------------
 
-# BI_build_container_image creates the docker build directory in
+# _BI_build_container_image creates the docker build directory in
 # dockerbuildtmpdir then calls docker build to build the image.
 # Args: No args expected.
-BI_build_container_image() {
+_BI_build_container_image() {
 
   local cmd retval tagname buildargs text
 
-  BI_create_docker_build_dir || return
+  _BI_create_docker_build_dir || return
 
-  buildargs=$(BI_get_build_args_for_k8s_ver "${BI[build_image_k8sver]}") || return
+  buildargs=$(_BI_get_build_args_for_k8s_ver "${BI[build_image_k8sver]}") || return
   tagname="${BI[baseimagename]}-v${BI[build_image_k8sver]}"
 
   if [[ -z ${BI[useprebuiltimage]} ]]; then
@@ -146,16 +148,16 @@ BI_build_container_image() {
     printf 'ERROR: Docker returned an error, shown below\n\n' >"$E"
     cat "$RUNWITHPROGRESS_OUTPUT" >"$E"
     printf '\n' >"$E"
-    return "${ERR[ERROR]}"
+    return $ERROR
   }
 
   return $retval
 }
 
-# BI_get_build_args_for_k8s_ver sets the buildargs variable that is added
+# _BI_get_build_args_for_k8s_ver sets the buildargs variable that is added
 # to the 'podman build ...' command line.
 # Args: None expected
-BI_get_build_args_for_k8s_ver() {
+_BI_get_build_args_for_k8s_ver() {
 
   local buildargs
 
@@ -173,19 +175,19 @@ BI_get_build_args_for_k8s_ver() {
   printf '%s' "$buildargs"
 }
 
-# BI_create_docker_build_dir creates a docker build directory in
+# _BI_create_docker_build_dir creates a docker build directory in
 # /var/tmp/tmp.XXXXXXXX
 # Args: None expected
-BI_create_docker_build_dir() {
+_BI_create_docker_build_dir() {
 
-  ${BI[dockerbuildtmpdir]}=$(mktemp -d -p /var/tmp) || {
+  BI[dockerbuildtmpdir]="$(mktemp -d -p /var/tmp)" || {
     printf 'ERROR: mktmp failed.\n' >"$E"
     err || return
   }
 
   # The following comments should not be removed or changed.
   # embed-dockerfile.sh adds a base64 encoded tarball and
-  #  unpacking code between them.
+  # unpacking code between them.
 
   #mok-centos-7-tarball-start
   #mok-centos-7-tarball-end

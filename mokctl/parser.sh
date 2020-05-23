@@ -6,11 +6,6 @@
 # Constants
 readonly LABELKEY="MokCluster"
 readonly BASEIMAGENAME="mok-centos-7"
-readonly OK=0
-readonly ERROR=1
-readonly FALSE=0
-readonly TRUE=1
-readonly STOP=2
 readonly SPINNER=('◐' '◓' '◑' '◒')
 
 colyellow=$(tput setaf 3)
@@ -354,7 +349,10 @@ check_build_subcommand_token() {
   #   arg1 - token
 
   case $1 in
-  image) SUBCOMMAND="image" ;;
+  image)
+    SUBCOMMAND="image"
+    BI_init
+    ;;
   ?*) return $ERROR ;;
   esac
 

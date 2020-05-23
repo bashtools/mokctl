@@ -1,3 +1,9 @@
+declare -i OK=0
+declare -i ERROR=1
+declare -i FALSE=0
+declare -i TRUE=1
+declare -i STOP=2
+
 # ---------------------------------------------------------------------------
 main() {
 

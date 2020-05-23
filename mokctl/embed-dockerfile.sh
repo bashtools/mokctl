@@ -4,4 +4,4 @@ sed -r '/mok-centos-7-tarball-start/, /mok-centos-7-tarball-end/ c \
   cat <<'EnD' | base64 -d | tar xz -C "$DOCKERBUILDTMPDIR" \
 '"$a"'
 EnD\
-  #mok-centos-7-tarball-end' mokctl/mokctl >mokctl.deploy
+  #mok-centos-7-tarball-end' mokctl/buildimage.sh >mokctl.deploy

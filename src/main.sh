@@ -11,7 +11,7 @@ main() {
   local retval="${OK}"
   sanity_checks || return
 
-  parse_options "$@" || retval=$?
+  PA_parse_options "$@" || retval=$?
   if [[ ${retval} -eq ${ERROR} ]]; then
     return "${ERROR}"
   elif [[ ${retval} -eq ${STOP} ]]; then

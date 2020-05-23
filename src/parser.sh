@@ -1,86 +1,48 @@
 # PA - PArser
 
-# GLOBALS
-# Don't change any globals
+# PA is holds data specific to parsing the command line arguments.
+declare -A PA
 
-# Constants
-readonly LABELKEY="MokCluster"
-readonly BASEIMAGENAME="mok-centos-7"
-readonly SPINNER=('◐' '◓' '◑' '◒')
+# Declare externally defined variables ----------------------------------------
 
-colyellow=$(tput setaf 3)
-colgreen=$(tput setaf 2)
-colred=$(tput setaf 1)
-colreset=$(tput sgr0)
-probablysuccess="$colyellow✓$colreset"
-success="$colgreen✓$colreset"
-failure="$colred✕$colreset"
+# Defined in ER (error.sh)
+declare OK ERROR #STDOUT STDERR
 
-# The initial state of the parser
-STATE="COMMAND"
+# Getters/Setters -------------------------------------------------------------
 
-# Parser sets these:
-COMMAND=
-SUBCOMMAND=
-CREATE_CLUSTER_NAME=
-BUILD_IMAGE_K8SVER=
-CREATE_CLUSTER_K8SVER=
-CREATE_CLUSTER_WITH_LB=
-CREATE_CLUSTER_SKIPLBSETUP=
-CREATE_CLUSTER_NUM_MASTERS=
-CREATE_CLUSTER_NUM_WORKERS=
-CREATE_CLUSTER_SKIPMASTERSETUP=
-CREATE_CLUSTER_SKIPWORKERSETUP=
-DELETE_CLUSTER_NAME=
-GET_CLUSTER_NAME=
-GET_CLUSTER_SHOW_HEADER=
-EXEC_CONTAINER_NAME=
-
-# For outputting errors
-E="/dev/stderr"
-ERR_CALLED=
-
-PODMANIMGPREFIX=
-BUILD_GET_PREBUILT=
-CONTAINERRT=
-
-# Directory to unpack the build files
-DOCKERBUILDTMPDIR=
-
-# For the spinning progress animation
-RUNWITHPROGRESS_OUTPUT=
-
-# END GLOBALS
-
-# ===========================================================================
-#                   FUNCTIONS FOR PARSING THE COMMAND LINE
-# ===========================================================================
+# PA_get_command gets the command string the user requested.
+BI_set_useprebuiltimage() {
+  printf '%s' "${PA[command]}"
+  return "${OK}"
+}
 
 # ---------------------------------------------------------------------------
 usage() {
 
-  # Every tool, no matter how small, should have help text!
-
-  case $COMMAND in
+  case "${PA[command]}" in
   create)
     create_usage
-    return $OK
+    return "${OK}"
     ;;
   delete)
     delete_usage
-    return $OK
+    return "${OK}"
     ;;
   build)
     build_usage
-    return $OK
+    return "${OK}"
     ;;
   get)
     get_usage
-    return $OK
+    return "${OK}"
     ;;
   exec)
     exec_usage
-    return $OK
+    return "${OK}"
+    ;;
+  *)
+    printf 'INTERNAL ERROR: This should not happen.'
+    err || return "${ERROR}"
     ;;
   esac
 
@@ -104,11 +66,11 @@ Where command can be one of:
 EnD
 
   # Output individual help pages
-  create_usage
-  delete_usage
-  build_usage
-  get_usage
-  exec_usage
+  CC_usage
+  DL_usage
+  BI_usage
+  GE_usage
+  EX_usage
 
   cat <<'EnD'
 EXAMPLES
@@ -607,5 +569,19 @@ check_valid_exec_cluster_opts() {
   printf 'ERROR: "%s" is not a valid "get cluster" option.\n' "$1" >"$E"
   return $ERROR
 }
+
+# vim helpers -----------------------------------------------------------------
+
+# The following lines allow the use of '[C-i' and '[I' (do ':help [I') in vim.
+#include buildimage.sh
+#include container.sh
+#include createcluster.sh
+#include deletecluster.sh
+#include embed-dockerfile.sh
+#include error.sh
+#include exec.sh
+#include getcluster.sh
+#include main.sh
+#include util.sh
 
 # vim:ft=sh:sw=2:et:ts=2:

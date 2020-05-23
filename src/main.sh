@@ -1,39 +1,57 @@
-declare -i OK=0
-declare -i ERROR=1
-declare -i FALSE=0
-declare -i TRUE=1
-declare -i STOP=2
+# MAIN - execution starts here
 
-# ---------------------------------------------------------------------------
+# Declare externally defined variables ----------------------------------------
+
+# Defined in GL (globals.sh)
+declare OK ERROR STOP STDERR
+
+# main is the start point for this application.
 main() {
 
-  # Execution begins here
-
-  local r=$OK
+  init || return
 
   trap cleanup EXIT
 
-  set_globals || return
-
-  podman_or_docker || return
+  local retval="${OK}"
 
   sanity_checks || return
 
-  parse_options "$@" || r=$?
-
-  if [[ $r -eq $ERROR ]]; then
-    return $ERROR
-  elif [[ $r -eq $STOP ]]; then
-    return $OK
+  parse_options "$@" || retval=$?
+  if [[ ${retval} -eq ${ERROR} ]]; then
+    return "${ERROR}"
+  elif [[ ${retval} -eq ${STOP} ]]; then
+    return "${OK}"
   fi
 
-  case "$COMMAND" in
+  case $(PA_get_command) in
   create) do_create ;;
   delete) do_delete ;;
   build) do_build ;;
   get) do_get ;;
   exec) do_exec ;;
+  *)
+    printf 'INTERNAL ERROR: This should not happen.'
+    err || return "${ERROR}"
+    ;;
   esac
+}
+
+init() {
+  GL_init || return
+  UT_init || return
+  CT_init || return
+}
+
+# cleanup is called from an EXIT trap only, when the program exits.
+# It calls the cleanup functions from other 'modules'.
+cleanup() {
+
+  # Called when the script exits.
+
+  UT_cleanup
+  BI_cleanup
+
+  return "${OK}"
 }
 
 # do_create chooses which function to run for 'create SUBCOMMAND'.
@@ -42,10 +60,14 @@ do_create() {
 
   # Calls the correct command/subcommand function
 
-  case ${PA[SUBCOMMAND]} in
+  case $(PA_get_subcommand) in
   cluster)
     CC_sanity_checks || return
     CC_cluster_create
+    ;;
+  *)
+    printf 'INTERNAL ERROR: This should not happen.'
+    err || return "${ERROR}"
     ;;
   esac
 }
@@ -55,10 +77,14 @@ do_create() {
 # Args: None expected.
 do_build() {
 
-  case ${PA[SUBCOMMAND]} in
+  case $(PA_get_subcommand) in
   image)
     BI_sanity_checks || return
     BI_build_image
+    ;;
+  *)
+    printf 'INTERNAL ERROR: This should not happen.'
+    err || return "${ERROR}"
     ;;
   esac
 }

@@ -1,11 +1,13 @@
 # BI - Build Image
 
-# The following lines allow the use of '[C-i' and '[I' (do ':help [I') in vim.
-#include util.sh
-#include main.sh
-
 # BI is an associative array that holds data specific to building an image.
 declare -A BI
+
+# Declare externally defined variables ----------------------------------------
+
+#declare -A CT # <- container
+#declare -A UT  # <- utility
+#declare -A ER # <- error
 
 # Getters/Setters -------------------------------------------------------------
 
@@ -17,7 +19,7 @@ BI_set_useprebuiltimage() {
 
 # Public Functions ------------------------------------------------------------
 
-# BI_init sets the initial values for the BI assoc-array
+# BI_init sets the initial values for the BI associative array.
 # This function is called by parse_options once it knows which component is
 # being requested but before it sets any array members.
 # Args: None expected.
@@ -26,17 +28,9 @@ BI_init() {
   BI[subcommand]=
   BI[build_image_k8sver]=
   BI[baseimagename]="mok-centos-7"
-  # TODO:
-  BI[E]="/dev/stderr"
-  # TODO:
-  BI[podmanimgprefix]=
   BI[useprebuiltimage]=
   BI[dockerbuildtmpdir]=
   BI[runwithprogress_output]=
-
-  declare -i OK=0
-  declare -i ERROR=1
-  E=
 }
 
 # BI_build_usage outputs help text for the build image component.
@@ -83,12 +77,12 @@ BI_check_valid_options() {
   )
 
   for opt in "${validopts[@]}"; do
-    [[ $1 == "${opt}" ]] && return "${OK}"
+    [[ ${1} == "${opt}" ]] && return "${ER[OK]}"
   done
 
   usage
-  printf 'ERROR: "%s" is not a valid "build image" option.\n' "${1}" >"${E}"
-  return "${ERROR}"
+  printf 'ERROR: "%s" is not a valid "build image" option.\n' "${1}" >"${ER[E]}"
+  return "${ER[ERROR]}"
 }
 
 # BI_sanity_checks is expected to run some quick and simple checks to
@@ -132,7 +126,7 @@ _BI_build_container_image() {
 
   if [[ -z ${BI[useprebuiltimage]} ]]; then
     cmd="docker build \
-    -t "${PODMANIMGPREFIX}local/${tagname}" \
+    -t "${CT[imgprefix]}local/${tagname}" \
     --force-rm \
     ${buildargs} \
     ${BI[DOCKERBUILDTMPDIR]}/${BI[baseimagename]}"
@@ -147,10 +141,10 @@ _BI_build_container_image() {
 
   retval=$?
   [[ ${retval} -ne 0 ]] && {
-    printf 'ERROR: Docker returned an error, shown below\n\n' >"${E}"
-    cat "${RUNWITHPROGRESS_OUTPUT}" >"${E}"
-    printf '\n' >"${E}"
-    return "${ERROR}"
+    printf 'ERROR: Docker returned an error, shown below\n\n' >"${ER[stderr]}"
+    cat "${RUNWITHPROGRESS_OUTPUT}" >"${ER[stderr]}"
+    printf '\n' >"${ER[stderr]}"
+    return "${ER[ERROR]}"
   }
 
   return "${retval}"
@@ -187,7 +181,7 @@ _BI_get_build_args_for_k8s_ver() {
 _BI_create_docker_build_dir() {
 
   BI[dockerbuildtmpdir]="$(mktemp -d -p /var/tmp)" || {
-    printf 'ERROR: mktmp failed.\n' >"${E}"
+    printf 'ERROR: mktmp failed.\n' >"${ER[E]}"
     err || return
   }
 
@@ -198,5 +192,19 @@ _BI_create_docker_build_dir() {
   #mok-centos-7-tarball-start
   #mok-centos-7-tarball-end
 }
+
+# vim helpers -----------------------------------------------------------------
+
+# The following lines allow the use of '[C-i' and '[I' (do ':help [I') in vim.
+#include container.sh
+#include createcluster.sh
+#include deletecluster.sh
+#include embed-dockerfile.sh
+#include error.sh
+#include exec.sh
+#include getcluster.sh
+#include main.sh
+#include parser.sh
+#include util.sh
 
 # vim:ft=sh:sw=2:et:ts=2:

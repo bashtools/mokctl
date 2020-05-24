@@ -9,20 +9,8 @@ declare OK STDERR
 
 # Getters/Setters -------------------------------------------------------------
 
-UT_get_runfile() {
+UT_runfile() {
   printf '%s' "${UT[runfile]}"
-}
-
-UT_get_probablysuccess() {
-  printf '%s' "${UT[success]}"
-}
-
-UT_get_success() {
-  printf '%s' "${UT[success]}"
-}
-
-UT_get_failure() {
-  printf '%s' "${UT[success]}"
 }
 
 # Public Functions ------------------------------------------------------------
@@ -103,11 +91,11 @@ UT_run_with_progress() {
   # Mark success/fail
   if [[ ${retval} -eq 127 ]]; then
     # The job finished before we started waiting for it
-    printf '\r  %s\n' "$(UT_get_probablysuccess)"
+    printf '\r  %s\n' "${UT[probablysuccess]}"
   elif [[ ${retval} -eq 0 ]]; then
-    printf '\r  %s\n' "$(UT_get_success)"
+    printf '\r  %s\n' "${UT[success]}"
   else
-    printf '\r  %s\n' "$(UT_get_failure)"
+    printf '\r  %s\n' "${UT[failure]}"
   fi
 
   # Restore the cursor

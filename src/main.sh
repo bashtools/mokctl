@@ -4,6 +4,7 @@
 declare OK ERROR STOP STDERR
 
 # main is the start point for this application.
+# Args: arg1-N - the command line arguments sent by the user.
 main() {
 
   trap cleanup EXIT

@@ -45,8 +45,6 @@ init() {
 # Args: No args expected.
 cleanup() {
 
-  # Called when the script exits.
-
   UT_cleanup
   CU_cleanup
   BI_cleanup
@@ -57,8 +55,6 @@ cleanup() {
 # do_create chooses which function to run for 'create SUBCOMMAND'.
 # Args: No args expected.
 do_create() {
-
-  # Calls the correct command/subcommand function
 
   case $(PA_get_subcommand) in
   cluster)
@@ -93,9 +89,6 @@ do_build() {
 # see if key components are available.
 # Args: No args expected.
 sanity_checks() {
-
-  # Check our environment
-  # No args expected
 
   local binary
 

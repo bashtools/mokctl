@@ -6,13 +6,13 @@ declare -A BI
 # Declare externally defined variables ----------------------------------------
 
 # Defined in GL (globals.sh)
-declare OK ERROR STDERR
+declare ERROR STDERR
 
 # Getters/Setters -------------------------------------------------------------
 
-# BI_set_useprebuiltimage setter sets the useprebuiltimage array item.
+# BI_setflag_useprebuiltimage setter sets the useprebuiltimage array item.
 # This is called by the parser.
-BI_set_useprebuiltimage() {
+BI_setflag_useprebuiltimage() {
   BI[useprebuiltimage]="$1"
 }
 
@@ -33,7 +33,7 @@ BI_init() {
 }
 
 # BI_build_usage outputs help text for the build image component.
-# It is called by usage().
+# It is called by PA_usage().
 # Args: None expected.
 BI_build_usage() {
 
@@ -76,7 +76,7 @@ BI_check_valid_options() {
   )
 
   for opt in "${validopts[@]}"; do
-    [[ ${1} == "${opt}" ]] && return "${OK}"
+    [[ ${1} == "${opt}" ]] && return
   done
 
   usage
@@ -168,7 +168,7 @@ _BI_get_build_args_for_k8s_ver() {
     ;;
   *)
     printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-    err || return "${ERROR}"
+    err || return
     ;;
   esac
 

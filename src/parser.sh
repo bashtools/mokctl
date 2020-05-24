@@ -10,33 +10,35 @@ declare OK ERROR TRUE STOP STDERR
 
 # Getters/Setters -------------------------------------------------------------
 
-# ---------------------------------------------------------------------------
+# PA_build_usage outputs help text for a single component, if help was asked
+# for when a command was specified, or for all components otherwise.
+# Args: None expected.
 PA_usage() {
 
   case "${PA[command]}" in
   create)
     CC_usage
-    return "${OK}"
+    return
     ;;
   delete)
     DE_usage
-    return "${OK}"
+    return
     ;;
   build)
     BI_usage
-    return "${OK}"
+    return
     ;;
   get)
     GE_usage
-    return "${OK}"
+    return
     ;;
   exec)
     EX_usage
-    return "${OK}"
+    return
     ;;
   *)
     printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-    err || return "${ERROR}"
+    err || return
     ;;
   esac
 
@@ -106,29 +108,29 @@ PA_parse_options() {
   while [ "${ARGN}" -ne 0 ]; do
     case "${1}" in
     --skipmastersetup)
-      PA_verify_option '--skipmastersetup' || return "${ERROR}"
+      PA_verify_option '--skipmastersetup' || return
       #CREATE_CLUSTER_SKIPMASTERSETUP="${TRUE}"
       ;;
     --skipworkersetup)
-      PA_verify_option '--skipworkersetup' || return "${ERROR}"
+      PA_verify_option '--skipworkersetup' || return
       #CREATE_CLUSTER_SKIPWORKERSETUP=$TRUE
       ;;
     --skiplbsetup)
-      PA_verify_option '--skiplbsetup' || return "${ERROR}"
+      PA_verify_option '--skiplbsetup' || return
       #CREATE_CLUSTER_SKIPLBSETUP="$TRUE"
       ;;
     --with-lb)
-      PA_verify_option '--with-lb' || return "${ERROR}"
+      PA_verify_option '--with-lb' || return
       #CREATE_CLUSTER_WITH_LB="$TRUE"
       ;;
     --k8sver)
-      PA_verify_option '--k8sver' || return "${ERROR}"
+      PA_verify_option '--k8sver' || return
       # enable later -> BUILD_IMAGE_K8SVER="$1"
       shift
       ;;
     --get-prebuilt-image)
-      PA_verify_option '--get-prebuilt-image' || return "${ERROR}"
-      BI_set_useprebuiltimage "${TRUE}"
+      PA_verify_option '--get-prebuilt-image' || return
+      BI_setflag_useprebuiltimage "${TRUE}"
       ;;
     --help) ;&
     -h)
@@ -268,7 +270,7 @@ PA_check_subcommand_token() {
   get) PA_check_get_subcommand_token "$1" ;;
   *)
     printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-    err || return "${ERROR}"
+    err || return
     ;;
   esac
 }
@@ -355,7 +357,7 @@ PA_check_option_token() {
       ;;
     *)
       printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-      err || return "${ERROR}"
+      err || return
       ;;
     esac
     ;;
@@ -367,7 +369,7 @@ PA_check_option_token() {
       ;;
     *)
       printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-      err || return "${ERROR}"
+      err || return
       ;;
     esac
     ;;
@@ -379,7 +381,7 @@ PA_check_option_token() {
       ;;
     *)
       printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-      err || return "${ERROR}"
+      err || return
       ;;
     esac
     ;;
@@ -389,7 +391,7 @@ PA_check_option_token() {
     ;;
   *)
     printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-    err || return "${ERROR}"
+    err || return
     ;;
   esac
 }
@@ -410,7 +412,7 @@ PA_check_option2_token() {
       ;;
     *)
       printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-      err || return "${ERROR}"
+      err || return
       ;;
     esac
     ;;
@@ -421,13 +423,13 @@ PA_check_option2_token() {
       ;;
     *)
       printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-      err || return "${ERROR}"
+      err || return
       ;;
     esac
     ;;
   *)
     printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-    err || return "${ERROR}"
+    err || return
     ;;
   esac
 }
@@ -448,7 +450,7 @@ PA_check_option3_token() {
       ;;
     *)
       printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-      err || return "${ERROR}"
+      err || return
       ;;
     esac
     ;;
@@ -459,13 +461,13 @@ PA_check_option3_token() {
       ;;
     *)
       printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-      err || return "${ERROR}"
+      err || return
       ;;
     esac
     ;;
   *)
     printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-    err || return "${ERROR}"
+    err || return
     ;;
   esac
 }
@@ -507,9 +509,9 @@ PA_verify_option() {
     ;;
   *)
     printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-    err || return "${ERROR}"
+    err || return
     ;;
-  esac && return "${OK}"
+  esac && return
 
   return "${ERROR}"
 }
@@ -526,7 +528,7 @@ PA_check_valid_global_opts() {
   )
 
   for int in "${validopts[@]}"; do
-    [[ $1 == "${int}" ]] && return "${OK}"
+    [[ $1 == "${int}" ]] && return
   done
 
   PA_usage
@@ -551,7 +553,7 @@ PA_check_valid_create_cluster_opts() {
   )
 
   for opt in "${validopts[@]}"; do
-    [[ $1 == "${opt}" ]] && return "${OK}"
+    [[ $1 == "${opt}" ]] && return
   done
 
   PA_usage
@@ -571,7 +573,7 @@ PA_check_valid_delete_cluster_opts() {
   )
 
   for opt in "${validopts[@]}"; do
-    [[ $1 == "${opt}" ]] && return "${OK}"
+    [[ $1 == "${opt}" ]] && return
   done
 
   PA_usage
@@ -592,7 +594,7 @@ PA_check_valid_get_cluster_opts() {
   )
 
   for opt in "${validopts[@]}"; do
-    [[ $1 == "${opt}" ]] && return "${OK}"
+    [[ $1 == "${opt}" ]] && return
   done
 
   PA_usage
@@ -612,7 +614,7 @@ PA_check_valid_exec_cluster_opts() {
   )
 
   for opt in "${validopts[@]}"; do
-    [[ $1 == "${opt}" ]] && return "${OK}"
+    [[ $1 == "${opt}" ]] && return
   done
 
   PA_usage

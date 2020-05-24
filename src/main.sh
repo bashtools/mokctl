@@ -34,10 +34,11 @@ main() {
 # init sets start values for variables and calls the init in each 'module'.
 # Args: No args expected.
 init() {
-  GL_init || return # <- init globals
-  UT_init || return # <- init utilities
-  CU_init || return # <- init container utils
-  BI_init || return # <- init build image
+  GL_init || return # <- globals
+  UT_init || return # <- utilities
+  PA_init || return # <- parser
+  CU_init || return # <- container utils
+  BI_init || return # <- build image
 }
 
 # cleanup is called from an EXIT trap only, when the program exits.

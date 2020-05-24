@@ -12,6 +12,14 @@ declare OK ERROR TRUE STOP STDERR
 
 # Public Functions ------------------------------------------------------------
 
+# PA_init sets the initial values for the PArsers associative array.
+# Args: None expected.
+PA_init() {
+
+  PA[command]=
+  PA[subcommand]=
+}
+
 # ---------------------------------------------------------------------------
 PA_parse_options() {
 
@@ -72,7 +80,7 @@ PA_parse_options() {
         _PA_check_subcommand_token "${1}"
         [[ $? -eq ${ERROR} ]] && {
           _PA_usage
-          printf 'Invalid SUBCOMMAND for %s, "%s".\n\n' "${COMMAND}" "${1}" \
+          printf 'Invalid SUBCOMMAND for %s, "%s".\n\n' "${PA[command]}" "${1}" \
             >"${STDERR}"
           return "${ERROR}"
         }
@@ -81,8 +89,8 @@ PA_parse_options() {
         _PA_check_option_token "${1}"
         [[ $? -eq ${ERROR} ]] && {
           _PA_usage
-          printf 'Invalid OPTION for %s %s, "%s".\n\n' "${COMMAND}" \
-            "${SUBCOMMAND}" "${1}" >"${STDERR}"
+          printf 'Invalid OPTION for %s %s, "%s".\n\n' "${PA[command]}" \
+            "${PA[subcommand]}" "${1}" >"${STDERR}"
           return "${ERROR}"
         }
         ;;
@@ -90,8 +98,8 @@ PA_parse_options() {
         _PA_check_option2_token "$1"
         [[ $? -eq ${ERROR} ]] && {
           _PA_usage
-          printf 'Invalid OPTION for %s %s, "%s".\n\n' "${COMMAND}" \
-            "${SUBCOMMAND}" "${1}" >"${STDERR}"
+          printf 'Invalid OPTION for %s %s, "%s".\n\n' "${PA[command]}" \
+            "${PA[subcommand]}" "${1}" >"${STDERR}"
           return "${ERROR}"
         }
         ;;
@@ -99,15 +107,15 @@ PA_parse_options() {
         _PA_check_option3_token "${1}"
         [[ $? -eq ${ERROR} ]] && {
           _PA_usage
-          printf 'Invalid OPTION for %s %s, "%s".\n\n' "${COMMAND}" \
-            "${SUBCOMMAND}" "${1}" >"${STDERR}"
+          printf 'Invalid OPTION for %s %s, "%s".\n\n' "${PA[command]}" \
+            "${PA[subcommand]}" "${1}" >"${STDERR}"
           return "${ERROR}"
         }
         ;;
       END)
         _PA_usage
         printf 'ERROR No more options expected, "%s" is unexpected for "%s %s"\n' \
-          "${1}" "${COMMAND}" "${SUBCOMMAND}" >"${STDERR}"
+          "${1}" "${PA[command]}" "${PA[subcommand]}" >"${STDERR}"
         return "${ERROR}"
         ;;
       *)
@@ -121,12 +129,12 @@ PA_parse_options() {
     ARGN=$((ARGN - 1))
   done
 
-  [[ -z ${COMMAND} ]] && {
+  [[ -z ${PA[command]} ]] && {
     _PA_usage
     printf 'No COMMAND supplied\n' >"${STDERR}"
     return "${ERROR}"
   }
-  [[ -z ${SUBCOMMAND} ]] && {
+  [[ -z ${PA[subcommand]} ]] && {
     _PA_usage
     printf 'No SUBCOMMAND supplied\n' >"${STDERR}"
     return "${ERROR}"
@@ -232,24 +240,24 @@ _PA_check_command_token() {
 
   case "${1}" in
   create)
-    COMMAND="create"
+    PA[command]="create"
     STATE="SUBCOMMAND"
     ;;
   delete)
-    COMMAND="delete"
+    PA[command]="delete"
     STATE="SUBCOMMAND"
     ;;
   build)
-    COMMAND="build"
+    PA[command]="build"
     STATE="SUBCOMMAND"
     ;;
   get)
-    COMMAND="get"
+    PA[command]="get"
     STATE="SUBCOMMAND"
     ;;
   exec)
-    COMMAND="exec"
-    SUBCOMMAND="unused"
+    PA[command]="exec"
+    PA[subcommand]="unused"
     STATE="OPTION"
     ;;
   *) return "${ERROR}" ;;
@@ -263,7 +271,7 @@ _PA_check_subcommand_token() {
   # Args:
   #   arg1 - token
 
-  case "${COMMAND}" in
+  case "${PA[command]}" in
   create) _PA_check_create_subcommand_token "$1" ;;
   delete) _PA_check_delete_subcommand_token "$1" ;;
   build) _PA_check_build_subcommand_token "$1" ;;
@@ -283,7 +291,7 @@ _PA_check_create_subcommand_token() {
   #   arg1 - token
 
   case $1 in
-  cluster) SUBCOMMAND="cluster" ;;
+  cluster) PA[subcommand]="cluster" ;;
   *) return "${ERROR}" ;;
   esac
 
@@ -300,7 +308,7 @@ _PA_check_delete_subcommand_token() {
   #   arg1 - token
 
   case $1 in
-  cluster) SUBCOMMAND="cluster" ;;
+  cluster) PA[subcommand]="cluster" ;;
   *) return "${ERROR}" ;;
   esac
 
@@ -316,7 +324,7 @@ _PA_check_build_subcommand_token() {
 
   case $1 in
   image)
-    SUBCOMMAND="image"
+    PA[subcommand]="image"
     BI_init
     ;;
   *) return "${ERROR}" ;;
@@ -334,7 +342,7 @@ _PA_check_get_subcommand_token() {
 
   case "${1}" in
   clusters) ;&
-  cluster) SUBCOMMAND="cluster" ;;
+  cluster) PA[subcommand]="cluster" ;;
   *) return "${ERROR}" ;;
   esac
 
@@ -348,9 +356,9 @@ _PA_check_option_token() {
   # Args:
   #   arg1 - token
 
-  case "${COMMAND}" in
+  case "${PA[command]}" in
   create)
-    case "${SUBCOMMAND}" in
+    case "${PA[subcommand]}" in
     cluster)
       #CREATE_CLUSTER_NAME="${1}"
       STATE="OPTION2"
@@ -362,7 +370,7 @@ _PA_check_option_token() {
     esac
     ;;
   delete)
-    case "${SUBCOMMAND}" in
+    case "${PA[subcommand]}" in
     cluster)
       #DELETE_CLUSTER_NAME="${1}"
       STATE="END"
@@ -374,7 +382,7 @@ _PA_check_option_token() {
     esac
     ;;
   get)
-    case "${SUBCOMMAND}" in
+    case "${PA[subcommand]}" in
     cluster)
       #GET_CLUSTER_NAME="${1}"
       STATE="END"
@@ -403,9 +411,9 @@ _PA_check_option2_token() {
   # Args:
   #   arg1 - token
 
-  case "${COMMAND}" in
+  case "${PA[command]}" in
   create)
-    case "${SUBCOMMAND}" in
+    case "${PA[subcommand]}" in
     cluster)
       #CREATE_CLUSTER_NUM_MASTERS="$1"
       STATE="OPTION3"
@@ -417,7 +425,7 @@ _PA_check_option2_token() {
     esac
     ;;
   delete)
-    case "${SUBCOMMAND}" in
+    case "${PA[subcommand]}" in
     cluster)
       return "${ERROR}"
       ;;
@@ -441,9 +449,9 @@ _PA_check_option3_token() {
   # Args:
   #   arg1 - token
 
-  case "${COMMAND}" in
+  case "${PA[command]}" in
   create)
-    case "${SUBCOMMAND}" in
+    case "${PA[subcommand]}" in
     cluster)
       #CREATE_CLUSTER_NUM_WORKERS="$1"
       STATE="END"
@@ -455,7 +463,7 @@ _PA_check_option3_token() {
     esac
     ;;
   delete)
-    case "${SUBCOMMAND}" in
+    case "${PA[subcommand]}" in
     cluster)
       return "${ERROR}"
       ;;
@@ -484,7 +492,7 @@ _PA_verify_option() {
   # Args:
   #   arg1 - The option to check.
 
-  case "${COMMAND}${SUBCOMMAND}" in
+  case "${PA[command]}${PA[subcommand]}" in
   create) ;& # Treat flags located just before
   delete) ;& # or just after COMMAND
   build) ;&  # as global options.

@@ -152,10 +152,10 @@ CC_sanity_checks() {
   fi
 }
 
-# CC_cluster_create creates the kubernetes cluster.
+# CC_run creates the kubernetes cluster.
 # This function is called by main.sh.
 # Args: None expected.
-CC_cluster_create() {
+CC_run() {
 
   declare -i numnodes=0
 

@@ -61,10 +61,12 @@ cleanup() {
 # Args: No args expected.
 do_create() {
 
-  case $(PA_get_subcommand) in
+  local subcmd
+  subcmd="$(PA_get_subcommand)" || err || return
+  case ${subcmd} in
   cluster)
     CC_sanity_checks || return
-    CC_cluster_create
+    CC_run
     ;;
   *)
     printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
@@ -83,7 +85,54 @@ do_build() {
   case ${subcmd} in
   image)
     BI_sanity_checks || return
-    BI_build_image
+    BI_run
+    ;;
+  *)
+    printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
+    err || return "${ERROR}"
+    ;;
+  esac
+}
+
+# do_delete starts the delete cluster process.
+# Calls the correct build command/subcommand function
+# Args: No args expected.
+do_delete() {
+
+  local subcmd
+  subcmd=$(PA_get_subcommand) || err || return
+  case ${subcmd} in
+  cluster)
+    DC_sanity_checks || return
+    DC_run
+    ;;
+  *)
+    printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
+    err || return "${ERROR}"
+    ;;
+  esac
+}
+
+# do_exec starts the 'log in' to a container process.
+# Calls the correct build command/subcommand function
+# Args: No args expected.
+do_exec() {
+
+  EX_sanity_checks || return
+  EX_run # add arg1 "$EXEC_CONTAINER_NAME"
+}
+
+# do_build starts the build image process.
+# Calls the correct build command/subcommand function
+# Args: No args expected.
+do_get() {
+
+  local subcmd
+  subcmd=$(PA_get_subcommand) || err || return
+  case ${subcmd} in
+  cluster)
+    GE_sanity_checks || return
+    GE_run
     ;;
   *)
     printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"

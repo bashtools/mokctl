@@ -106,10 +106,10 @@ BI_check_valid_options() {
 # Args: None expected.
 BI_sanity_checks() { :; }
 
-# BI_build_image builds the base image used for masters and workers.
+# BI_run builds the base image used for masters and workers.
 # This function is called in main.sh.
 # Args: None expected.
-BI_build_image() {
+BI_run() {
 
   local retval=0
   _BI_build_container_image

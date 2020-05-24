@@ -3,7 +3,7 @@
 # UT is an associative array that holds data specific to shared utilities.
 declare -A UT
 
-# Declare externally defined associative arrays -------------------------------
+# Declare externally defined gloabl variables ---------------------------------
 
 declare OK STDERR
 

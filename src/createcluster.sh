@@ -179,7 +179,7 @@ CC_run() {
 
   #[[ -z ${CC[skipmastersetup]} ]] && {
   #  # TODO Query the server for all pods ready instead
-  #  run_with_progress \
+  #  UT_run_with_progress \
   #    "    Waiting for master to be ready." \
   #    sleep 40
   #}
@@ -212,7 +212,7 @@ create_lb_node() {
   labelkey=$(CU_labelkey) || err || return
 
   # Ceate container
-  run_with_progress \
+  UT_run_with_progress \
     "    Creating load balancer container, '${CC[clustername]}-lb'" \
     CU_create_container \
     "${CC[clustername]}-lb" \
@@ -238,7 +238,7 @@ setup_lb_node() {
 
   # Set up
   [[ -z $CREATE_CLUSTER_SKIPLBSETUP ]] && {
-    run_with_progress \
+    UT_run_with_progress \
       "    Setting up '${CC[clustername]}-lb'" \
       set_up_lb_node_real "${CC[clustername]}-lb"
     r=$?
@@ -328,7 +328,7 @@ create_master_nodes() {
   labelkey=$(CU_labelkey) || err || return
 
   for int in $(seq 1 "$1"); do
-    run_with_progress \
+    UT_run_with_progress \
       "    Creating master container, '${CC[clustername]}-master-${int}'" \
       CU_create_container \
       "${CC[clustername]}-master-${int}" \
@@ -345,7 +345,7 @@ create_master_nodes() {
     }
 
     [[ -z ${CC[skipmastersetup]} ]] && {
-      run_with_progress \
+      UT_run_with_progress \
         "    Setting up '${CC[clustername]}-master-$int'" \
         set_up_master_node "${CC[clustername]}-master-$int"
       r=$?
@@ -425,7 +425,7 @@ create_worker_nodes() {
   labelkey=$(CU_labelkey) || err || return
 
   for int in $(seq 1 "$1"); do
-    run_with_progress \
+    UT_run_with_progress \
       "    Creating worker container, '${CC[clustername]}-worker-$int'" \
       CU_create_container \
       "${CC[clustername]}-worker-${int}" \
@@ -443,7 +443,7 @@ create_worker_nodes() {
 
     [[ -n $CREATE_CLUSTER_SKIPWORKERSETUP || -n \
     ${CC[skipmastersetup]} ]] || {
-      run_with_progress \
+      UT_run_with_progress \
         "    Setting up '${CC[clustername]}-worker-$int'" \
         set_up_worker_node "${CC[clustername]}-worker-$int" \
         "$cahash" "$token" "$masterip"

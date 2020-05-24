@@ -98,7 +98,7 @@ do_delete_cluster_mutate() {
   printf '\n'
 
   for id in $ids; do
-    run_with_progress \
+    UT_run_with_progress \
       "    Deleting id, '$id' from cluster '$DELETE_CLUSTER_NAME'." \
       delete_docker_container "$id"
     r=$?

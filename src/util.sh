@@ -51,8 +51,8 @@ UT_run_with_progress() {
   # Display a progress spinner, display item text, display a tick or cross
   # based on the exit code.
   # Args:
-  #   arg1 - the text to display
-  #   argN - remaining args are the program and its arguments
+  #   arg1 - the text to display.
+  #   argN - remaining args are the program to run and its arguments.
 
   local displaytext=$1 retval int spinner=()
 
@@ -68,8 +68,8 @@ UT_run_with_progress() {
 
   # Run the command in the background
   (
-    eval "$*"
-  ) &>"${UT[runlogfile]}" &
+    eval "$*" &>"${UT[runlogfile]}"
+  ) &
 
   # Turn the cursor off
   tput civis

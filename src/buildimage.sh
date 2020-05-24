@@ -153,11 +153,11 @@ _BI_build_container_image() {
     text="Downloading"
   fi
 
-  run_with_progress \
+  UT_run_with_progress \
     "    ${text} base image, '${tagname}'" "${cmd}"
 
   retval=$?
-  [[ ${retval} -ne 0 ]] && {
+  [[ ${retval} -ne ${OK} ]] && {
     local runlogfile
     runlogfile=$(UT_runlogfile) || err || return
     printf 'ERROR: Docker returned an error, shown below\n\n' >"${STDERR}"
@@ -165,6 +165,8 @@ _BI_build_container_image() {
     printf '\n' >"${STDERR}"
     return "${ERROR}"
   }
+
+  return "${OK}"
 }
 
 # _BI_get_build_args_for_k8s_ver sets the buildargs variable that is added

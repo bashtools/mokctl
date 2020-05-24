@@ -34,6 +34,12 @@ ER_err() {
   return "${ERROR}"
 }
 
+# err calls ER_err since it is used in so many places it should be small.
+err() {
+  ER_err
+  return
+}
+
 # vim helpers -----------------------------------------------------------------
 #include globals.sh
 # vim:ft=sh:sw=2:et:ts=2:

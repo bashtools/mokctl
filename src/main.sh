@@ -160,11 +160,6 @@ sanity_checks() {
   [ -t 1 ] || UT_disable_colours
 }
 
-# Calls main() if we're called from the command line
-if [ "$0" = "${BASH_SOURCE[0]}" ] || [ -z "${BASH_SOURCE[0]}" ]; then
-  main "$@"
-fi
-
 # vim helpers -----------------------------------------------------------------
 #include globals.sh
 # vim:ft=sh:sw=2:et:ts=2:

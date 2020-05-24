@@ -26,11 +26,16 @@ CU_labelkey() {
 # CU_new sets the initial values for the Container Utils associative array.
 # Args: None expected.
 CU_new() {
-
   CU[imgprefix]=
   CU[labelkey]=
   CU[containerrt]=
+
+  _CU_podman_or_docker
 }
+
+# CU_cleanup remove things that were created during execution. Currently
+# this does nothing.
+CU_cleanup() { :; }
 
 # CU_get_cluster_docker_ids outputs just the container IDs, one per line
 # for any MOK cluster, unless arg1 is set, in which case just the IDs
@@ -68,7 +73,7 @@ CU_get_cluster_size() {
     err || return
   }
 
-  output=$(get_docker_ids_for_cluster "$1") || return
+  output=$(CU_get_cluster_docker_ids "$1") || err || return
 
   # readarray will read null as an array item so don't run
   # through readarray if it's null

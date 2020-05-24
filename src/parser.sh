@@ -29,7 +29,7 @@ PA_subcommand() {
 PA_new() {
   PA[command]=
   PA[subcommand]=
-  PA[state]=
+  PA[state]="COMMAND"
 }
 
 # PA_parse_options implements an interleaved state machine to process the

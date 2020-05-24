@@ -1,6 +1,6 @@
 # UT - Utilities
 
-# UT is an associative array that holds data specific to building an image.
+# UT is an associative array that holds data specific to shared utilities.
 declare -A UT
 
 # Declare externally defined associative arrays -------------------------------

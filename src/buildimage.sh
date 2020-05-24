@@ -36,7 +36,6 @@ BI_baseimagename() {
 # being requested but before it sets any array members.
 # Args: None expected.
 BI_new() {
-
   BI[k8sver]="1.18.2"
   BI[baseimagename]="mok-centos-7"
   BI[useprebuiltimage]=
@@ -166,8 +165,6 @@ _BI_build_container_image() {
     printf '\n' >"${STDERR}"
     return "${ERROR}"
   }
-
-  return
 }
 
 # _BI_get_build_args_for_k8s_ver sets the buildargs variable that is added

@@ -15,19 +15,12 @@ declare ERROR TRUE STDERR
 # ER_new sets the initial values for the ER associative array.
 # Args: None expected.
 ER_new() {
-
   ER[errcalled]=
-
 }
 
+# ER_err outputs a stacktrace and returns ERROR status.
+# Args: None expected.
 ER_err() {
-  return "$(_ER_err)"
-}
-
-# Private Functions -----------------------------------------------------------
-
-# ---------------------------------------------------------------------------
-_ER_err() {
 
   # In case of error print the function call stack
   # No args expected

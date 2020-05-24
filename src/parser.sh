@@ -20,12 +20,19 @@ PA_init() {
   PA[subcommand]=
 }
 
-# ---------------------------------------------------------------------------
+# PA_parse_options implements an interleaved state machine to process the
+# user request. It allows for strict checking of arguments and options.
+#
+# Each COMMAND can have a different set of requirements which are controlled
+# by setting the next state at each transition.
+#
+# --global-option COMMAND --command-option SUBCOMMAND OPTION1 OPTION2 OPTION3 ...
+#
+# --global-options are those before COMMAND.
+# --command-options can be anywhere after the COMMAND.
+#
+# Args: arg1-N - The arguments given to mokctl by the user on the command line
 PA_parse_options() {
-
-  # Uses a state machine to check all command line arguments
-  # Args:
-  #   arg1 - The arguments given to mokctl by the user on the command line
 
   set -- "$@"
   local ARGN=$#
@@ -145,7 +152,7 @@ PA_parse_options() {
 
 # Private Functions -----------------------------------------------------------
 
-# _PA_usage outputs help text for a single component, if help was asked for when
+# _PA_usage outputs help text for a single component if help was asked for when
 # a command was specified, or for all components otherwise.
 # Args: None expected.
 _PA_usage() {

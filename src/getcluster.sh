@@ -1,3 +1,28 @@
+# GE - GEt cluster
+
+# GE is an associative array that holds data specific to the get cluster command.
+declare -A GE
+
+# Declare externally defined variables ----------------------------------------
+
+declare OK ERROR STDERR
+
+# Getters/Setters -------------------------------------------------------------
+
+# Public Functions ------------------------------------------------------------
+
+# GE_init sets the initial values for the GE associative array.
+# This function is called by main().
+# Args: None expected.
+CU_init() {
+
+  GE[dummy]=
+}
+
+CU_cleanup() {
+  :
+}
+
 # ---------------------------------------------------------------------------
 GE_check_valid_options() {
 
@@ -13,13 +38,13 @@ GE_check_valid_options() {
     [[ $1 == "${opt}" ]] && return
   done
 
-  _PA_usage
+  GE_usage
   printf 'ERROR: "%s" is not a valid "get cluster" option.\n' "$1" >"${STDERR}"
   return "${ERROR}"
 }
 
 # ---------------------------------------------------------------------------
-get_usage() {
+GE_usage() {
 
   cat <<'EnD'
 GET subcommands are:
@@ -74,12 +99,10 @@ do_get_clusters_nomutate() {
 
   declare -a nodes
 
-  [[ -n $clustname ]] && clustname="=$clustname"
+  ids=$(CU_get_cluster_docker_ids "${clustname}") || return
 
-  ids=$(get_mok_cluster_docker_ids "$clustname") || return
-
-  if [[ -z $ids ]]; then
-    return $OK
+  if [[ -z ${ids} ]]; then
+    return "${OK}"
   fi
 
   readarray -t nodes <<<"$ids"
@@ -98,7 +121,7 @@ do_get_clusters_nomutate() {
 
   for id in "${nodes[@]}"; do
 
-    info=$(get_info_about_container_using_docker "$id") || return
+    info=$(CU_get_container_info "$id") || return
 
     clustname=$(sed -rn \
       '/Labels/,/}/ {s/[":,]//g; s/^ *'"$LABELKEY"' ([^ ]*).*/\1/p }' \
@@ -120,21 +143,6 @@ do_get_clusters_nomutate() {
 }
 
 # ---------------------------------------------------------------------------
-get_docker_container_ip() {
-
-  # Args:
-  #   arg1 - docker container id or container name
-
-  docker inspect \
-    --format='{{.NetworkSettings.IPAddress}}' \
-    "$1" || {
-    printf 'ERROR: docker failed\n\n' >"$E"
-    err || return
-  }
-
-}
-
-# ---------------------------------------------------------------------------
 get_mok_cluster_docker_ids() {
 
   # Use 'docker ps .. label= ..' to get a list of mok clusters
@@ -142,19 +150,6 @@ get_mok_cluster_docker_ids() {
   #   arg1 - mok cluster name, optional
 
   docker ps -a -f label="$LABELKEY$1" -q || {
-    printf 'ERROR: docker failed\n' >"$E"
-    err || return
-  }
-}
-
-# ---------------------------------------------------------------------------
-get_info_about_container_using_docker() {
-
-  # Use 'docker inspect $id' to get details about container $id
-  # Args
-  #   arg1 - docker container id
-
-  docker inspect "$1" || {
     printf 'ERROR: docker failed\n' >"$E"
     err || return
   }

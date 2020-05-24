@@ -216,7 +216,7 @@ create_lb_node() {
     "$(CU_labelkey)=${CC[clustername]}" \
     "${CC[k8sver]}"
 
-  [[ $r -ne 0 ]] && {
+  [[ ${r} -ne 0 ]] && {
     printf '\n' >"$E"
     cat $RUNWITHPROGRESS_OUTPUT >"$E"
     printf '\nERROR: Set up failed. See above, and also in the file:' >"$E"
@@ -269,8 +269,8 @@ set_up_lb_node_real() {
   masteriplist=
   nl=
   for idx in $(seq 1 "${CC[nummasters]}"); do
-    ip=$(get_docker_container_ip "${CC[clustername]}-master-${idx}")
-    masteriplist="$masteriplist$nl    server master-$idx $ip:6443 check fall 3 rise 2"
+    ip=$(CU_get_container_ip "${CC[clustername]}-master-${idx}") || return
+    masteriplist="${masteriplist}${nl}    server master-${idx} ${ip}:6443 check fall 3 rise 2"
     nl='\n'
   done
 
@@ -361,7 +361,7 @@ create_master_nodes() {
   [[ -z ${CC[skipmastersetup]} && $masternum -eq 1 ]] && {
     mkdir -p ~/.mok/
     if [[ ${CC[withlb]} -eq $TRUE ]]; then
-      lbaddr=$(get_docker_container_ip "${CC[clustername]}-lb")
+      lbaddr=$(CU_get_container_ip "${CC[clustername]}-lb")
       docker cp "${CC[clustername]}-master-1":/etc/kubernetes/admin.conf \
         /var/tmp/admin.conf || err || return
       sed -i 's#\(server: https://\)[0-9.]*\(:.*\)#\1'"$lbaddr"'\2#' /var/tmp/admin.conf
@@ -483,7 +483,7 @@ get_master_join_details() {
     return $ERROR
   }
 
-  master1ip=$(get_docker_container_ip "${CC[clustername]}-master-1") || err || return
+  master1ip=$(CU_get_container_ip "${CC[clustername]}-master-1") || err || return
 
   cat <<EnD >"$joinvarsfile"
 #!/bin/bash
@@ -536,7 +536,7 @@ set_up_master_node_v1_18_2() {
     # This is the first master node
 
     # Sets cahash, token, and masterip:
-    lbaddr=$(get_docker_container_ip "${CC[clustername]}-lb")
+    lbaddr=$(CU_get_container_ip "${CC[clustername]}-lb")
     certSANs="certSANs: [ '$lbaddr' ]"
     uploadcerts="--upload-certs"
     certkey="CertificateKey: f8802e114ef118304e561c3acd4d0b543adc226b7a27f675f56564185ffe0c07"
@@ -694,7 +694,7 @@ EnD
     docker exec "$1" bash /root/removetaint.sh || err
   }
 
-  return $OK
+  return "${OK}"
 }
 
 # ---------------------------------------------------------------------------
@@ -712,7 +712,7 @@ set_up_worker_node_v1_18_2() {
   }
 
   if [[ ${CC[withlb]} == "${TRUE}" ]]; then
-    masterip=$(get_docker_container_ip "${CC[clustername]}-lb")
+    masterip=$(CU_get_container_ip "${CC[clustername]}-lb") || return
   fi
 
   cat <<EnD >"$setupfile"

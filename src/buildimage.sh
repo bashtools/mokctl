@@ -72,7 +72,11 @@ EnD
 BI_cleanup() {
   [[ -e ${BI[dockerbuildtmpdir]} ]] &&
     [[ ${BI[dockerbuildtmpdir]} == "/var/tmp/"* ]] && {
-    rm -rf "${BI[dockerbuildtmpdir]}"
+    rm -rf "${BI[dockerbuildtmpdir]}" || {
+      printf 'ERROR: "rm -rf %s" failed.\n' "${BI[dockerbuildtmpdir]}" \
+        >"${STDERR}"
+      err || return
+    }
   }
 }
 
@@ -117,6 +121,7 @@ BI_build_image() {
     : # We only need the tick - no text
   else
     printf 'Image build failed\n' >"${STDERR}"
+    err
   fi
 
   return "${retval}"

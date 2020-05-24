@@ -23,23 +23,6 @@ CU_labelkey() {
 
 # Public Functions ------------------------------------------------------------
 
-# CU_init sets the initial values for the CU associative array and works
-# out which container runtime to use, podman or docker.
-# This function is called by main().
-# Args: None expected.
-CU_init() {
-
-  CU[imgprefix]=
-  CU[containerrt]=
-  CU[labelkey]='MokCluster'
-
-  _CU_podman_or_docker || return
-}
-
-CU_cleanup() {
-  :
-}
-
 # CU_get_cluster_docker_ids outputs just the container IDs, one per line
 # for any MOK cluster, unless arg1 is set, in which case just the IDs
 # for the requests cluster name are output.
@@ -51,7 +34,7 @@ CU_get_cluster_docker_ids() {
   [[ -n $1 ]] && value="=$1"
 
   output=$(docker ps -a -f label="${CU[label]}${value}" -q) || {
-    printf 'ERROR: Docker command failed\n\n' >"${STDERR}"
+    printf 'ERROR: %s command failed\n' "${CU[containerrt]}" >"${STDERR}"
     err || return
   }
 
@@ -72,7 +55,7 @@ CU_get_cluster_size() {
   declare -a nodes
 
   [[ -z ${1} ]] && {
-    printf 'INTERNAL ERROR: Cluster name cannot be empty.' >"${STDERR}"
+    printf 'INTERNAL ERROR: Cluster name cannot be empty.\n' >"${STDERR}"
     err || return
   }
 
@@ -98,10 +81,11 @@ CU_get_cluster_size() {
 #       arg3 - The k8s base image version to use.
 CU_create_container() {
 
-  local imagename img what allimgs
+  local imagename img allimgs
 
   [[ -z $1 || -z $2 || -z $3 ]] && {
-    printf 'INTERNAL ERROR: Neither arg1, arg2 nor arg3 can be empty.'
+    printf 'INTERNAL ERROR: Neither arg1, arg2 nor arg3 can be empty.\n' \
+      >"${STDERR}"
     err || return
   }
 
@@ -112,8 +96,7 @@ CU_create_container() {
 
   # Prefer a locally built container over one downloaded from a registry
   allimgs=$(podman images -n) || {
-    what="${CU[containerrt]}"
-    printf 'ERROR: %s returned an error' "${what}"
+    printf 'ERROR: %s returned an error' "${CU[containerrt]}\n" >"${STDERR}"
     err || return
   }
 
@@ -142,7 +125,43 @@ EnD
     --name "$1" \
     --hostname "$1" \
     --label "$2" \
-    "${imagename}" || err
+    "${imagename}" || {
+    printf 'ERROR: %s run failed\n' "${CU[containerrt]}" >"${STDERR}"
+    err || return
+  }
+}
+
+# CU_get_container_ip outputs the IP address of the container.
+# Args: arg1 - docker container id or container name to query.
+CU_get_container_ip() {
+
+  [[ -z ${1} ]] && {
+    printf 'INTERNAL ERROR: Container ID (arg1) cannot be empty.\n' >"${STDERR}"
+    err || return
+  }
+
+  docker inspect \
+    --format='{{.NetworkSettings.IPAddress}}' \
+    "$1" || {
+    printf 'ERROR: %s inspect failed\n' "${CU[containerrt]}" >"${STDERR}"
+    err || return
+  }
+}
+
+# CU_get_container_info uses 'docker inspect $id' to output
+# container details.
+# Args: arg1 - docker container id
+CU_get_container_info() {
+
+  [[ -z ${1} ]] && {
+    printf 'INTERNAL ERROR: Container ID (arg1) cannot be empty.\n' >"${STDERR}"
+    err || return
+  }
+
+  docker inspect "$1" || {
+    printf 'ERROR: %s inspect failed\n' "${CU[containerrt]}" >"${STDERR}"
+    err || return
+  }
 }
 
 # Private Functions -----------------------------------------------------------
@@ -189,47 +208,6 @@ EnD
   fi
 
   return "${OK}"
-}
-
-# ---------------------------------------------------------------------------
-get_docker_container_ip() {
-
-  # Args:
-  #   arg1 - docker container id or container name
-
-  docker inspect \
-    --format='{{.NetworkSettings.IPAddress}}' \
-    "$1" || {
-    printf 'ERROR: docker failed\n\n' >"${STDERR}"
-    err || return
-  }
-
-}
-
-# ---------------------------------------------------------------------------
-get_mok_cluster_docker_ids() {
-
-  # Use 'docker ps .. label= ..' to get a list of mok clusters
-  # Args
-  #   arg1 - mok cluster name, optional
-
-  docker ps -a -f label="${CU[labelkey]}${1}" -q || {
-    printf 'ERROR: docker failed\n' >"${STDERR}"
-    err || return
-  }
-}
-
-# ---------------------------------------------------------------------------
-get_info_about_container_using_docker() {
-
-  # Use 'docker inspect $id' to get details about container $id
-  # Args
-  #   arg1 - docker container id
-
-  docker inspect "$1" || {
-    printf 'ERROR: docker failed\n' >"${STDERR}"
-    err || return
-  }
 }
 
 # vim helpers -----------------------------------------------------------------

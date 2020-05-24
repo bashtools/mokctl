@@ -1,8 +1,95 @@
-# GLOBALS
-# Don't change any globals
+# CC - Create Cluster
 
-# ---------------------------------------------------------------------------
-create_usage() {
+# CC is an associative array that holds data specific to creating a cluster.
+declare -A CC
+
+# Declare externally defined variables ----------------------------------------
+
+# Defined in GL (globals.sh)
+declare OK ERROR STDERR
+
+# Getters/Setters -------------------------------------------------------------
+
+# CC_setflag_skipmastersetup setter sets the skipmastersetup array item.
+# This function is called by the parser.
+CC_setflag_skipmastersetup() {
+  CC[skipmastersetup]="$1"
+}
+
+# CC_setflag_skipworkersetup setter sets the skipmastersetup array item.
+# This function is called by the parser.
+CC_setflag_skipworkersetup() {
+  CC[skipworkersetup]="$1"
+}
+
+# CC_setflag_skiplbsetup setter sets the skipmastersetup array item.
+# This function is called by the parser.
+CC_setflag_skiplbsetup() {
+  CC[skiplbsetup]="$1"
+}
+
+# CC_setflag_withlb setter sets the skipmastersetup array item.
+# This function is called by the parser.
+CC_setflag_withlb() {
+  CC[withlb]="$1"
+}
+
+# CC_set_clustername setter sets the clustername array item.
+CC_set_clustername() {
+  CC[clustername]="$1"
+}
+
+# CC_set_nummasters setter sets the nummasters array item.
+# This function is called by the parser.
+CC_set_nummasters() {
+  CC[nummasters]="$1"
+}
+
+# CC_set_numworkers setter sets the numworkers array item.
+# This function is called by the parser.
+CC_set_numworkers() {
+  CC[numworkers]="$1"
+}
+
+# Public Functions ------------------------------------------------------------
+
+# CC_init sets the initial values for the CC associative array.
+# This function is called by parse_options once it knows which component is
+# being requested but before it sets any array members.
+# Args: None expected.
+CC_init() {
+
+  CC[k8sver]="1.18.2"
+}
+
+# CC_check_valid_options checks if arg1 is in a list of valid create cluster
+# options. This function is called by the parser.
+# Args: arg1 - the option to check.
+CC_check_valid_options() {
+
+  local opt validopts=(
+    "--help"
+    "-h"
+    "--skipmastersetup"
+    "--skipworkersetup"
+    "--skiplbsetup"
+    "--k8sver"
+    "--with-lb"
+  )
+
+  for opt in "${validopts[@]}"; do
+    [[ $1 == "${opt}" ]] && return
+  done
+
+  _PA_usage
+  printf 'ERROR: "%s" is not a valid "create cluster" option.\n' "$1" >"${STDERR}"
+  return "${ERROR}"
+}
+
+# CC_usage outputs help text for the create cluster component.
+# It is called by PA_usage().
+# Args: None expected.
+CC_usage() {
 
   cat <<'EnD'
 CREATE subcommands are:
@@ -38,151 +125,81 @@ create cluster [flags] options:
 EnD
 }
 
+# CC_sanity_checks is expected to run some quick and simple checks to see if it
+# has all it's key components. This function is called in main.sh. At this
+# point all parsing has been completed and flags set.
+# Args: None expected.
 # ---------------------------------------------------------------------------
-do_create() {
+CC_sanity_checks() {
 
-  # Calls the correct command/subcommand function
-
-  case $SUBCOMMAND in
-  cluster)
-    do_create_cluster_sanity_checks || return
-    do_create_cluster_mutate
-    ;;
-  esac
-}
-
-# ---------------------------------------------------------------------------
-do_create_cluster_sanity_checks() {
-
-  # Creates a mok cluster. All user vars have been parsed and saved.
-  # Globals: CREATE_CLUSTER_NAME CREATE_CLUSTER_NUM_MASTERS
-  #          CREATE_CLUSTER_NUM_WORKERS
-  # No args expected
-
-  if [[ -z $CREATE_CLUSTER_NAME ]]; then
+  if [[ -z ${CC[clustername]} ]]; then
     usage
-    printf 'Please provide the Cluster NAME to create.\n' >"$E"
-    return $ERROR
+    printf 'Please provide the Cluster NAME to create.\n' >"${STDERR}"
+    return "${ERROR}"
   fi
 
-  if [[ -z $CREATE_CLUSTER_NUM_MASTERS || $CREATE_CLUSTER_NUM_MASTERS -le 0 ]]; then
+  if [[ -z ${CC[nummasters]} || ${CC[nummasters]} -le 0 ]]; then
     usage
-    printf 'Please provide the number of Masters to create. Must be 1 or more.\n' >"$E"
-    return $ERROR
+    printf 'Please provide the number of Masters to create. Must be 1 or more.\n' \
+      >"${STDERR}"
+    return "${ERROR}"
   fi
 
-  if [[ -z $CREATE_CLUSTER_NUM_WORKERS ]]; then
+  if [[ -z ${CC[numworkers]} ]]; then
     usage
-    printf 'Please provide the number of Workers to create.\n' >"$E"
-    return $ERROR
+    printf 'Please provide the number of Workers to create.\n' >"${STDERR}"
+    return "${ERROR}"
   fi
 }
 
-# ===========================================================================
-#                                MUTATIONS
-#                FUNCTIONS IN THIS SECTION CHANGE SYSTEM STATE
-# ===========================================================================
-
-# ---------------------------------------------------------------------------
-do_create_cluster_mutate() {
-
-  # Mutate functions make system changes.
-  # Global variables:
-  #   CREATE_CLUSTER_NAME        - (string) cluster name
-  #   CREATE_CLUSTER_NUM_MASTERS - (int) num masters
-  #   CREATE_CLUSTER_NUM_WORKERS - (int) num workers
+# CC_cluster_create creates the kubernetes cluster.
+# This function is called by main.sh.
+# Args: None expected.
+CC_cluster_create() {
 
   declare -i numnodes=0
 
-  numnodes=$(get_cluster_size $CREATE_CLUSTER_NAME) || return
+  numnodes=$(get_cluster_size "${CC[clustername]}") || return
 
-  [[ $numnodes -gt 0 ]] && {
-    printf '\nERROR: Cluster, "%s", exists! Aborting.\n\n' "$CREATE_CLUSTER_NAME" >"$E"
-    return $ERROR
+  [[ ${numnodes} -gt 0 ]] && {
+    printf '\nERROR: Cluster, "%s", exists! Aborting.\n\n' "${CC[clustername]}" \
+      >"${STDERR}"
+    return "${ERROR}"
   }
 
   printf '\n'
 
-  [[ $CREATE_CLUSTER_WITH_LB -gt 0 ]] && {
-    create_lb_node $CREATE_CLUSTER_NUM_MASTERS || return
+  [[ ${CC[withlb]} -gt 0 ]] && {
+    create_lb_node "${CC[nummasters]}" || return
   }
 
-  [[ $CREATE_CLUSTER_NUM_MASTERS -gt 0 ]] && {
-    create_master_nodes $CREATE_CLUSTER_NUM_MASTERS || return
+  [[ ${CC[nummasters]} -gt 0 ]] && {
+    create_master_nodes "${CC[nummasters]}" || return
   }
 
-  #[[ -z $CREATE_CLUSTER_SKIPMASTERSETUP ]] && {
+  #[[ -z ${CC[skipmastersetup]} ]] && {
   #  # TODO Query the server for all pods ready instead
   #  run_with_progress \
   #    "    Waiting for master to be ready." \
   #    sleep 40
   #}
 
-  [[ $CREATE_CLUSTER_WITH_LB -gt 0 ]] && {
-    setup_lb_node $CREATE_CLUSTER_NUM_MASTERS || return
+  [[ ${CC[withlb]} -gt 0 ]] && {
+    setup_lb_node "${CC[nummasters]}" || return
   }
 
-  [[ $CREATE_CLUSTER_NUM_WORKERS -gt 0 ]] && {
-    create_worker_nodes "$CREATE_CLUSTER_NUM_WORKERS" || return
+  [[ ${CC[numworkers]} -gt 0 ]] && {
+    create_worker_nodes "${CC[numworkers]}" || return
   }
 
   printf '\n'
 
-  [[ -z $CREATE_CLUSTER_SKIPMASTERSETUP ]] && {
-    printf 'Cluster, "%s", can be accessed using:\n\n' "$CREATE_CLUSTER_NAME"
+  [[ -z ${CC[skipmastersetup]} ]] && {
+    printf 'Cluster, "%s", can be accessed using:\n\n' "${CC[clustername]}"
     printf 'export KUBECONFIG=/var/tmp/admin.conf\n\n'
   }
 
-  return $OK
-}
-
-# ---------------------------------------------------------------------------
-get_cluster_size() {
-
-  # Search for an existing cluster using labels. All cluster nodes are
-  # labelled with $LABELKEY=$CREATE_CLUSTER_NAME
-  # Args:
-  #   arg1 - name to search for.
-
-  local output
-  declare -a nodes
-
-  output=$(get_docker_ids_for_cluster "$1") || err || return
-
-  # readarray will read null as an array item so don't run
-  # through readarray if it's null
-  [[ -z $output ]] && {
-    printf '0'
-    return $OK
-  }
-
-  # read the nodes array and delete blank lines
-  readarray -t nodes <<<"$output"
-
-  printf '%d' "${#nodes[*]}"
-}
-
-# ---------------------------------------------------------------------------
-get_docker_ids_for_cluster() {
-
-  # Get all cluster ids for labelled containers
-  # Args:
-  #   arg1 - Cluster name
-
-  local value output
-
-  [[ -n $1 ]] && value="=$1"
-
-  output=$(docker ps -a -f label="$LABELKEY$value" -q) || {
-    printf 'ERROR: Docker command failed\n\n' >"$E"
-    err || return
-  }
-
-  output=$(printf '%s' "$output" | sed 's/$//')
-
-  printf '%s' "$output"
-
-  return $OK
+  return "${OK}"
 }
 
 # ---------------------------------------------------------------------------
@@ -193,10 +210,11 @@ create_lb_node() {
 
   # Ceate container
   run_with_progress \
-    "    Creating load balancer container, '$CREATE_CLUSTER_NAME-lb'" \
-    create_docker_container \
-    "$CREATE_CLUSTER_NAME-lb" \
-    "$LABELKEY=$CREATE_CLUSTER_NAME"
+    "    Creating load balancer container, '${CC[clustername]}-lb'" \
+    CU_create_container \
+    "${CC[clustername]}-lb" \
+    "$(CU_labelkey)=${CC[clustername]}" \
+    "${CC[k8sver]}"
 
   [[ $r -ne 0 ]] && {
     printf '\n' >"$E"
@@ -218,8 +236,8 @@ setup_lb_node() {
   # Set up
   [[ -z $CREATE_CLUSTER_SKIPLBSETUP ]] && {
     run_with_progress \
-      "    Setting up '$CREATE_CLUSTER_NAME-lb'" \
-      set_up_lb_node_real "$CREATE_CLUSTER_NAME-lb"
+      "    Setting up '${CC[clustername]}-lb'" \
+      set_up_lb_node_real "${CC[clustername]}-lb"
     r=$?
 
     [[ $r -ne 0 ]] && {
@@ -250,8 +268,8 @@ set_up_lb_node_real() {
 
   masteriplist=
   nl=
-  for idx in $(seq 1 $CREATE_CLUSTER_NUM_MASTERS); do
-    ip=$(get_docker_container_ip "$CREATE_CLUSTER_NAME-master-$idx")
+  for idx in $(seq 1 "${CC[nummasters]}"); do
+    ip=$(get_docker_container_ip "${CC[clustername]}-master-${idx}")
     masteriplist="$masteriplist$nl    server master-$idx $ip:6443 check fall 3 rise 2"
     nl='\n'
   done
@@ -305,10 +323,11 @@ create_master_nodes() {
 
   for int in $(seq 1 "$1"); do
     run_with_progress \
-      "    Creating master container, '$CREATE_CLUSTER_NAME-master-$int'" \
-      create_docker_container \
-      "$CREATE_CLUSTER_NAME-master-$int" \
-      "$LABELKEY=$CREATE_CLUSTER_NAME"
+      "    Creating master container, '${CC[clustername]}-master-${int}'" \
+      CU_create_container \
+      "${CC[clustername]}-master-${int}" \
+      "$(CU_labelkey)=${CC[clustername]}" \
+      "${CC[k8sver]}"
     r=$?
 
     [[ $r -ne 0 ]] && {
@@ -319,10 +338,10 @@ create_master_nodes() {
       return $ERROR
     }
 
-    [[ -z $CREATE_CLUSTER_SKIPMASTERSETUP ]] && {
+    [[ -z ${CC[skipmastersetup]} ]] && {
       run_with_progress \
-        "    Setting up '$CREATE_CLUSTER_NAME-master-$int'" \
-        set_up_master_node "$CREATE_CLUSTER_NAME-master-$int"
+        "    Setting up '${CC[clustername]}-master-$int'" \
+        set_up_master_node "${CC[clustername]}-master-$int"
       r=$?
 
       [[ $r -ne 0 ]] && {
@@ -339,15 +358,15 @@ create_master_nodes() {
 
   masternum="${1##*-}" # <- eg. for xxx-master-1, masternum=1
 
-  [[ -z $CREATE_CLUSTER_SKIPMASTERSETUP && $masternum -eq 1 ]] && {
+  [[ -z ${CC[skipmastersetup]} && $masternum -eq 1 ]] && {
     mkdir -p ~/.mok/
-    if [[ $CREATE_CLUSTER_WITH_LB -eq $TRUE ]]; then
-      lbaddr=$(get_docker_container_ip "$CREATE_CLUSTER_NAME-lb")
-      docker cp "$CREATE_CLUSTER_NAME-master-1":/etc/kubernetes/admin.conf \
+    if [[ ${CC[withlb]} -eq $TRUE ]]; then
+      lbaddr=$(get_docker_container_ip "${CC[clustername]}-lb")
+      docker cp "${CC[clustername]}-master-1":/etc/kubernetes/admin.conf \
         /var/tmp/admin.conf || err || return
       sed -i 's#\(server: https://\)[0-9.]*\(:.*\)#\1'"$lbaddr"'\2#' /var/tmp/admin.conf
     else
-      docker cp "$CREATE_CLUSTER_NAME-master-1":/etc/kubernetes/admin.conf \
+      docker cp "${CC[clustername]}-master-1":/etc/kubernetes/admin.conf \
         /var/tmp/admin.conf || err || return
     fi
   }
@@ -374,46 +393,6 @@ set_up_master_node() {
 }
 
 # ---------------------------------------------------------------------------
-create_docker_container() {
-
-  # Runs a new container with docker run.
-  # Args:
-  #   arg1 - name to use as the name and hostname.
-  #   arg2 - the label to write to the container.
-
-  local imglocal="${PODMANIMGPREFIX}local/$BASEIMAGENAME-v$CREATE_CLUSTER_K8SVER"
-  local imgremote="docker.io/mclarkson/$BASEIMAGENAME-v$CREATE_CLUSTER_K8SVER"
-  local allimgs
-
-  # Prefer a locally built container over one downloaded from a registry
-  allimgs=$(podman images -n)
-  if echo "$allimgs" | grep -qs "$imglocal"; then
-    imagename="$imglocal"
-  elif echo "$allimgs" | grep -qs "$imgremote"; then
-    imagename="$imgremote"
-  else
-    cat <<EnD
-ERROR: No container base image found. Use either:
-
-  $ mokctl build image
-OR
-  $ mokctl build image --get-prebuilt-image
-
-Then try running 'mokctl create ...' again.
-EnD
-  fi
-
-  docker run --privileged \
-    -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
-    -v /lib/modules:/lib/modules:ro \
-    --tmpfs /run --tmpfs /tmp \
-    --detach \
-    --name "$1" \
-    --hostname "$1" \
-    --label "$2" \
-    "$imagename"
-}
-
 # ---------------------------------------------------------------------------
 create_worker_nodes() {
 
@@ -425,9 +404,9 @@ create_worker_nodes() {
   declare -i int=0
 
   [[ -n $CREATE_CLUSTER_SKIPWORKERSETUP || -n \
-  $CREATE_CLUSTER_SKIPMASTERSETUP ]] || {
+  ${CC[skipmastersetup]} ]] || {
     # Runs a script on master node to get details
-    t=$(get_master_join_details $CREATE_CLUSTER_NAME-master-1) || {
+    t=$(get_master_join_details "${CC[clustername]}-master-1") || {
       printf '\nERROR: Problem with "get_master_join_details".\n\n' >"$E"
       return $ERROR
     }
@@ -438,10 +417,11 @@ create_worker_nodes() {
 
   for int in $(seq 1 "$1"); do
     run_with_progress \
-      "    Creating worker container, '$CREATE_CLUSTER_NAME-worker-$int'" \
-      create_docker_container \
-      "$CREATE_CLUSTER_NAME-worker-$int" \
-      "$LABELKEY=$CREATE_CLUSTER_NAME"
+      "    Creating worker container, '${CC[clustername]}-worker-$int'" \
+      CU_create_container \
+      "${CC[clustername]}-worker-${int}" \
+      "$(CU_labelkey)=${CC[clustername]}" \
+      "${CC[k8sver]}"
     r=$?
 
     [[ $r -ne 0 ]] && {
@@ -453,10 +433,10 @@ create_worker_nodes() {
     }
 
     [[ -n $CREATE_CLUSTER_SKIPWORKERSETUP || -n \
-    $CREATE_CLUSTER_SKIPMASTERSETUP ]] || {
+    ${CC[skipmastersetup]} ]] || {
       run_with_progress \
-        "    Setting up '$CREATE_CLUSTER_NAME-worker-$int'" \
-        set_up_worker_node "$CREATE_CLUSTER_NAME-worker-$int" \
+        "    Setting up '${CC[clustername]}-worker-$int'" \
+        set_up_worker_node "${CC[clustername]}-worker-$int" \
         "$cahash" "$token" "$masterip"
       r=$?
 
@@ -503,7 +483,7 @@ get_master_join_details() {
     return $ERROR
   }
 
-  master1ip=$(get_docker_container_ip "$CREATE_CLUSTER_NAME-master-1") || err || return
+  master1ip=$(get_docker_container_ip "${CC[clustername]}-master-1") || err || return
 
   cat <<EnD >"$joinvarsfile"
 #!/bin/bash
@@ -551,17 +531,17 @@ set_up_master_node_v1_18_2() {
 
   masternum="${1##*-}" # <- eg. for xxx-master-1, masternum=1
 
-  if [[ $CREATE_CLUSTER_WITH_LB == "$TRUE" && $masternum -eq 1 ]]; then
+  if [[ ${CC[withlb]} == "$TRUE" && $masternum -eq 1 ]]; then
 
     # This is the first master node
 
     # Sets cahash, token, and masterip:
-    lbaddr=$(get_docker_container_ip "$CREATE_CLUSTER_NAME-lb")
+    lbaddr=$(get_docker_container_ip "${CC[clustername]}-lb")
     certSANs="certSANs: [ '$lbaddr' ]"
     uploadcerts="--upload-certs"
     certkey="CertificateKey: f8802e114ef118304e561c3acd4d0b543adc226b7a27f675f56564185ffe0c07"
 
-  elif [[ $CREATE_CLUSTER_WITH_LB == "$TRUE" && $masternum -ne 1 ]]; then
+  elif [[ ${CC[withlb]} == "$TRUE" && $masternum -ne 1 ]]; then
 
     # This is not the first master node, so join with the master
     # https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/
@@ -569,7 +549,7 @@ set_up_master_node_v1_18_2() {
     # Keep trying to get join details until apiserver is ready or we run out of tries
     for try in $(seq 1 9); do
       # Runs a script on master node to get join details
-      t=$(get_master_join_details "$CREATE_CLUSTER_NAME-master-1")
+      t=$(get_master_join_details "${CC[clustername]}-master-1")
       retval=$?
       [[ $retval -eq 0 ]] && break
       [[ $try -eq 9 ]] && {
@@ -692,7 +672,7 @@ EnD
 
   # Remove the taint if we're setting up a single node cluster
 
-  [[ $CREATE_CLUSTER_NUM_WORKERS -eq 0 ]] && {
+  [[ ${CC[numworkers]} -eq 0 ]] && {
 
     removetaint=$(mktemp -p /var/tmp) || {
       printf 'ERROR: mktmp failed.\n' >"$E"
@@ -731,8 +711,8 @@ set_up_worker_node_v1_18_2() {
     return $ERROR
   }
 
-  if [[ $CREATE_CLUSTER_WITH_LB == "$TRUE" ]]; then
-    masterip=$(get_docker_container_ip "$CREATE_CLUSTER_NAME-lb")
+  if [[ ${CC[withlb]} == "${TRUE}" ]]; then
+    masterip=$(get_docker_container_ip "${CC[clustername]}-lb")
   fi
 
   cat <<EnD >"$setupfile"

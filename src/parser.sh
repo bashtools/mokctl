@@ -18,18 +18,20 @@ PA_init() {
 
   PA[command]=
   PA[subcommand]=
+  PA[state]=
 }
 
 # PA_parse_options implements an interleaved state machine to process the
-# user request. It allows for strict checking of arguments and options.
+# user request. It allows for strict checking of arguments and options. All
+# command line arguments are processed in order from left to right.
 #
 # Each COMMAND can have a different set of requirements which are controlled
 # by setting the next state at each transition.
 #
-# --global-option COMMAND --command-option SUBCOMMAND OPTION1 OPTION2 OPTION3 ...
+# --global-option COMMAND SUBCOMMAND --command-option OPTION1 OPTION2 OPTION3 ...
 #
-# --global-options are those before COMMAND.
-# --command-options can be anywhere after the COMMAND.
+# --global-options are those before or just after COMMAND.
+# --command-options can be anywhere after the SUBCOMMAND.
 #
 # Args: arg1-N - The arguments given to mokctl by the user on the command line
 PA_parse_options() {
@@ -40,19 +42,19 @@ PA_parse_options() {
     case "${1}" in
     --skipmastersetup)
       _PA_verify_option '--skipmastersetup' || return
-      #CREATE_CLUSTER_SKIPMASTERSETUP="${TRUE}"
+      CC_setflag_skipmastersetup "${TRUE}"
       ;;
     --skipworkersetup)
       _PA_verify_option '--skipworkersetup' || return
-      #CREATE_CLUSTER_SKIPWORKERSETUP=$TRUE
+      CC_setflag_skipworkersetup "${TRUE}"
       ;;
     --skiplbsetup)
       _PA_verify_option '--skiplbsetup' || return
-      #CREATE_CLUSTER_SKIPLBSETUP="$TRUE"
+      CC_setflag_skiplbsetup "${TRUE}"
       ;;
     --with-lb)
       _PA_verify_option '--with-lb' || return
-      #CREATE_CLUSTER_WITH_LB="$TRUE"
+      CC_setflag_with_lb "${TRUE}"
       ;;
     --k8sver)
       _PA_verify_option '--k8sver' || return
@@ -74,7 +76,7 @@ PA_parse_options() {
       return "${ERROR}"
       ;;
     *)
-      case "${STATE}" in
+      case "${PA[state]}" in
       COMMAND)
         _PA_check_command_token "${1}"
         [[ $? -eq ${ERROR} ]] && {
@@ -126,7 +128,7 @@ PA_parse_options() {
         return "${ERROR}"
         ;;
       *)
-        printf 'Internal ERROR. Invalid state "%s"\n' "${STATE}" >"${STDERR}"
+        printf 'Internal ERROR. Invalid state "%s"\n' "${PA[state]}" >"${STDERR}"
         return "${ERROR}"
         ;;
       esac
@@ -238,45 +240,41 @@ Delete a cluster:
 EnD
 }
 
-# ---------------------------------------------------------------------------
+# _PA_check_command_token checks for a valid token in command state.
+# Args: arg1 - the token to check
 _PA_check_command_token() {
-
-  # Check for a valid token in command state
-  # Args:
-  #   arg1 - token
 
   case "${1}" in
   create)
     PA[command]="create"
-    STATE="SUBCOMMAND"
+    PA[state]="SUBCOMMAND"
     ;;
   delete)
     PA[command]="delete"
-    STATE="SUBCOMMAND"
+    PA[state]="SUBCOMMAND"
     ;;
   build)
     PA[command]="build"
-    STATE="SUBCOMMAND"
+    PA[state]="SUBCOMMAND"
     ;;
   get)
     PA[command]="get"
-    STATE="SUBCOMMAND"
+    PA[state]="SUBCOMMAND"
     ;;
   exec)
     PA[command]="exec"
     PA[subcommand]="unused"
-    STATE="OPTION"
+    PA[state]="OPTION"
     ;;
   *) return "${ERROR}" ;;
   esac
 }
 
+# _PA_check_subcommand_token checks for a valid token in subcommand state by
+# calling check functions for the specific command.
+# Args: arg1 - the token to check
 # ---------------------------------------------------------------------------
 _PA_check_subcommand_token() {
-
-  # Check for a valid token in subcommand state
-  # Args:
-  #   arg1 - token
 
   case "${PA[command]}" in
   create) _PA_check_create_subcommand_token "$1" ;;
@@ -290,44 +288,45 @@ _PA_check_subcommand_token() {
   esac
 }
 
-# ---------------------------------------------------------------------------
+# _PA_check_create_subcommand_token checks for a valid token in subcommand
+# state for 'create'.
+# Args: arg1 - token
 _PA_check_create_subcommand_token() {
 
-  # Check for a valid token in subcommand state
-  # Args:
-  #   arg1 - token
-
   case $1 in
-  cluster) PA[subcommand]="cluster" ;;
+  cluster)
+    PA[subcommand]="cluster"
+    CC_init
+    ;;
   *) return "${ERROR}" ;;
   esac
 
-  STATE="OPTION"
+  PA[state]="OPTION"
 
   return "${OK}"
 }
 
-# ---------------------------------------------------------------------------
+# _PA_check_delete_subcommand_token checks for a valid token in subcommand
+# state for 'delete'.
+# Args: arg1 - the token to check
 _PA_check_delete_subcommand_token() {
 
-  # Check for a valid token in subcommand state
-  # Args:
-  #   arg1 - token
-
   case $1 in
-  cluster) PA[subcommand]="cluster" ;;
+  cluster)
+    PA[subcommand]="cluster"
+    DE_init
+    ;;
   *) return "${ERROR}" ;;
   esac
 
-  STATE=OPTION
+  PA[state]=OPTION
 }
 
+# _PA_check_build_subcommand_token checks for a valid token in subcommand
+# state for 'build'.
+# Args: arg1 - the token to check
 # ---------------------------------------------------------------------------
 _PA_check_build_subcommand_token() {
-
-  # Check for a valid token in subcommand state
-  # Args:
-  #   arg1 - token
 
   case $1 in
   image)
@@ -337,38 +336,38 @@ _PA_check_build_subcommand_token() {
   *) return "${ERROR}" ;;
   esac
 
-  STATE=END
+  PA[state]=END
 }
 
+# _PA_check_delete_subcommand_token checks for a valid token in subcommand
+# state for 'build'.
+# Args: arg1 - the token to check
 # ---------------------------------------------------------------------------
 _PA_check_get_subcommand_token() {
 
-  # Check for a valid token in subcommand state
-  # Args:
-  #   arg1 - token
-
   case "${1}" in
   clusters) ;&
-  cluster) PA[subcommand]="cluster" ;;
+  cluster)
+    PA[subcommand]="cluster"
+    GE_init
+    ;;
   *) return "${ERROR}" ;;
   esac
 
-  STATE=OPTION
+  PA[state]=OPTION
 }
 
-# ---------------------------------------------------------------------------
+# _PA_check_option_token checks for a valid token in option
+# state.
+# Args: arg1 - the token to check
 _PA_check_option_token() {
-
-  # Check for a valid token in option state
-  # Args:
-  #   arg1 - token
 
   case "${PA[command]}" in
   create)
     case "${PA[subcommand]}" in
     cluster)
-      #CREATE_CLUSTER_NAME="${1}"
-      STATE="OPTION2"
+      CC_set_clustername "${1}"
+      PA[state]="OPTION2"
       ;;
     *)
       printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
@@ -380,7 +379,7 @@ _PA_check_option_token() {
     case "${PA[subcommand]}" in
     cluster)
       #DELETE_CLUSTER_NAME="${1}"
-      STATE="END"
+      PA[state]="END"
       ;;
     *)
       printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
@@ -392,7 +391,7 @@ _PA_check_option_token() {
     case "${PA[subcommand]}" in
     cluster)
       #GET_CLUSTER_NAME="${1}"
-      STATE="END"
+      PA[state]="END"
       ;;
     *)
       printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
@@ -402,7 +401,7 @@ _PA_check_option_token() {
     ;;
   exec)
     ##EXEC_CONTAINER_NAME="${1}"
-    STATE="END"
+    PA[state]="END"
     ;;
   *)
     printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
@@ -411,19 +410,17 @@ _PA_check_option_token() {
   esac
 }
 
-# ---------------------------------------------------------------------------
+# _PA_check_option2_token checks for a valid token in option2
+# state.
+# Args: arg1 - the token to check
 _PA_check_option2_token() {
-
-  # Check for a valid token in option2 state
-  # Args:
-  #   arg1 - token
 
   case "${PA[command]}" in
   create)
     case "${PA[subcommand]}" in
     cluster)
-      #CREATE_CLUSTER_NUM_MASTERS="$1"
-      STATE="OPTION3"
+      CC_set_nummasters "$1"
+      PA[state]="OPTION3"
       ;;
     *)
       printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
@@ -449,19 +446,17 @@ _PA_check_option2_token() {
   esac
 }
 
-# ---------------------------------------------------------------------------
+# _PA_check_option3_token checks for a valid token in option3
+# state.
+# Args: arg1 - the token to check
 _PA_check_option3_token() {
-
-  # Check for a valid token in option3 state
-  # Args:
-  #   arg1 - token
 
   case "${PA[command]}" in
   create)
     case "${PA[subcommand]}" in
     cluster)
-      #CREATE_CLUSTER_NUM_WORKERS="$1"
-      STATE="END"
+      CC_set_numworkers "$1"
+      PA[state]="END"
       ;;
     *)
       printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
@@ -491,13 +486,10 @@ _PA_check_option3_token() {
 #                              FLAG PROCESSING
 # ===========================================================================
 
-# ---------------------------------------------------------------------------
+# _PA_verify_option checks that the sent option is valid for the
+# command-subcommand or global options.
+# Args: arg1 - The option to check.
 _PA_verify_option() {
-
-  # Check that the sent option is valid for the command-subcommand or global
-  # options.
-  # Args:
-  #   arg1 - The option to check.
 
   case "${PA[command]}${PA[subcommand]}" in
   create) ;& # Treat flags located just before
@@ -508,19 +500,19 @@ _PA_verify_option() {
     _PA_check_valid_global_opts "$1"
     ;;
   createcluster)
-    _PA_check_valid_create_cluster_opts "$1"
+    CC_check_valid_options "$1"
     ;;
   deletecluster)
-    _PA_check_valid_delete_cluster_opts "$1"
+    DE_check_valid_options "$1"
     ;;
   execcluster)
-    _PA_check_valid_exec_cluster_opts "$1"
+    EX_check_valid_options "$1"
     ;;
   buildimage)
     BI_check_valid_options "$1"
     ;;
   getcluster)
-    _PA_check_valid_get_cluster_opts "$1"
+    GE_check_valid_options "$1"
     ;;
   *)
     printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
@@ -531,11 +523,9 @@ _PA_verify_option() {
   return "${ERROR}"
 }
 
-# ---------------------------------------------------------------------------
+# _PA_check_valid_global_opts checks that the global option is valid.
+# Args: arg1 - The option to check.
 _PA_check_valid_global_opts() {
-
-  # Args:
-  #   arg1 - The option to check.
 
   local int validopts=(
     "--help"
@@ -548,93 +538,6 @@ _PA_check_valid_global_opts() {
 
   _PA_usage
   printf 'ERROR: "%s" is not a valid global option.\n' "$1" >"${STDERR}"
-  return "${ERROR}"
-}
-
-# ---------------------------------------------------------------------------
-_PA_check_valid_create_cluster_opts() {
-
-  # Args:
-  #   arg1 - The option to check.
-
-  local opt validopts=(
-    "--help"
-    "-h"
-    "--skipmastersetup"
-    "--skipworkersetup"
-    "--skiplbsetup"
-    "--k8sver"
-    "--with-lb"
-  )
-
-  for opt in "${validopts[@]}"; do
-    [[ $1 == "${opt}" ]] && return
-  done
-
-  _PA_usage
-  printf 'ERROR: "%s" is not a valid "create cluster" option.\n' "$1" >"${STDERR}"
-  return "${ERROR}"
-}
-
-# ---------------------------------------------------------------------------
-_PA_check_valid_delete_cluster_opts() {
-
-  # Args:
-  #   arg1 - The option to check.
-
-  local opt validopts=(
-    "--help"
-    "-h"
-  )
-
-  for opt in "${validopts[@]}"; do
-    [[ $1 == "${opt}" ]] && return
-  done
-
-  _PA_usage
-  printf 'ERROR: "%s" is not a valid "delete cluster" option.\n' "$1" \
-    >"${STDERR}"
-  return "${ERROR}"
-}
-
-# ---------------------------------------------------------------------------
-_PA_check_valid_get_cluster_opts() {
-
-  # Args:
-  #   arg1 - The option to check.
-
-  local opt validopts=(
-    "--help"
-    "-h"
-  )
-
-  for opt in "${validopts[@]}"; do
-    [[ $1 == "${opt}" ]] && return
-  done
-
-  _PA_usage
-  printf 'ERROR: "%s" is not a valid "get cluster" option.\n' "$1" >"${STDERR}"
-  return "${ERROR}"
-}
-
-# ---------------------------------------------------------------------------
-_PA_check_valid_exec_cluster_opts() {
-
-  # Args:
-  #   arg1 - The option to check.
-
-  local opt validopts=(
-    "--help"
-    "-h"
-  )
-
-  for opt in "${validopts[@]}"; do
-    [[ $1 == "${opt}" ]] && return
-  done
-
-  _PA_usage
-  printf 'ERROR: "%s" is not a valid "get cluster" option.\n' "$1" \
-    >"${STDERR}"
   return "${ERROR}"
 }
 

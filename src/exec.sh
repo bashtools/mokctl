@@ -1,4 +1,25 @@
 # ---------------------------------------------------------------------------
+EX_check_valid_options() {
+
+  # Args:
+  #   arg1 - The option to check.
+
+  local opt validopts=(
+    "--help"
+    "-h"
+  )
+
+  for opt in "${validopts[@]}"; do
+    [[ $1 == "${opt}" ]] && return
+  done
+
+  _PA_usage
+  printf 'ERROR: "%s" is not a valid "get cluster" option.\n' "$1" \
+    >"${STDERR}"
+  return "${ERROR}"
+}
+
+# ---------------------------------------------------------------------------
 exec_usage() {
 
   cat <<'EnD'

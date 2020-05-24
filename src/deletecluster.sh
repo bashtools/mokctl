@@ -1,63 +1,23 @@
-# GLOBALS
-# Don't change any globals
+# ---------------------------------------------------------------------------
+DE_check_valid_options() {
 
-# Constants
-readonly LABELKEY="MokCluster"
-readonly BASEIMAGENAME="mok-centos-7"
-readonly OK=0
-readonly ERROR=1
-readonly FALSE=0
-readonly TRUE=1
-readonly STOP=2
-readonly SPINNER=('◐' '◓' '◑' '◒')
+  # Args:
+  #   arg1 - The option to check.
 
-colyellow=$(tput setaf 3)
-colgreen=$(tput setaf 2)
-colred=$(tput setaf 1)
-colreset=$(tput sgr0)
-probablysuccess="$colyellow✓$colreset"
-success="$colgreen✓$colreset"
-failure="$colred✕$colreset"
+  local opt validopts=(
+    "--help"
+    "-h"
+  )
 
-# The initial state of the parser
-STATE="COMMAND"
+  for opt in "${validopts[@]}"; do
+    [[ $1 == "${opt}" ]] && return
+  done
 
-# Parser sets these:
-COMMAND=
-SUBCOMMAND=
-CREATE_CLUSTER_NAME=
-BUILD_IMAGE_K8SVER=
-CREATE_CLUSTER_K8SVER=
-CREATE_CLUSTER_WITH_LB=
-CREATE_CLUSTER_SKIPLBSETUP=
-CREATE_CLUSTER_NUM_MASTERS=
-CREATE_CLUSTER_NUM_WORKERS=
-CREATE_CLUSTER_SKIPMASTERSETUP=
-CREATE_CLUSTER_SKIPWORKERSETUP=
-DELETE_CLUSTER_NAME=
-GET_CLUSTER_NAME=
-GET_CLUSTER_SHOW_HEADER=
-EXEC_CONTAINER_NAME=
-
-# For outputting errors
-E="/dev/stderr"
-ERR_CALLED=
-
-PODMANIMGPREFIX=
-BUILD_GET_PREBUILT=
-CONTAINERRT=
-
-# Directory to unpack the build files
-DOCKERBUILDTMPDIR=
-
-# For the spinning progress animation
-RUNWITHPROGRESS_OUTPUT=
-
-# END GLOBALS
-
-# ===========================================================================
-# MOKCTL DELETE CLUSTER
-# ===========================================================================
+  _PA_usage
+  printf 'ERROR: "%s" is not a valid "delete cluster" option.\n' "$1" \
+    >"${STDERR}"
+  return "${ERROR}"
+}
 
 # ---------------------------------------------------------------------------
 delete_usage() {

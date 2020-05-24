@@ -16,6 +16,19 @@ BI_setflag_useprebuiltimage() {
   BI[useprebuiltimage]="$1"
 }
 
+# BI_k8sver outputs the value of the BI[k8sver], the kubernetes version to be
+# installed.
+# Args: None expected.
+BI_k8sver() {
+  printf '%s' "${BI[baseimagename]}"
+}
+
+# BI_baseimagename outputs the value of the BI[baseimagename].
+# Args: None expected.
+BI_baseimagename() {
+  printf '%s' "${BI[baseimagename]}"
+}
+
 # Public Functions ------------------------------------------------------------
 
 # BI_init sets the initial values for the BI associative array.
@@ -24,15 +37,14 @@ BI_setflag_useprebuiltimage() {
 # Args: None expected.
 BI_init() {
 
-  BI[subcommand]=
-  BI[build_image_k8sver]=
+  BI[k8sver]="1.18.2"
   BI[baseimagename]="mok-centos-7"
   BI[useprebuiltimage]=
   BI[dockerbuildtmpdir]=
   BI[runwithprogress_output]=
 }
 
-# BI_build_usage outputs help text for the build image component.
+# BI_usage outputs help text for the build image component.
 # It is called by PA_usage().
 # Args: None expected.
 BI_build_usage() {
@@ -121,12 +133,12 @@ _BI_build_container_image() {
 
   _BI_create_docker_build_dir || return
 
-  buildargs=$(_BI_get_build_args_for_k8s_ver "${BI[build_image_k8sver]}") || return
-  tagname="${BI[baseimagename]}-v${BI[build_image_k8sver]}"
+  buildargs=$(_BI_get_build_args_for_k8s_ver "${BI[k8sver]}") || return
+  tagname="${BI[baseimagename]}-v${BI[k8sver]}"
 
   if [[ -z ${BI[useprebuiltimage]} ]]; then
     cmd="docker build \
-      -t "$(CU_get_imgprefix)local/${tagname}" \
+      -t "$(CU_imgprefix)local/${tagname}" \
       --force-rm \
       ${buildargs} \
       ${BI[dockerbuildtmpdir]}/${BI[baseimagename]}"
@@ -157,7 +169,7 @@ _BI_get_build_args_for_k8s_ver() {
 
   local buildargs
 
-  case "${BI[build_image_k8sver]}" in
+  case "${BI[k8sver]}" in
   "1.18.2")
     buildargs="--build-arg"
     buildargs="${buildargs} CRIO_VERSION=1.18"

@@ -9,8 +9,10 @@ declare OK STDERR
 
 # Getters/Setters -------------------------------------------------------------
 
-UT_runfile() {
-  printf '%s' "${UT[runfile]}"
+# UT_runlogfile outputs the value of UT[runlogfile], which contains the name of
+# the file written to when running UT_run_with_progress.
+UT_runlogfile() {
+  printf '%s' "${UT[runlogfile]}"
 }
 
 # Public Functions ------------------------------------------------------------
@@ -27,7 +29,7 @@ UT_new() {
   UT[probablysuccess]="${UT[yellow]}✓${UT[normal]}"
   UT[success]="${UT[green]}✓${UT[normal]}"
   UT[failure]="${UT[red]}✕${UT[normal]}"
-  UT[runfile]=
+  UT[runlogfile]=
   UT[spinnerchars]='◐◓◑◒'
 }
 
@@ -54,7 +56,7 @@ UT_run_with_progress() {
 
   local displaytext=$1 retval int spinner=()
 
-  UT[runfile]=$(mktemp -p /var/tmp) || {
+  UT[runlogfile]=$(mktemp -p /var/tmp) || {
     printf 'ERROR: mktmp failed.\n' >"${STDERR}"
     err || return
   }
@@ -67,7 +69,7 @@ UT_run_with_progress() {
   # Run the command in the background
   (
     eval "$*"
-  ) &>"${UT[runfile]}" &
+  ) &>"${UT[runlogfile]}" &
 
   # Turn the cursor off
   tput civis

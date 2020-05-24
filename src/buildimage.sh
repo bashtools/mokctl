@@ -158,10 +158,10 @@ _BI_build_container_image() {
 
   retval=$?
   [[ ${retval} -ne 0 ]] && {
-    local runfile
-    runfile=$(UT_runfile) || err || return
+    local runlogfile
+    runlogfile=$(UT_runlogfile) || err || return
     printf 'ERROR: Docker returned an error, shown below\n\n' >"${STDERR}"
-    cat "${runfile}" >"${STDERR}"
+    cat "${runlogfile}" >"${STDERR}"
     printf '\n' >"${STDERR}"
     return "${ERROR}"
   }

@@ -23,6 +23,15 @@ CU_labelkey() {
 
 # Public Functions ------------------------------------------------------------
 
+# CU_new sets the initial values for the Container Utils associative array.
+# Args: None expected.
+CU_new() {
+
+  CU[imgprefix]=
+  CU[labelkey]=
+  CU[containerrt]=
+}
+
 # CU_get_cluster_docker_ids outputs just the container IDs, one per line
 # for any MOK cluster, unless arg1 is set, in which case just the IDs
 # for the requests cluster name are output.
@@ -33,7 +42,7 @@ CU_get_cluster_docker_ids() {
 
   [[ -n $1 ]] && value="=$1"
 
-  output=$(docker ps -a -f label="${CU[label]}${value}" -q) || {
+  output=$(docker ps -a -f label="${CU[labelkey]}${value}" -q) || {
     printf 'ERROR: %s command failed\n' "${CU[containerrt]}" >"${STDERR}"
     err || return
   }

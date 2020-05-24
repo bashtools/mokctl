@@ -6,15 +6,15 @@ declare -A ER
 # Declare externally defined associative arrays -------------------------------
 
 # Defined in GL (globals.sh)
-declare OK ERROR STOP STDERR
+declare ERROR TRUE STDERR
 
 # Getters/Setters -------------------------------------------------------------
 
 # Public Functions ------------------------------------------------------------
 
-# ER_init sets the initial values for the ER associative array.
+# ER_new sets the initial values for the ER associative array.
 # Args: None expected.
-BI_init() {
+ER_new() {
 
   ER[errcalled]=
 
@@ -41,9 +41,6 @@ _ER_err() {
   done | tac >"${STDERR}"
   printf '\n' >"${STDERR}"
   return "${ERROR}"
-}
-
-fakefunc() {
 }
 
 # vim helpers -----------------------------------------------------------------

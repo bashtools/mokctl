@@ -2,12 +2,11 @@
 
 # Public Functions ------------------------------------------------------------
 
-# GL_init sets the only global variables that should be in use anywhere.  The
+# GL_new sets the only global variables that should be in use anywhere.  The
 # only other globals are the associative arrays. All the globals are constant
 # (readonly) variables. Declare these globals, where needed, in other files.
 # Args: None expected.
-GL_init() {
-  local dummy
+GL_new() {
 
   # Returns, exit codes
   declare -rg OK=0
@@ -26,6 +25,7 @@ GL_init() {
   declare -rg STDERR="/dev/stderr"
 
   # The following just keep shellcheck happy
+  local dummy
   dummy="${OK}"
   dummy="${ERROR}"
   dummy="${STOP}"

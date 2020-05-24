@@ -10,11 +10,17 @@ declare OK ERROR TRUE STOP STDERR
 
 # Getters/Setters -------------------------------------------------------------
 
+# PA_command outputs the PA[command] array member. This contains the command
+# the user requested.
+PA_command() {
+  printf '%s' "${PA[command]}"
+}
+
 # Public Functions ------------------------------------------------------------
 
-# PA_init sets the initial values for the PArsers associative array.
+# PA_new sets the initial values for the PArsers associative array.
 # Args: None expected.
-PA_init() {
+PA_new() {
 
   PA[command]=
   PA[subcommand]=
@@ -296,7 +302,7 @@ _PA_check_create_subcommand_token() {
   case $1 in
   cluster)
     PA[subcommand]="cluster"
-    CC_init
+    CC_new
     ;;
   *) return "${ERROR}" ;;
   esac
@@ -314,7 +320,7 @@ _PA_check_delete_subcommand_token() {
   case $1 in
   cluster)
     PA[subcommand]="cluster"
-    DE_init
+    DC_new
     ;;
   *) return "${ERROR}" ;;
   esac
@@ -331,7 +337,7 @@ _PA_check_build_subcommand_token() {
   case $1 in
   image)
     PA[subcommand]="image"
-    BI_init
+    BI_new
     ;;
   *) return "${ERROR}" ;;
   esac
@@ -349,7 +355,7 @@ _PA_check_get_subcommand_token() {
   clusters) ;&
   cluster)
     PA[subcommand]="cluster"
-    GE_init
+    GE_new
     ;;
   *) return "${ERROR}" ;;
   esac

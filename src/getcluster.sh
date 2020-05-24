@@ -14,7 +14,7 @@ declare OK ERROR STDERR
 # GE_init sets the initial values for the GE associative array.
 # This function is called by main().
 # Args: None expected.
-CU_init() {
+GE_init() {
 
   GE[dummy]=
 }

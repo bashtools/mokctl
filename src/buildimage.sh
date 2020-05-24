@@ -6,7 +6,7 @@ declare -A BI
 # Declare externally defined variables ----------------------------------------
 
 # Defined in GL (globals.sh)
-declare ERROR STDERR
+declare OK ERROR STDERR
 
 # Getters/Setters -------------------------------------------------------------
 
@@ -31,11 +31,11 @@ BI_baseimagename() {
 
 # Public Functions ------------------------------------------------------------
 
-# BI_init sets the initial values for the BI associative array.
+# BI_new sets the initial values for the BI associative array.
 # This function is called by parse_options once it knows which component is
 # being requested but before it sets any array members.
 # Args: None expected.
-BI_init() {
+BI_new() {
 
   BI[k8sver]="1.18.2"
   BI[baseimagename]="mok-centos-7"
@@ -47,7 +47,7 @@ BI_init() {
 # BI_usage outputs help text for the build image component.
 # It is called by PA_usage().
 # Args: None expected.
-BI_build_usage() {
+BI_usage() {
 
   cat <<'EnD'
 BUILD subcommands are:
@@ -95,7 +95,7 @@ BI_check_valid_options() {
     [[ ${1} == "${opt}" ]] && return
   done
 
-  usage
+  BI_usage
   printf 'ERROR: "%s" is not a valid "build image" option.\n' "${1}" \
     >"${STDERR}"
   return "${ERROR}"
@@ -113,11 +113,10 @@ BI_sanity_checks() { :; }
 BI_build_image() {
 
   local retval=0
-
   _BI_build_container_image
   retval=$?
 
-  if [[ ${retval} -eq 0 ]]; then
+  if [[ ${retval} -eq ${OK} ]]; then
     : # We only need the tick - no text
   else
     printf 'Image build failed\n' >"${STDERR}"
@@ -141,15 +140,17 @@ _BI_build_container_image() {
   buildargs=$(_BI_get_build_args_for_k8s_ver "${BI[k8sver]}") || return
   tagname="${BI[baseimagename]}-v${BI[k8sver]}"
 
+  local imgprefix
+  imgprefix=$(CU_imgprefix) || err || return
   if [[ -z ${BI[useprebuiltimage]} ]]; then
     cmd="docker build \
-      -t "$(CU_imgprefix)local/${tagname}" \
+      -t "${imgprefix}local/${tagname}" \
       --force-rm \
       ${buildargs} \
       ${BI[dockerbuildtmpdir]}/${BI[baseimagename]}"
     text="Creating"
   else
-    cmd="docker pull mclarkson/mok-centos-7-v1.18.2"
+    cmd="docker pull mclarkson/${tagname}"
     text="Downloading"
   fi
 
@@ -158,13 +159,15 @@ _BI_build_container_image() {
 
   retval=$?
   [[ ${retval} -ne 0 ]] && {
+    local runfile
+    runfile=$(UT_get_runfile) || err || return
     printf 'ERROR: Docker returned an error, shown below\n\n' >"${STDERR}"
-    cat "$(UT_get_runfile)" >"${STDERR}"
+    cat "${runfile}" >"${STDERR}"
     printf '\n' >"${STDERR}"
     return "${ERROR}"
   }
 
-  return "${retval}"
+  return
 }
 
 # _BI_get_build_args_for_k8s_ver sets the buildargs variable that is added

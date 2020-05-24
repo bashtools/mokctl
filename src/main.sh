@@ -8,9 +8,9 @@ main() {
 
   trap cleanup EXIT
   init || return
-  local retval="${OK}"
   sanity_checks || return
 
+  local retval="${OK}"
   PA_parse_options "$@" || retval=$?
   if [[ ${retval} -eq ${ERROR} ]]; then
     return "${ERROR}"
@@ -18,7 +18,9 @@ main() {
     return "${OK}"
   fi
 
-  case $(PA_get_command) in
+  local cmd
+  cmd=$(PA_command) || err || return
+  case "${cmd}" in
   create) do_create ;;
   delete) do_delete ;;
   build) do_build ;;
@@ -31,14 +33,16 @@ main() {
   esac
 }
 
-# init sets start values for variables and calls the init in each 'module'.
+# init sets start values for variables and calls the init in each utility
+# 'module'. Other XX_new functions are called in the parser when it knows
+# what command and subcommand the user has requested.
 # Args: No args expected.
 init() {
-  GL_init || return # <- globals
-  UT_init || return # <- utilities
-  PA_init || return # <- parser
-  CU_init || return # <- container utils
-  BI_init || return # <- build image
+  GL_new || return # <- new globals
+  ER_new || return # <- new error
+  UT_new || return # <- new utilities
+  PA_new || return # <- new parser
+  CU_new || return # <- new container utils
 }
 
 # cleanup is called from an EXIT trap only, when the program exits.
@@ -74,7 +78,9 @@ do_create() {
 # Args: No args expected.
 do_build() {
 
-  case $(PA_get_subcommand) in
+  local subcmd
+  subcmd=$(PA_get_subcommand) || err || return
+  case ${subcmd} in
   image)
     BI_sanity_checks || return
     BI_build_image

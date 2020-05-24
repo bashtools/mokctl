@@ -53,11 +53,11 @@ CC_set_numworkers() {
 
 # Public Functions ------------------------------------------------------------
 
-# CC_init sets the initial values for the CC associative array.
+# CC_new sets the initial values for the CC associative array.
 # This function is called by parse_options once it knows which component is
 # being requested but before it sets any array members.
 # Args: None expected.
-CC_init() {
+CC_new() {
 
   CC[k8sver]="1.18.2"
 }
@@ -81,7 +81,7 @@ CC_check_valid_options() {
     [[ $1 == "${opt}" ]] && return
   done
 
-  _PA_usage
+  CC_usage
   printf 'ERROR: "%s" is not a valid "create cluster" option.\n' "$1" >"${STDERR}"
   return "${ERROR}"
 }
@@ -133,20 +133,20 @@ EnD
 CC_sanity_checks() {
 
   if [[ -z ${CC[clustername]} ]]; then
-    usage
+    CC_usage
     printf 'Please provide the Cluster NAME to create.\n' >"${STDERR}"
     return "${ERROR}"
   fi
 
   if [[ -z ${CC[nummasters]} || ${CC[nummasters]} -le 0 ]]; then
-    usage
+    CC_usage
     printf 'Please provide the number of Masters to create. Must be 1 or more.\n' \
       >"${STDERR}"
     return "${ERROR}"
   fi
 
   if [[ -z ${CC[numworkers]} ]]; then
-    usage
+    CC_usage
     printf 'Please provide the number of Workers to create.\n' >"${STDERR}"
     return "${ERROR}"
   fi
@@ -208,12 +208,15 @@ create_lb_node() {
   # Create the load balancer nodes
   # Args:
 
+  local labelkey
+  labelkey=$(CU_labelkey) || err || return
+
   # Ceate container
   run_with_progress \
     "    Creating load balancer container, '${CC[clustername]}-lb'" \
     CU_create_container \
     "${CC[clustername]}-lb" \
-    "$(CU_labelkey)=${CC[clustername]}" \
+    "${labelkey}=${CC[clustername]}" \
     "${CC[k8sver]}"
 
   [[ ${r} -ne 0 ]] && {
@@ -321,12 +324,15 @@ create_master_nodes() {
 
   declare -i int=0 r
 
+  local labelkey
+  labelkey=$(CU_labelkey) || err || return
+
   for int in $(seq 1 "$1"); do
     run_with_progress \
       "    Creating master container, '${CC[clustername]}-master-${int}'" \
       CU_create_container \
       "${CC[clustername]}-master-${int}" \
-      "$(CU_labelkey)=${CC[clustername]}" \
+      "${labelkey}=${CC[clustername]}" \
       "${CC[k8sver]}"
     r=$?
 
@@ -415,12 +421,15 @@ create_worker_nodes() {
     eval "$t"
   }
 
+  local labelkey
+  labelkey=$(CU_labelkey) || err || return
+
   for int in $(seq 1 "$1"); do
     run_with_progress \
       "    Creating worker container, '${CC[clustername]}-worker-$int'" \
       CU_create_container \
       "${CC[clustername]}-worker-${int}" \
-      "$(CU_labelkey)=${CC[clustername]}" \
+      "${labelkey}=${CC[clustername]}" \
       "${CC[k8sver]}"
     r=$?
 

@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-DE_check_valid_options() {
+DC_check_valid_options() {
 
   # Args:
   #   arg1 - The option to check.

@@ -27,11 +27,11 @@ UT_get_failure() {
 
 # Public Functions ------------------------------------------------------------
 
-# UT_init sets the initial values for the UT associative array.
+# UT_new sets the initial values for the UT associative array.
 # This function is called by parse_options once it knows which component is
 # being requested but before it sets any array members.
 # Args: None expected.
-UT_init() {
+UT_new() {
   UT[yellow]=$(tput setaf 3)
   UT[green]=$(tput setaf 2)
   UT[red]=$(tput setaf 1)
@@ -43,6 +43,8 @@ UT_init() {
   UT[spinnerchars]='◐◓◑◒'
 }
 
+# UT_disable_colours resets variables used for colourised output so that they
+# contain no colour terminal escapes. Useful if stdin is not a terminal.
 UT_disable_colours() {
   UT[yellow]=
   UT[green]=

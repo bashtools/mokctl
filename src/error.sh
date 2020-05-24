@@ -8,8 +8,6 @@ declare -A ER
 # Defined in GL (globals.sh)
 declare ERROR TRUE STDERR
 
-# Getters/Setters -------------------------------------------------------------
-
 # Public Functions ------------------------------------------------------------
 
 # ER_new sets the initial values for the ER associative array.

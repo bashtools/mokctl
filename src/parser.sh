@@ -10,10 +10,137 @@ declare OK ERROR TRUE STOP STDERR
 
 # Getters/Setters -------------------------------------------------------------
 
-# PA_build_usage outputs help text for a single component, if help was asked
-# for when a command was specified, or for all components otherwise.
+# Public Functions ------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+PA_parse_options() {
+
+  # Uses a state machine to check all command line arguments
+  # Args:
+  #   arg1 - The arguments given to mokctl by the user on the command line
+
+  set -- "$@"
+  local ARGN=$#
+  while [ "${ARGN}" -ne 0 ]; do
+    case "${1}" in
+    --skipmastersetup)
+      _PA_verify_option '--skipmastersetup' || return
+      #CREATE_CLUSTER_SKIPMASTERSETUP="${TRUE}"
+      ;;
+    --skipworkersetup)
+      _PA_verify_option '--skipworkersetup' || return
+      #CREATE_CLUSTER_SKIPWORKERSETUP=$TRUE
+      ;;
+    --skiplbsetup)
+      _PA_verify_option '--skiplbsetup' || return
+      #CREATE_CLUSTER_SKIPLBSETUP="$TRUE"
+      ;;
+    --with-lb)
+      _PA_verify_option '--with-lb' || return
+      #CREATE_CLUSTER_WITH_LB="$TRUE"
+      ;;
+    --k8sver)
+      _PA_verify_option '--k8sver' || return
+      # enable later -> BUILD_IMAGE_K8SVER="$1"
+      shift
+      ;;
+    --get-prebuilt-image)
+      _PA_verify_option '--get-prebuilt-image' || return
+      BI_setflag_useprebuiltimage "${TRUE}"
+      ;;
+    --help) ;&
+    -h)
+      _PA_usage
+      return "${STOP}"
+      ;;
+    --?*)
+      _PA_usage
+      printf 'Invalid option: "%s"\n' "$1" >"${STDERR}"
+      return "${ERROR}"
+      ;;
+    *)
+      case "${STATE}" in
+      COMMAND)
+        _PA_check_command_token "${1}"
+        [[ $? -eq ${ERROR} ]] && {
+          _PA_usage
+          printf 'Invalid COMMAND, "%s".\n\n' "$1" >"${STDERR}"
+          return "${ERROR}"
+        }
+        ;;
+      SUBCOMMAND)
+        _PA_check_subcommand_token "${1}"
+        [[ $? -eq ${ERROR} ]] && {
+          _PA_usage
+          printf 'Invalid SUBCOMMAND for %s, "%s".\n\n' "${COMMAND}" "${1}" \
+            >"${STDERR}"
+          return "${ERROR}"
+        }
+        ;;
+      OPTION)
+        _PA_check_option_token "${1}"
+        [[ $? -eq ${ERROR} ]] && {
+          _PA_usage
+          printf 'Invalid OPTION for %s %s, "%s".\n\n' "${COMMAND}" \
+            "${SUBCOMMAND}" "${1}" >"${STDERR}"
+          return "${ERROR}"
+        }
+        ;;
+      OPTION2)
+        _PA_check_option2_token "$1"
+        [[ $? -eq ${ERROR} ]] && {
+          _PA_usage
+          printf 'Invalid OPTION for %s %s, "%s".\n\n' "${COMMAND}" \
+            "${SUBCOMMAND}" "${1}" >"${STDERR}"
+          return "${ERROR}"
+        }
+        ;;
+      OPTION3)
+        _PA_check_option3_token "${1}"
+        [[ $? -eq ${ERROR} ]] && {
+          _PA_usage
+          printf 'Invalid OPTION for %s %s, "%s".\n\n' "${COMMAND}" \
+            "${SUBCOMMAND}" "${1}" >"${STDERR}"
+          return "${ERROR}"
+        }
+        ;;
+      END)
+        _PA_usage
+        printf 'ERROR No more options expected, "%s" is unexpected for "%s %s"\n' \
+          "${1}" "${COMMAND}" "${SUBCOMMAND}" >"${STDERR}"
+        return "${ERROR}"
+        ;;
+      *)
+        printf 'Internal ERROR. Invalid state "%s"\n' "${STATE}" >"${STDERR}"
+        return "${ERROR}"
+        ;;
+      esac
+      ;;
+    esac
+    shift 1
+    ARGN=$((ARGN - 1))
+  done
+
+  [[ -z ${COMMAND} ]] && {
+    _PA_usage
+    printf 'No COMMAND supplied\n' >"${STDERR}"
+    return "${ERROR}"
+  }
+  [[ -z ${SUBCOMMAND} ]] && {
+    _PA_usage
+    printf 'No SUBCOMMAND supplied\n' >"${STDERR}"
+    return "${ERROR}"
+  }
+
+  return "${OK}"
+}
+
+# Private Functions -----------------------------------------------------------
+
+# _PA_usage outputs help text for a single component, if help was asked for when
+# a command was specified, or for all components otherwise.
 # Args: None expected.
-PA_usage() {
+_PA_usage() {
 
   case "${PA[command]}" in
   create)
@@ -97,134 +224,7 @@ EnD
 }
 
 # ---------------------------------------------------------------------------
-PA_parse_options() {
-
-  # Uses a state machine to check all command line arguments
-  # Args:
-  #   arg1 - The arguments given to mokctl by the user on the command line
-
-  set -- "$@"
-  local ARGN=$#
-  while [ "${ARGN}" -ne 0 ]; do
-    case "${1}" in
-    --skipmastersetup)
-      PA_verify_option '--skipmastersetup' || return
-      #CREATE_CLUSTER_SKIPMASTERSETUP="${TRUE}"
-      ;;
-    --skipworkersetup)
-      PA_verify_option '--skipworkersetup' || return
-      #CREATE_CLUSTER_SKIPWORKERSETUP=$TRUE
-      ;;
-    --skiplbsetup)
-      PA_verify_option '--skiplbsetup' || return
-      #CREATE_CLUSTER_SKIPLBSETUP="$TRUE"
-      ;;
-    --with-lb)
-      PA_verify_option '--with-lb' || return
-      #CREATE_CLUSTER_WITH_LB="$TRUE"
-      ;;
-    --k8sver)
-      PA_verify_option '--k8sver' || return
-      # enable later -> BUILD_IMAGE_K8SVER="$1"
-      shift
-      ;;
-    --get-prebuilt-image)
-      PA_verify_option '--get-prebuilt-image' || return
-      BI_setflag_useprebuiltimage "${TRUE}"
-      ;;
-    --help) ;&
-    -h)
-      PA_usage
-      return "${STOP}"
-      ;;
-    --?*)
-      PA_usage
-      printf 'Invalid option: "%s"\n' "$1" >"${STDERR}"
-      return "${ERROR}"
-      ;;
-    *)
-      case "${STATE}" in
-      COMMAND)
-        PA_check_command_token "${1}"
-        [[ $? -eq ${ERROR} ]] && {
-          PA_usage
-          printf 'Invalid COMMAND, "%s".\n\n' "$1" >"${STDERR}"
-          return "${ERROR}"
-        }
-        ;;
-      SUBCOMMAND)
-        PA_check_subcommand_token "${1}"
-        [[ $? -eq ${ERROR} ]] && {
-          PA_usage
-          printf 'Invalid SUBCOMMAND for %s, "%s".\n\n' "${COMMAND}" "${1}" \
-            >"${STDERR}"
-          return "${ERROR}"
-        }
-        ;;
-      OPTION)
-        PA_check_option_token "${1}"
-        [[ $? -eq ${ERROR} ]] && {
-          PA_usage
-          printf 'Invalid OPTION for %s %s, "%s".\n\n' "${COMMAND}" \
-            "${SUBCOMMAND}" "${1}" >"${STDERR}"
-          return "${ERROR}"
-        }
-        ;;
-      OPTION2)
-        PA_check_option2_token "$1"
-        [[ $? -eq ${ERROR} ]] && {
-          PA_usage
-          printf 'Invalid OPTION for %s %s, "%s".\n\n' "${COMMAND}" \
-            "${SUBCOMMAND}" "${1}" >"${STDERR}"
-          return "${ERROR}"
-        }
-        ;;
-      OPTION3)
-        PA_check_option3_token "${1}"
-        [[ $? -eq ${ERROR} ]] && {
-          PA_usage
-          printf 'Invalid OPTION for %s %s, "%s".\n\n' "${COMMAND}" \
-            "${SUBCOMMAND}" "${1}" >"${STDERR}"
-          return "${ERROR}"
-        }
-        ;;
-      END)
-        PA_usage
-        printf 'ERROR No more options expected, "%s" is unexpected for "%s %s"\n' \
-          "${1}" "${COMMAND}" "${SUBCOMMAND}" >"${STDERR}"
-        return "${ERROR}"
-        ;;
-      *)
-        printf 'Internal ERROR. Invalid state "%s"\n' "${STATE}" >"${STDERR}"
-        return "${ERROR}"
-        ;;
-      esac
-      ;;
-    esac
-    shift 1
-    ARGN=$((ARGN - 1))
-  done
-
-  [[ -z ${COMMAND} ]] && {
-    PA_usage
-    printf 'No COMMAND supplied\n' >"${STDERR}"
-    return "${ERROR}"
-  }
-  [[ -z ${SUBCOMMAND} ]] && {
-    PA_usage
-    printf 'No SUBCOMMAND supplied\n' >"${STDERR}"
-    return "${ERROR}"
-  }
-
-  return "${OK}"
-}
-
-# ===========================================================================
-#                    COMMAND, SUBCOMMAND, OPTION PROCESSING
-# ===========================================================================
-
-# ---------------------------------------------------------------------------
-PA_check_command_token() {
+_PA_check_command_token() {
 
   # Check for a valid token in command state
   # Args:
@@ -257,17 +257,17 @@ PA_check_command_token() {
 }
 
 # ---------------------------------------------------------------------------
-PA_check_subcommand_token() {
+_PA_check_subcommand_token() {
 
   # Check for a valid token in subcommand state
   # Args:
   #   arg1 - token
 
   case "${COMMAND}" in
-  create) PA_check_create_subcommand_token "$1" ;;
-  delete) PA_check_delete_subcommand_token "$1" ;;
-  build) PA_check_build_subcommand_token "$1" ;;
-  get) PA_check_get_subcommand_token "$1" ;;
+  create) _PA_check_create_subcommand_token "$1" ;;
+  delete) _PA_check_delete_subcommand_token "$1" ;;
+  build) _PA_check_build_subcommand_token "$1" ;;
+  get) _PA_check_get_subcommand_token "$1" ;;
   *)
     printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
     err || return
@@ -276,7 +276,7 @@ PA_check_subcommand_token() {
 }
 
 # ---------------------------------------------------------------------------
-PA_check_create_subcommand_token() {
+_PA_check_create_subcommand_token() {
 
   # Check for a valid token in subcommand state
   # Args:
@@ -293,7 +293,7 @@ PA_check_create_subcommand_token() {
 }
 
 # ---------------------------------------------------------------------------
-PA_check_delete_subcommand_token() {
+_PA_check_delete_subcommand_token() {
 
   # Check for a valid token in subcommand state
   # Args:
@@ -308,7 +308,7 @@ PA_check_delete_subcommand_token() {
 }
 
 # ---------------------------------------------------------------------------
-PA_check_build_subcommand_token() {
+_PA_check_build_subcommand_token() {
 
   # Check for a valid token in subcommand state
   # Args:
@@ -326,7 +326,7 @@ PA_check_build_subcommand_token() {
 }
 
 # ---------------------------------------------------------------------------
-PA_check_get_subcommand_token() {
+_PA_check_get_subcommand_token() {
 
   # Check for a valid token in subcommand state
   # Args:
@@ -342,7 +342,7 @@ PA_check_get_subcommand_token() {
 }
 
 # ---------------------------------------------------------------------------
-PA_check_option_token() {
+_PA_check_option_token() {
 
   # Check for a valid token in option state
   # Args:
@@ -397,7 +397,7 @@ PA_check_option_token() {
 }
 
 # ---------------------------------------------------------------------------
-PA_check_option2_token() {
+_PA_check_option2_token() {
 
   # Check for a valid token in option2 state
   # Args:
@@ -435,7 +435,7 @@ PA_check_option2_token() {
 }
 
 # ---------------------------------------------------------------------------
-PA_check_option3_token() {
+_PA_check_option3_token() {
 
   # Check for a valid token in option3 state
   # Args:
@@ -477,7 +477,7 @@ PA_check_option3_token() {
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
-PA_verify_option() {
+_PA_verify_option() {
 
   # Check that the sent option is valid for the command-subcommand or global
   # options.
@@ -490,22 +490,22 @@ PA_verify_option() {
   build) ;&  # as global options.
   get) ;&
   '')
-    PA_check_valid_global_opts "$1"
+    _PA_check_valid_global_opts "$1"
     ;;
   createcluster)
-    PA_check_valid_create_cluster_opts "$1"
+    _PA_check_valid_create_cluster_opts "$1"
     ;;
   deletecluster)
-    PA_check_valid_delete_cluster_opts "$1"
+    _PA_check_valid_delete_cluster_opts "$1"
     ;;
   execcluster)
-    PA_check_valid_exec_cluster_opts "$1"
+    _PA_check_valid_exec_cluster_opts "$1"
     ;;
   buildimage)
     BI_check_valid_options "$1"
     ;;
   getcluster)
-    PA_check_valid_get_cluster_opts "$1"
+    _PA_check_valid_get_cluster_opts "$1"
     ;;
   *)
     printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
@@ -517,7 +517,7 @@ PA_verify_option() {
 }
 
 # ---------------------------------------------------------------------------
-PA_check_valid_global_opts() {
+_PA_check_valid_global_opts() {
 
   # Args:
   #   arg1 - The option to check.
@@ -531,13 +531,13 @@ PA_check_valid_global_opts() {
     [[ $1 == "${int}" ]] && return
   done
 
-  PA_usage
+  _PA_usage
   printf 'ERROR: "%s" is not a valid global option.\n' "$1" >"${STDERR}"
   return "${ERROR}"
 }
 
 # ---------------------------------------------------------------------------
-PA_check_valid_create_cluster_opts() {
+_PA_check_valid_create_cluster_opts() {
 
   # Args:
   #   arg1 - The option to check.
@@ -556,13 +556,13 @@ PA_check_valid_create_cluster_opts() {
     [[ $1 == "${opt}" ]] && return
   done
 
-  PA_usage
+  _PA_usage
   printf 'ERROR: "%s" is not a valid "create cluster" option.\n' "$1" >"${STDERR}"
   return "${ERROR}"
 }
 
 # ---------------------------------------------------------------------------
-PA_check_valid_delete_cluster_opts() {
+_PA_check_valid_delete_cluster_opts() {
 
   # Args:
   #   arg1 - The option to check.
@@ -576,14 +576,14 @@ PA_check_valid_delete_cluster_opts() {
     [[ $1 == "${opt}" ]] && return
   done
 
-  PA_usage
+  _PA_usage
   printf 'ERROR: "%s" is not a valid "delete cluster" option.\n' "$1" \
     >"${STDERR}"
   return "${ERROR}"
 }
 
 # ---------------------------------------------------------------------------
-PA_check_valid_get_cluster_opts() {
+_PA_check_valid_get_cluster_opts() {
 
   # Args:
   #   arg1 - The option to check.
@@ -597,13 +597,13 @@ PA_check_valid_get_cluster_opts() {
     [[ $1 == "${opt}" ]] && return
   done
 
-  PA_usage
+  _PA_usage
   printf 'ERROR: "%s" is not a valid "get cluster" option.\n' "$1" >"${STDERR}"
   return "${ERROR}"
 }
 
 # ---------------------------------------------------------------------------
-PA_check_valid_exec_cluster_opts() {
+_PA_check_valid_exec_cluster_opts() {
 
   # Args:
   #   arg1 - The option to check.
@@ -617,7 +617,7 @@ PA_check_valid_exec_cluster_opts() {
     [[ $1 == "${opt}" ]] && return
   done
 
-  PA_usage
+  _PA_usage
   printf 'ERROR: "%s" is not a valid "get cluster" option.\n' "$1" \
     >"${STDERR}"
   return "${ERROR}"

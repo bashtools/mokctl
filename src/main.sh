@@ -50,12 +50,11 @@ init() {
 # It calls the cleanup functions from other 'modules'.
 # Args: No args expected.
 cleanup() {
-
-  UT_cleanup
-  CU_cleanup
-  BI_cleanup
-
-  return "${OK}"
+  local retval="${OK}"
+  UT_cleanup || retval=$?
+  CU_cleanup || retval=$?
+  BI_cleanup || retval=$?
+  return "${retval}"
 }
 
 # do_create chooses which function to run for 'create SUBCOMMAND'.

@@ -16,12 +16,17 @@ PA_command() {
   printf '%s' "${PA[command]}"
 }
 
+# PA_subcommand outputs the PA[subcommand] array member. This contains the
+# subcommand the user requested.
+PA_subcommand() {
+  printf '%s' "${PA[subcommand]}"
+}
+
 # Public Functions ------------------------------------------------------------
 
 # PA_new sets the initial values for the PArsers associative array.
 # Args: None expected.
 PA_new() {
-
   PA[command]=
   PA[subcommand]=
   PA[state]=

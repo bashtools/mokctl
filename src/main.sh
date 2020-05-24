@@ -62,7 +62,7 @@ cleanup() {
 do_create() {
 
   local subcmd
-  subcmd="$(PA_get_subcommand)" || err || return
+  subcmd="$(PA_subcommand)" || err || return
   case ${subcmd} in
   cluster)
     CC_sanity_checks || return
@@ -81,7 +81,7 @@ do_create() {
 do_build() {
 
   local subcmd
-  subcmd=$(PA_get_subcommand) || err || return
+  subcmd=$(PA_subcommand) || err || return
   case ${subcmd} in
   image)
     BI_sanity_checks || return
@@ -100,7 +100,7 @@ do_build() {
 do_delete() {
 
   local subcmd
-  subcmd=$(PA_get_subcommand) || err || return
+  subcmd=$(PA_subcommand) || err || return
   case ${subcmd} in
   cluster)
     DC_sanity_checks || return
@@ -128,7 +128,7 @@ do_exec() {
 do_get() {
 
   local subcmd
-  subcmd=$(PA_get_subcommand) || err || return
+  subcmd=$(PA_subcommand) || err || return
   case ${subcmd} in
   cluster)
     GE_sanity_checks || return

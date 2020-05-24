@@ -113,12 +113,12 @@ UT_cleanup() {
 
   local int
 
-  # If progress spinner crashed make sure the cursor is shown
-  [ -t 1 ] && tput cnorm
-
   # Kill the spinny, and anything else, if they're running
   [[ -n $(jobs -p) ]] && printf '%s\r  ✕%s\n' "${UT[red]}" "${UT[normal]}"
   for int in $(jobs -p); do kill "${int}"; done
+
+  # If progress spinner crashed make sure the cursor is shown
+  [ -t 1 ] && tput cnorm
 
   return "${OK}"
 }

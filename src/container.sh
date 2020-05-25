@@ -183,7 +183,6 @@ EnD
 # CU_podman_or_docker checks to see if docker and/or podman are installed
 # and sets the imgprefix array member accordingly, and also defines the
 # function to be used. Podman is preferred if both are installed.
-# This function is called by main().
 # Args: No args expected.
 _CU_podman_or_docker() {
 

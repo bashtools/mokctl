@@ -33,7 +33,7 @@ CU_new() {
   _CU_podman_or_docker
 }
 
-# CU_cleanup remove artifacts that were created during execution. Currently
+# CU_cleanup removes artifacts that were created during execution. Currently
 # this does nothing.
 CU_cleanup() { :; }
 

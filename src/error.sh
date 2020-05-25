@@ -34,7 +34,7 @@ ER_err() {
   return "${ERROR}"
 }
 
-# err calls ER_err since it is used in so many places it should be small.
+# err is a synonym for ER_err to aid with code readability.
 err() {
   ER_err
   return

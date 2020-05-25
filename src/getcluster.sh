@@ -15,7 +15,6 @@ declare OK ERROR STDERR
 # This function is called by main().
 # Args: None expected.
 GE_init() {
-
   GE[dummy]=
 }
 
@@ -99,7 +98,7 @@ do_get_clusters_nomutate() {
 
   declare -a nodes
 
-  ids=$(CU_get_cluster_docker_ids "${clustname}") || return
+  ids=$(CU_get_cluster_container_ids "${clustname}") || return
 
   if [[ -z ${ids} ]]; then
     return "${OK}"

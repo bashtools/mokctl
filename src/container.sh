@@ -33,15 +33,15 @@ CU_new() {
   _CU_podman_or_docker
 }
 
-# CU_cleanup remove things that were created during execution. Currently
+# CU_cleanup remove artifacts that were created during execution. Currently
 # this does nothing.
 CU_cleanup() { :; }
 
-# CU_get_cluster_docker_ids outputs just the container IDs, one per line
+# CU_get_cluster_container_ids outputs just the container IDs, one per line
 # for any MOK cluster, unless arg1 is set, in which case just the IDs
 # for the requests cluster name are output.
 # Args: arg1 - The cluster name, optional.
-CU_get_cluster_docker_ids() {
+CU_get_cluster_container_ids() {
 
   local value output
 
@@ -73,7 +73,7 @@ CU_get_cluster_size() {
     err || return
   }
 
-  output=$(CU_get_cluster_docker_ids "$1") || err || return
+  output=$(CU_get_cluster_container_ids "$1") || err || return
 
   # readarray will read null as an array item so don't run
   # through readarray if it's null
@@ -86,6 +86,39 @@ CU_get_cluster_size() {
   readarray -t nodes <<<"${output}"
 
   printf '%d' "${#nodes[*]}"
+}
+
+# CU_get_container_ip outputs the IP address of the container.
+# Args: arg1 - docker container id or container name to query.
+CU_get_container_ip() {
+
+  [[ -z ${1} ]] && {
+    printf 'INTERNAL ERROR: Container ID (arg1) cannot be empty.\n' >"${STDERR}"
+    err || return
+  }
+
+  docker inspect \
+    --format='{{.NetworkSettings.IPAddress}}' \
+    "$1" || {
+    printf 'ERROR: %s inspect failed\n' "${CU[containerrt]}" >"${STDERR}"
+    err || return
+  }
+}
+
+# CU_get_container_info uses 'docker inspect $id' to output
+# container details.
+# Args: arg1 - docker container id
+CU_get_container_info() {
+
+  [[ -z ${1} ]] && {
+    printf 'INTERNAL ERROR: Container ID (arg1) cannot be empty.\n' >"${STDERR}"
+    err || return
+  }
+
+  docker inspect "$1" || {
+    printf 'ERROR: %s inspect failed\n' "${CU[containerrt]}" >"${STDERR}"
+    err || return
+  }
 }
 
 # CU_create_container creates and runs a container with settings suitable for
@@ -141,39 +174,6 @@ EnD
     --label "$2" \
     "${imagename}" || {
     printf 'ERROR: %s run failed\n' "${CU[containerrt]}" >"${STDERR}"
-    err || return
-  }
-}
-
-# CU_get_container_ip outputs the IP address of the container.
-# Args: arg1 - docker container id or container name to query.
-CU_get_container_ip() {
-
-  [[ -z ${1} ]] && {
-    printf 'INTERNAL ERROR: Container ID (arg1) cannot be empty.\n' >"${STDERR}"
-    err || return
-  }
-
-  docker inspect \
-    --format='{{.NetworkSettings.IPAddress}}' \
-    "$1" || {
-    printf 'ERROR: %s inspect failed\n' "${CU[containerrt]}" >"${STDERR}"
-    err || return
-  }
-}
-
-# CU_get_container_info uses 'docker inspect $id' to output
-# container details.
-# Args: arg1 - docker container id
-CU_get_container_info() {
-
-  [[ -z ${1} ]] && {
-    printf 'INTERNAL ERROR: Container ID (arg1) cannot be empty.\n' >"${STDERR}"
-    err || return
-  }
-
-  docker inspect "$1" || {
-    printf 'ERROR: %s inspect failed\n' "${CU[containerrt]}" >"${STDERR}"
     err || return
   }
 }

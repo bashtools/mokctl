@@ -39,7 +39,7 @@ CU_cleanup() { :; }
 
 # CU_get_cluster_container_ids outputs just the container IDs, one per line
 # for any MOK cluster, unless arg1 is set, in which case just the IDs
-# for the requests cluster name are output.
+# for the requested cluster name are output.
 # Args: arg1 - The cluster name, optional.
 CU_get_cluster_container_ids() {
 

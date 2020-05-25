@@ -24,7 +24,7 @@ PA_subcommand() {
 
 # Public Functions ------------------------------------------------------------
 
-# PA_new sets the initial values for the PArsers associative array.
+# PA_new sets the initial values for the PArser's associative array.
 # Args: None expected.
 PA_new() {
   PA[command]=

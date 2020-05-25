@@ -61,7 +61,7 @@ CU_get_cluster_container_ids() {
 
 # CU_get_cluster_size searches for an existing cluster using labels and outputs
 # the number of containers in that cluster. All cluster nodes are labelled with
-# LABELKEY="${CC[clustername]}"
+# "${CU[labelkey]}=${CC[clustername]}"
 # Args: arg1 - The cluster name to search for.
 CU_get_cluster_size() {
 

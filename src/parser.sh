@@ -32,6 +32,24 @@ PA_add_option_callback() {
   PA[optscallbacks]+="$1,$2 "
 }
 
+# PA_add_usage_callback adds a callback to the list of callbacks used for
+# output of help text.
+# Args: arg1 - Null string (for global help), COMMAND or COMMANDSUBCOMMAND.
+#       arg2 - The function to call.
+PA_add_usage_callback() {
+  PA[usagecallbacks]+="$1,$2 "
+}
+
+# PA_add_state_callback adds a callback to the list of callbacks used for
+# programming the state machine.
+# Args: arg1 - Current state to match.
+#       arg2 - The value of the state to match.
+#       arg3 - The new state if arg1 and arg2 match.
+#       arg4 - The function to call, optional.
+PA_add_state_callback() {
+  PA[statecallbacks]+="$1,$2,$3,$4 "
+}
+
 # PA_new sets the initial values for the PArser's associative array.
 # Args: None expected.
 PA_new() {
@@ -39,6 +57,7 @@ PA_new() {
   PA[subcommand]=
   PA[state]="COMMAND"
   PA[optscallbacks]=
+  PA[usagecallbacks]=
 }
 
 # PA_parse_args implements an interleaved state machine to process the
@@ -68,7 +87,7 @@ PA_parse_args() {
     *)
       case "${PA[state]}" in
       COMMAND)
-        _PA_check_command_token "${1}"
+        _PA_check_token "${1}" "COMMAND" "command"
         [[ $? -eq ${ERROR} ]] && {
           _PA_usage
           printf 'Invalid COMMAND, "%s".\n\n' "$1" >"${STDERR}"
@@ -76,7 +95,7 @@ PA_parse_args() {
         }
         ;;
       SUBCOMMAND)
-        _PA_check_subcommand_token "${1}"
+        _PA_check_token "${1}" "SUBCOMMAND" "subcommand"
         [[ $? -eq ${ERROR} ]] && {
           _PA_usage
           printf 'Invalid SUBCOMMAND for %s, "%s".\n\n' "${PA[command]}" "${1}" \
@@ -84,17 +103,17 @@ PA_parse_args() {
           return "${ERROR}"
         }
         ;;
-      ARG)
-        _PA_check_arg_token "${1}"
+      ARG1)
+        _PA_check_token "${1}" "ARG1"
         [[ $? -eq ${ERROR} ]] && {
           _PA_usage
-          printf 'Invalid ARG for %s %s, "%s".\n\n' "${PA[command]}" \
+          printf 'Invalid ARG1 for %s %s, "%s".\n\n' "${PA[command]}" \
             "${PA[subcommand]}" "${1}" >"${STDERR}"
           return "${ERROR}"
         }
         ;;
       ARG2)
-        _PA_check_arg2_token "$1"
+        _PA_check_token "${1}" "ARG2"
         [[ $? -eq ${ERROR} ]] && {
           _PA_usage
           printf 'Invalid ARG for %s %s, "%s".\n\n' "${PA[command]}" \
@@ -103,7 +122,7 @@ PA_parse_args() {
         }
         ;;
       ARG3)
-        _PA_check_arg3_token "${1}"
+        _PA_check_token "${1}" "ARG3"
         [[ $? -eq ${ERROR} ]] && {
           _PA_usage
           printf 'Invalid ARG for %s %s, "%s".\n\n' "${PA[command]}" \
@@ -128,352 +147,39 @@ PA_parse_args() {
     ARGN=$((ARGN - 1))
   done
 
-  [[ -z ${PA[command]} ]] && {
-    _PA_usage
-    printf 'No COMMAND supplied\n' >"${STDERR}"
-    return "${ERROR}"
-  }
-  [[ -z ${PA[subcommand]} ]] && {
-    _PA_usage
-    printf 'No SUBCOMMAND supplied\n' >"${STDERR}"
-    return "${ERROR}"
-  }
-
   return "${OK}"
 }
 
 # Private Functions -----------------------------------------------------------
 
-# _PA_usage outputs help text for a single component if help was asked for when
-# a command was specified, or for all components otherwise.
-# Args: None expected.
-_PA_usage() {
+# _PA_check_token checks for a valid token in arg2 state.
+# Args: arg1 - the token to check.
+#       arg2 - the current state.
+#       arg3 - the state value to set, optional. This should only be sent
+#              for command and subcommand states.
+_PA_check_token() {
 
-  case "${PA[command]}" in
-  create)
-    CC_usage
-    return
-    ;;
-  delete)
-    DE_usage
-    return
-    ;;
-  build)
-    BI_usage
-    return
-    ;;
-  get)
-    GE_usage
-    return
-    ;;
-  exec)
-    EX_usage
-    return
-    ;;
-  *)
-    # Just fall out and output the entire help since the user
-    # has not selected a valid command.
-    ;;
-  esac
+  local item
 
-  cat <<'EnD'
-
-Usage: mokctl [-h] <command> [subcommand] [ARGS...]
- 
-Global options:
- 
-  --help
-  -h     - This help text
- 
-Where command can be one of:
- 
-  create - Add item(s) to the system.
-  delete - Delete item(s) from the system.
-  build  - Build item(s) used by the system.
-  get    - Get details about items in the system.
-  exec   - 'Log in' to the container.
-
-EnD
-
-  # Output individual help pages
-  CC_usage # <- create cluster
-  DE_usage # <- delete cluster
-  BI_usage # <- build image
-  GE_usage # <- get
-  EX_usage # <- exec
-
-  cat <<'EnD'
-EXAMPLES
- 
-Get a list of mok clusters
- 
-  mokctl get clusters
- 
-Build the image used for masters and workers:
- 
-  mokctl build image
- 
-Create a single node cluster:
-Note that the master node will be made schedulable for pods.
- 
-  mokctl create cluster mycluster 1 0
- 
-Create a single master and single node cluster:
-Note that the master node will NOT be schedulable for pods.
- 
-  mokctl create cluster mycluster 1 1
- 
-Delete a cluster:
- 
-  mokctl delete cluster mycluster
-
-EnD
-}
-
-# _PA_check_command_token checks for a valid token in command state.
-# Args: arg1 - the token to check
-_PA_check_command_token() {
-
-  case "${1}" in
-  create)
-    PA[command]="create"
-    PA[state]="SUBCOMMAND"
-    ;;
-  delete)
-    PA[command]="delete"
-    PA[state]="SUBCOMMAND"
-    ;;
-  build)
-    PA[command]="build"
-    PA[state]="SUBCOMMAND"
-    ;;
-  get)
-    PA[command]="get"
-    PA[state]="SUBCOMMAND"
-    ;;
-  exec)
-    PA[command]="exec"
-    PA[subcommand]="unused"
-    PA[state]="ARG"
-    ;;
-  *) return "${ERROR}" ;;
-  esac
-}
-
-# _PA_check_subcommand_token checks for a valid token in subcommand state by
-# calling check functions for the specific command.
-# Args: arg1 - the token to check
-# ---------------------------------------------------------------------------
-_PA_check_subcommand_token() {
-
-  case "${PA[command]}" in
-  create) _PA_check_create_subcommand_token "$1" ;;
-  delete) _PA_check_delete_subcommand_token "$1" ;;
-  build) _PA_check_build_subcommand_token "$1" ;;
-  get) _PA_check_get_subcommand_token "$1" ;;
-  *)
-    printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-    err || return
-    ;;
-  esac
-}
-
-# _PA_check_create_subcommand_token checks for a valid token in subcommand
-# state for 'create'.
-# Args: arg1 - token
-_PA_check_create_subcommand_token() {
-
-  case $1 in
-  cluster)
-    PA[subcommand]="cluster"
-    CC_new
-    ;;
-  *) return "${ERROR}" ;;
-  esac
-
-  PA[state]="ARG"
-
-  return "${OK}"
-}
-
-# _PA_check_delete_subcommand_token checks for a valid token in subcommand
-# state for 'delete'.
-# Args: arg1 - the token to check
-_PA_check_delete_subcommand_token() {
-
-  case $1 in
-  cluster)
-    PA[subcommand]="cluster"
-    DC_new
-    ;;
-  *) return "${ERROR}" ;;
-  esac
-
-  PA[state]=ARG
-}
-
-# _PA_check_build_subcommand_token checks for a valid token in subcommand
-# state for 'build'.
-# Args: arg1 - the token to check
-# ---------------------------------------------------------------------------
-_PA_check_build_subcommand_token() {
-
-  case $1 in
-  image)
-    PA[subcommand]="image"
-    ;;
-  *) return "${ERROR}" ;;
-  esac
-
-  PA[state]=END
-}
-
-# _PA_check_delete_subcommand_token checks for a valid token in subcommand
-# state for 'build'.
-# Args: arg1 - the token to check
-# ---------------------------------------------------------------------------
-_PA_check_get_subcommand_token() {
-
-  case "${1}" in
-  clusters) ;&
-  cluster)
-    PA[subcommand]="cluster"
-    GE_new
-    ;;
-  *) return "${ERROR}" ;;
-  esac
-
-  PA[state]=ARG
-}
-
-# _PA_check_arg_token checks for a valid token in arg
-# state.
-# Args: arg1 - the token to check
-_PA_check_arg_token() {
-
-  case "${PA[command]}" in
-  create)
-    case "${PA[subcommand]}" in
-    cluster)
-      CC_set_clustername "${1}"
-      PA[state]="ARG2"
-      ;;
-    *)
-      printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-      err || return
-      ;;
-    esac
-    ;;
-  delete)
-    case "${PA[subcommand]}" in
-    cluster)
-      #DELETE_CLUSTER_NAME="${1}"
-      PA[state]="END"
-      ;;
-    *)
-      printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-      err || return
-      ;;
-    esac
-    ;;
-  get)
-    case "${PA[subcommand]}" in
-    cluster)
-      #GET_CLUSTER_NAME="${1}"
-      PA[state]="END"
-      ;;
-    *)
-      printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-      err || return
-      ;;
-    esac
-    ;;
-  exec)
-    ##EXEC_CONTAINER_NAME="${1}"
-    PA[state]="END"
-    ;;
-  *)
-    printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-    err || return
-    ;;
-  esac
-}
-
-# _PA_check_arg2_token checks for a valid token in arg2
-# state.
-# Args: arg1 - the token to check
-_PA_check_arg2_token() {
-
-  case "${PA[command]}" in
-  create)
-    case "${PA[subcommand]}" in
-    cluster)
-      CC_set_nummasters "$1"
-      PA[state]="ARG3"
-      ;;
-    *)
-      printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-      err || return
-      ;;
-    esac
-    ;;
-  delete)
-    case "${PA[subcommand]}" in
-    cluster)
-      return "${ERROR}"
-      ;;
-    *)
-      printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-      err || return
-      ;;
-    esac
-    ;;
-  *)
-    printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-    err || return
-    ;;
-  esac
-}
-
-# _PA_check_arg3_token checks for a valid token in arg3
-# state.
-# Args: arg1 - the token to check
-_PA_check_arg3_token() {
-
-  case "${PA[command]}" in
-  create)
-    case "${PA[subcommand]}" in
-    cluster)
-      CC_set_numworkers "$1"
-      PA[state]="END"
-      ;;
-    *)
-      printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-      err || return
-      ;;
-    esac
-    ;;
-  delete)
-    case "${PA[subcommand]}" in
-    cluster)
-      return "${ERROR}"
-      ;;
-    *)
-      printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-      err || return
-      ;;
-    esac
-    ;;
-  *)
-    printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-    err || return
-    ;;
-  esac
+  for item in ${PA[statecallbacks]}; do
+    IFS=, read -r state component newstate func <<<"${item}"
+    [[ ${state} == "$2" ]] && {
+      [[ ${component} == "$1" ]] && {
+        [[ -n $3 ]] && PA["$3"]="$1"
+        PA[state]="${newstate}"
+        [[ -n ${func} ]] && {
+          eval "${func} $1" || return
+        }
+        return "${OK}"
+      }
+    }
+  done
 }
 
 # _PA_process_option checks that the sent option is valid for the
 # command-subcommand or global options.
 # Args: arg1 - The option to check.
+#       arg2 - TODO The value of the option if present, optional.
 _PA_process_option() {
 
   local item curcmdsubcmd
@@ -490,6 +196,27 @@ _PA_process_option() {
 
   return "${ERROR}"
 }
+
+# _PA_usage outputs help text for a single component if help was asked for when
+# a command was specified, or for all components otherwise.
+# Args: None expected.
+_PA_usage() {
+
+  curcmdsubcmd="${PA[command]}${PA[subcommand]}"
+
+  for item in ${PA[usagecallbacks]}; do
+    IFS=, read -r cmdsubcmd func <<<"${item}"
+    [[ ${curcmdsubcmd} == "${cmdsubcmd}" ]] && {
+      eval "${func}"
+      return
+    }
+  done
+
+  eval "${PA[usage]}"
+}
+
+# Initialise PA
+PA_new
 
 # vim helpers -----------------------------------------------------------------
 #include globals.sh

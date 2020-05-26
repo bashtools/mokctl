@@ -1,7 +1,7 @@
 # CU - Container Utilities
 
-# CU is an associative array that holds data specific to containers.
-declare -A CU
+# _CU is an associative array that holds data specific to containers.
+declare -A _CU
 
 # Declare externally defined variables ----------------------------------------
 
@@ -9,16 +9,20 @@ declare OK ERROR STDERR
 
 # Getters/Setters -------------------------------------------------------------
 
+CU_containerrt() {
+  printf '%s' "${_CU[containerrt]}"
+}
+
 # CU_imgprefix gets the prefix to be used with docker build. For podman
 # it is 'localhost/'. For docker it is empty.
 CU_imgprefix() {
-  printf '%s' "${CU[imgprefix]}"
+  printf '%s' "${_CU[imgprefix]}"
 }
 
 # CU_labelkey gets the key value of the label that is applied to all
 # cluster members for podman or docker.
 CU_labelkey() {
-  printf '%s' "${CU[labelkey]}"
+  printf '%s' "${_CU[labelkey]}"
 }
 
 # Public Functions ------------------------------------------------------------
@@ -26,9 +30,9 @@ CU_labelkey() {
 # CU_new sets the initial values for the Container Utils associative array.
 # Args: None expected.
 CU_new() {
-  CU[imgprefix]=
-  CU[labelkey]=
-  CU[containerrt]=
+  _CU[imgprefix]=
+  _CU[labelkey]="MokCluster"
+  _CU[containerrt]=
 
   _CU_podman_or_docker
 }
@@ -47,8 +51,8 @@ CU_get_cluster_container_ids() {
 
   [[ -n $1 ]] && value="=$1"
 
-  output=$(docker ps -a -f label="${CU[labelkey]}${value}" -q) || {
-    printf 'ERROR: %s command failed\n' "${CU[containerrt]}" >"${STDERR}"
+  output=$(docker ps -a -f label="${_CU[labelkey]}${value}" -q) || {
+    printf 'ERROR: %s command failed\n' "${_CU[containerrt]}" >"${STDERR}"
     err || return
   }
 
@@ -61,7 +65,7 @@ CU_get_cluster_container_ids() {
 
 # CU_get_cluster_size searches for an existing cluster using labels and outputs
 # the number of containers in that cluster. All cluster nodes are labelled with
-# "${CU[labelkey]}=${CC[clustername]}"
+# "${_CU[labelkey]}=${CC[clustername]}"
 # Args: arg1 - The cluster name to search for.
 CU_get_cluster_size() {
 
@@ -100,7 +104,7 @@ CU_get_container_ip() {
   docker inspect \
     --format='{{.NetworkSettings.IPAddress}}' \
     "$1" || {
-    printf 'ERROR: %s inspect failed\n' "${CU[containerrt]}" >"${STDERR}"
+    printf 'ERROR: %s inspect failed\n' "${_CU[containerrt]}" >"${STDERR}"
     err || return
   }
 }
@@ -116,7 +120,7 @@ CU_get_container_info() {
   }
 
   docker inspect "$1" || {
-    printf 'ERROR: %s inspect failed\n' "${CU[containerrt]}" >"${STDERR}"
+    printf 'ERROR: %s inspect failed\n' "${_CU[containerrt]}" >"${STDERR}"
     err || return
   }
 }
@@ -138,12 +142,12 @@ CU_create_container() {
 
   img=$(BI_baseimagename) || err || return
 
-  local imglocal="${CU[imgprefix]}local/${img}-v${3}"
+  local imglocal="${_CU[imgprefix]}local/${img}-v${3}"
   local imgremote="docker.io/mclarkson/${img}-v${3}"
 
   # Prefer a locally built container over one downloaded from a registry
   allimgs=$(podman images -n) || {
-    printf 'ERROR: %s returned an error' "${CU[containerrt]}\n" >"${STDERR}"
+    printf 'ERROR: %s returned an error' "${_CU[containerrt]}\n" >"${STDERR}"
     err || return
   }
 
@@ -173,7 +177,7 @@ EnD
     --hostname "$1" \
     --label "$2" \
     "${imagename}" || {
-    printf 'ERROR: %s run failed\n' "${CU[containerrt]}" >"${STDERR}"
+    printf 'ERROR: %s run failed\n' "${_CU[containerrt]}" >"${STDERR}"
     err || return
   }
 }
@@ -190,8 +194,8 @@ _CU_podman_or_docker() {
   local id
 
   if type podman &>/dev/null; then
-    CU[imgprefix]="localhost/"
-    CU[containerrt]="podman"
+    _CU[imgprefix]="localhost/"
+    _CU[containerrt]="podman"
     local id
     id=$(id -u)
     [[ ${id} -ne 0 ]] && {
@@ -208,8 +212,8 @@ EnD
       podman "$@"
     }
   elif type docker &>/dev/null; then
-    CU[imgprefix]=""
-    CU[containerrt]="docker"
+    _CU[imgprefix]=""
+    _CU[containerrt]="docker"
     docker() {
       docker "$@"
     }
@@ -223,6 +227,9 @@ EnD
 
   return "${OK}"
 }
+
+# Initialise _CU
+CU_new
 
 # vim helpers -----------------------------------------------------------------
 #include globals.sh

@@ -38,6 +38,9 @@ GL_new() {
   dummy="${dummy}"
 }
 
+# Initialise GL
+GL_new
+
 # vim helpers -----------------------------------------------------------------
 
 # The following lines allow the use of '[C-i' and '[I' (do ':help [I') in vim.

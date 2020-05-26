@@ -39,8 +39,14 @@ BI_new() {
   BI[useprebuiltimage]=
   BI[dockerbuildtmpdir]=
   BI[runwithprogress_output]=
+  # Program the state machine
+  PA_add_state_callback "COMMAND" "build" "SUBCOMMAND" ""
+  PA_add_state_callback "SUBCOMMAND" "image" "END" ""
+  # Set up option callbacks
   PA_add_option_callback "build" "BI_process_options" || return
   PA_add_option_callback "buildimage" "BI_process_options" || return
+  PA_add_usage_callback "build" "BI_usage" || return
+  PA_add_usage_callback "buildimage" "BI_usage" || return
 }
 
 # BI_usage outputs help text for the build image component.
@@ -102,16 +108,12 @@ BI_process_options() {
   esac
 }
 
-# BI_sanity_checks is expected to run some quick and simple checks to
-# see if it has all it's key components. For build image this does nothing.
-# This function should not be deleted as it is called in main.sh.
-# Args: None expected.
-BI_sanity_checks() { :; }
-
 # BI_run builds the base image used for masters and workers.
 # This function is called in main.sh.
 # Args: None expected.
 BI_run() {
+
+  _BI_sanity_checks || return
 
   local retval=0
   _BI_build_container_image
@@ -128,6 +130,12 @@ BI_run() {
 }
 
 # Private Functions -----------------------------------------------------------
+
+# BI_sanity_checks is expected to run some quick and simple checks to
+# see if it has all it's key components. For build image this does nothing.
+# This function should not be deleted as it is called in main.sh.
+# Args: None expected.
+_BI_sanity_checks() { :; }
 
 # _BI_build_container_image creates the docker build directory in
 # dockerbuildtmpdir then calls docker build to build the image.
@@ -213,6 +221,9 @@ _BI_create_docker_build_dir() {
   #mok-centos-7-tarball-start
   #mok-centos-7-tarball-end
 }
+
+# Initialise BI
+BI_new
 
 # vim helpers -----------------------------------------------------------------
 #include globals.sh

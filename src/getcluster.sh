@@ -1,49 +1,56 @@
-# GE - GEt cluster
+# GC - Get Cluster
 
-# GE is an associative array that holds data specific to the get cluster command.
-declare -A GE
+# _GC is an associative array that holds data specific to the get cluster command.
+declare -A _GC
 
 # Declare externally defined variables ----------------------------------------
 
-declare OK ERROR STDERR
+declare OK ERROR STDERR TRUE STOP
 
 # Getters/Setters -------------------------------------------------------------
 
-# Public Functions ------------------------------------------------------------
-
-# GE_init sets the initial values for the GE associative array.
-# This function is called by main().
-# Args: None expected.
-GE_init() {
-  GE[dummy]=
+GC_showheader() {
+  printf '%s' "${_GC[showheader]}"
 }
 
-CU_cleanup() {
+GC_set_showheader() {
+  _GC[showheader]="$1"
+}
+
+GC_set_clustername() {
+  _GC[clustername]="$1"
+}
+
+# Public Functions ------------------------------------------------------------
+
+GC_cleanup() {
   :
 }
 
-# ---------------------------------------------------------------------------
-GE_check_valid_options() {
+# GC_process_options checks if arg1 is in a list of valid get cluster
+# options. This function is called by the parser.
+# Args: arg1 - the option to check.
+#       arg2 - value of the item to be set, optional
+GC_process_options() {
 
-  # Args:
-  #   arg1 - The option to check.
-
-  local opt validopts=(
-    "--help"
-    "-h"
-  )
-
-  for opt in "${validopts[@]}"; do
-    [[ $1 == "${opt}" ]] && return
-  done
-
-  GE_usage
-  printf 'ERROR: "%s" is not a valid "get cluster" option.\n' "$1" >"${STDERR}"
-  return "${ERROR}"
+  case "$1" in
+  -h | --help)
+    GC_usage
+    return "${STOP}"
+    ;;
+  *)
+    GC_usage
+    printf 'ERROR: "%s" is not a valid "build" option.\n' "${1}" \
+      >"${STDERR}"
+    return "${ERROR}"
+    ;;
+  esac
 }
 
-# ---------------------------------------------------------------------------
-GE_usage() {
+# GC_usage outputs help text for the create cluster component.
+# It is called by PA_usage().
+# Args: None expected.
+GC_usage() {
 
   cat <<'EnD'
 GET subcommands are:
@@ -60,99 +67,88 @@ get cluster(s) options:
 EnD
 }
 
-# ---------------------------------------------------------------------------
-do_get() {
-
-  # Calls the correct command/subcommand function
-
-  case $SUBCOMMAND in
-  cluster)
-    do_get_clusters_sanity_checks || return
-    do_get_clusters_nomutate "$GET_CLUSTER_NAME"
-    ;;
-  esac
+# GC_new sets the initial values for the _GC associative array.
+# This function is called by main().
+# Args: None expected.
+GC_new() {
+  _GC[showheader]=
+  # Program the parser's state machine
+  PA_add_state_callback "COMMAND" "get" "SUBCOMMAND" ""
+  PA_add_state_callback "SUBCOMMAND" "cluster" "ARG1" ""
+  PA_add_state_callback "ARG1" "getcluster" "END" "GC_set_clustername"
+  # Set up the parser's option callbacks
+  PA_add_option_callback "get" "GC_process_options" || return
+  PA_add_option_callback "getcluster" "GC_process_options" || return
+  # Set up the parser's usage callbacks
+  PA_add_usage_callback "get" "GC_usage" || return
+  PA_add_usage_callback "getcluster" "GC_usage" || return
 }
 
-# ---------------------------------------------------------------------------
-do_get_clusters_sanity_checks() {
+# GC_run gets information about cluster(s).
+# This function is called in main.sh.
+# Args: None expected.
+GC_run() {
 
-  # No sanity checks required.
-  # Globals: None
-  # No args expected
+  _GC_sanity_checks || return
 
-  :
-}
-
-# ---------------------------------------------------------------------------
-do_get_clusters_nomutate() {
-
-  # Mutate functions make system changes but this one doesn't and I don't
-  #  know where to put it yet.
-  # Gets cluster details
-  # Globals: None
-  # Args
-  #   arg1 - cluster name, optional
-
-  local ids id info clustname=$1 output
+  local ids id info output labelkey
   local containerhostname containerip
 
   declare -a nodes
 
-  ids=$(CU_get_cluster_container_ids "${clustname}") || return
+  ids=$(CU_get_cluster_container_ids "${_GC[clustername]}") || return
 
   if [[ -z ${ids} ]]; then
     return "${OK}"
   fi
 
-  readarray -t nodes <<<"$ids"
+  readarray -t nodes <<<"${ids}"
 
   # Use 'docker inspect' to get the value of the label $LABELKEY
 
   output=$(mktemp -p /var/tmp) || {
-    printf 'ERROR: mktmp failed.\n' >"$E"
-    return $ERROR
+    printf 'ERROR: mktmp failed.\n' >"${STDERR}"
+    return "${ERROR}"
   }
 
   # Output the header
-  [[ $GET_CLUSTER_SHOW_HEADER -eq $TRUE ]] && {
-    printf 'MOK_Cluster Docker_ID Container_Name IP_Address\n' >"$output"
+  [[ ${_GC[showheader]} -eq ${TRUE} ]] && {
+    printf 'MOK_Cluster Docker_ID Container_Name IP_Address\n' >"${output}"
   }
+
+  labelkey=$(CU_labelkey) || err || return
 
   for id in "${nodes[@]}"; do
 
-    info=$(CU_get_container_info "$id") || return
+    info=$(CU_get_container_info "${id}") || return
 
     clustname=$(sed -rn \
-      '/Labels/,/}/ {s/[":,]//g; s/^ *'"$LABELKEY"' ([^ ]*).*/\1/p }' \
-      <<<"$info") || err || return
+      '/Labels/,/}/ {s/[":,]//g; s/^ *'"${labelkey}"' ([^ ]*).*/\1/p }' \
+      <<<"${info}") || err || return
 
     containerhostname=$(sed -rn \
       '/"Config"/,/}/ {s/[":,]//g; s/^ *Hostname ([^ ]*).*/\1/p }' \
-      <<<"$info") || err || return
+      <<<"${info}") || err || return
 
     containerip=$(sed -rn \
       '/NetworkSettings/,/Networks/ {s/[":,]//g; s/^ *IPAddress ([^ ]*).*/\1/p }' \
-      <<<"$info") || err || return
+      <<<"${info}") || err || return
 
-    printf '%s %s %s %s\n' "$clustname" "$id" "$containerhostname" "$containerip"
+    printf '%s %s %s %s\n' "${clustname}" "${id}" "${containerhostname}" "${containerip}"
 
-  done | sort -k 3 >>"$output"
+  done | sort -k 3 >>"${output}"
 
-  column -t "$output" || err
+  column -t "${output}" || err
 }
 
-# ---------------------------------------------------------------------------
-get_mok_cluster_docker_ids() {
+# GC_sanity_checks is expected to run some quick and simple checks to
+# see if it has all it's key components. For build image this does nothing.
+# This function should not be deleted as it is called in main.sh.
+# Args: None expected.
+_GC_sanity_checks() { :; }
 
-  # Use 'docker ps .. label= ..' to get a list of mok clusters
-  # Args
-  #   arg1 - mok cluster name, optional
-
-  docker ps -a -f label="$LABELKEY$1" -q || {
-    printf 'ERROR: docker failed\n' >"$E"
-    err || return
-  }
-}
+# Initialise _GC
+GC_new
 
 # vim helpers -----------------------------------------------------------------
 #include globals.sh

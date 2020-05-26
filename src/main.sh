@@ -8,10 +8,8 @@ declare OK ERROR STOP STDERR
 main() {
 
   trap cleanup EXIT
-  init || return
   sanity_checks || return
-  #register_parser || return
-  register_parser_options || return
+  register_parser_global_options || return
 
   local retval="${OK}"
   PA_parse_args "$@" || retval=$?
@@ -21,14 +19,15 @@ main() {
     return "${OK}"
   fi
 
-  local cmd
+  local cmd subcmd
   cmd=$(PA_command) || err || return
-  case "${cmd}" in
-  create) do_create ;;
-  delete) do_delete ;;
-  build) do_build ;;
-  get) do_get ;;
-  exec) do_exec ;;
+  subcmd=$(PA_subcommand) || err || return
+  case "${cmd}${subcmd}" in
+  create | createcluster) CC_run ;;
+  delete | deletecluster) DC_run ;;
+  build | buildimage) BI_run ;;
+  get | getcluster) GC_run ;;
+  exec) EX_run ;;
   *)
     printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
     err || return "${ERROR}"
@@ -36,15 +35,14 @@ main() {
   esac
 }
 
-register_parser_options() {
-  PA_add_option_callback "" "process_global_options" || return
-  PA_add_option_callback "delete" "DE_process_options" || return
-  PA_add_option_callback "deletecluster" "DE_process_options" || return
-  PA_add_option_callback "exec" "EX_process_options" || return
-  PA_add_option_callback "get" "GE_process_options" || return
-  PA_add_option_callback "getcluster" "GE_process_options" || return
+register_parser_global_options() {
+  PA_add_option_callback "" "process_global_options"
+  PA_add_usage_callback "" "usage"
 }
 
+# process_global_options is called by the parser when a global option is
+# encountered for processing.
+# Args: arg1 - the global option that was found.
 process_global_options() {
   case "$1" in
   -h | --help)
@@ -58,19 +56,6 @@ process_global_options() {
   esac
 }
 
-# init sets start values for variables and calls the init in each utility
-# 'module'. Other XX_new functions are called in the parser when it knows
-# what command and subcommand the user has requested.
-# Args: No args expected.
-init() {
-  GL_new || return # <- new globals
-  ER_new || return # <- new error
-  UT_new || return # <- new utilities
-  PA_new || return # <- new parser
-  CU_new || return # <- new container utils
-  BI_new || return # <- new build image
-}
-
 # cleanup is called from an EXIT trap only, when the program exits.
 # It calls the cleanup functions from other 'modules'.
 # Args: No args expected.
@@ -80,90 +65,6 @@ cleanup() {
   CU_cleanup || retval=$?
   BI_cleanup || retval=$?
   return "${retval}"
-}
-
-# do_create chooses which function to run for 'create SUBCOMMAND'.
-# Args: No args expected.
-do_create() {
-
-  local subcmd
-  subcmd="$(PA_subcommand)" || err || return
-  case ${subcmd} in
-  cluster)
-    CC_sanity_checks || return
-    CC_run
-    ;;
-  *)
-    printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-    err || return "${ERROR}"
-    ;;
-  esac
-}
-
-# do_build starts the build image process.
-# Calls the correct build command/subcommand function
-# Args: No args expected.
-do_build() {
-
-  local subcmd
-  subcmd=$(PA_subcommand) || err || return
-  case ${subcmd} in
-  image)
-    BI_sanity_checks || return
-    BI_run
-    ;;
-  *)
-    printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-    err || return "${ERROR}"
-    ;;
-  esac
-}
-
-# do_delete starts the delete cluster process.
-# Calls the correct build command/subcommand function
-# Args: No args expected.
-do_delete() {
-
-  local subcmd
-  subcmd=$(PA_subcommand) || err || return
-  case ${subcmd} in
-  cluster)
-    DC_sanity_checks || return
-    DC_run
-    ;;
-  *)
-    printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-    err || return "${ERROR}"
-    ;;
-  esac
-}
-
-# do_exec starts the 'log in' to a container process.
-# Calls the correct build command/subcommand function
-# Args: No args expected.
-do_exec() {
-
-  EX_sanity_checks || return
-  EX_run # add arg1 "$EXEC_CONTAINER_NAME"
-}
-
-# do_build starts the build image process.
-# Calls the correct build command/subcommand function
-# Args: No args expected.
-do_get() {
-
-  local subcmd
-  subcmd=$(PA_subcommand) || err || return
-  case ${subcmd} in
-  cluster)
-    GE_sanity_checks || return
-    GE_run
-    ;;
-  *)
-    printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-    err || return "${ERROR}"
-    ;;
-  esac
 }
 
 # sanity_checks is expected to run some quick and simple checks to
@@ -183,6 +84,64 @@ sanity_checks() {
 
   # Disable terminal escapes (colours) if stdout is not a terminal
   [ -t 1 ] || UT_disable_colours
+}
+
+# usage outputs help text for all components then quits with no error.
+# Args: None expected.
+usage() {
+
+  cat <<'EnD'
+
+Usage: mokctl [-h] <command> [subcommand] [ARGS...]
+ 
+Global options:
+ 
+  --help
+  -h     - This help text
+ 
+Where command can be one of:
+ 
+  create - Add item(s) to the system.
+  delete - Delete item(s) from the system.
+  build  - Build item(s) used by the system.
+  get    - Get details about items in the system.
+  exec   - 'Log in' to the container.
+
+EnD
+
+  # Output individual help pages
+  CC_usage # <- create cluster
+  DC_usage # <- delete cluster
+  BI_usage # <- build image
+  GC_usage # <- get
+  EX_usage # <- exec
+
+  cat <<'EnD'
+EXAMPLES
+ 
+Get a list of mok clusters
+ 
+  mokctl get clusters
+ 
+Build the image used for masters and workers:
+ 
+  mokctl build image
+ 
+Create a single node cluster:
+Note that the master node will be made schedulable for pods.
+ 
+  mokctl create cluster mycluster 1 0
+ 
+Create a single master and single node cluster:
+Note that the master node will NOT be schedulable for pods.
+ 
+  mokctl create cluster mycluster 1 1
+ 
+Delete a cluster:
+ 
+  mokctl delete cluster mycluster
+
+EnD
 }
 
 # vim helpers -----------------------------------------------------------------

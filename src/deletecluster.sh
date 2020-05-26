@@ -1,5 +1,21 @@
-# ---------------------------------------------------------------------------
-DC_check_valid_options() {
+# DC - Delete Cluster
+
+# GE is an associative array that holds data specific to the get cluster command.
+declare -A DC
+
+# Declare externally defined variables ----------------------------------------
+
+declare OK ERROR STDERR
+
+# Getters/Setters -------------------------------------------------------------
+
+# Public Functions ------------------------------------------------------------
+
+# DC_process_options checks if arg1 is in a list of valid create cluster
+# options. This function is called by the parser.
+# Args: arg1 - the option to check.
+#       arg2 - value of the item to be set, optional
+DC_process_options() {
 
   # Args:
   #   arg1 - The option to check.
@@ -19,8 +35,10 @@ DC_check_valid_options() {
   return "${ERROR}"
 }
 
-# ---------------------------------------------------------------------------
-delete_usage() {
+# DC_usage outputs help text for the create cluster component.
+# It is called by PA_usage().
+# Args: None expected.
+DC_usage() {
 
   cat <<'EnD'
 DELETE subcommands are:
@@ -36,36 +54,17 @@ delete cluster options:
 EnD
 }
 
-# ---------------------------------------------------------------------------
-do_delete() {
-
-  # Calls the correct command/subcommand function
-  # No args expected
-
-  case $SUBCOMMAND in
-  cluster)
-    do_delete_cluster_sanity_checks || return
-    do_delete_cluster_mutate
-    ;;
-  esac
+DC_new() {
+  PA_add_option_callback "delete" "DC_process_options" || return
+  PA_add_option_callback "deletecluster" "DC_process_options" || return
+  PA_add_usage_callback "delete" "DC_usage" || return
+  PA_add_usage_callback "deletecluster" "DC_usage" || return
 }
 
 # ---------------------------------------------------------------------------
-do_delete_cluster_sanity_checks() {
+DC_run() {
 
-  # Deletes a mok cluster. All user vars have been parsed and saved.
-  # Globals: DELETE_CLUSTER_NAME
-  # No args expected
-
-  if [[ -z $DELETE_CLUSTER_NAME ]]; then
-    usage
-    printf 'Please provide the Cluster NAME to delete.\n' >"$E"
-    return $ERROR
-  fi
-}
-
-# ---------------------------------------------------------------------------
-do_delete_cluster_mutate() {
+  _DC_sanity_checks || return
 
   # Mutate functions make system changes.
 
@@ -100,7 +99,7 @@ do_delete_cluster_mutate() {
   for id in $ids; do
     UT_run_with_progress \
       "    Deleting id, '$id' from cluster '$DELETE_CLUSTER_NAME'." \
-      delete_docker_container "$id"
+      _DC_delete "$id"
     r=$?
     [[ $r -ne 0 ]] && {
       cat "$RUNWITHPROGRESS_OUTPUT"
@@ -114,15 +113,32 @@ do_delete_cluster_mutate() {
 }
 
 # ---------------------------------------------------------------------------
-delete_docker_container() {
+_DC_sanity_checks() {
+
+  # Deletes a mok cluster. All user vars have been parsed and saved.
+  # Globals: DELETE_CLUSTER_NAME
+  # No args expected
+
+  if [[ -z $DELETE_CLUSTER_NAME ]]; then
+    usage
+    printf 'Please provide the Cluster NAME to delete.\n' >"$E"
+    return $ERROR
+  fi
+}
+
+# ---------------------------------------------------------------------------
+_DC_delete() {
 
   # Stops and removes docker container.
   # Args:
   #   arg1 - docker id to delete
 
-  docker stop -t 5 "$id" || err || return
+  docker stop -t 5 "$id"
   docker rm "$id" || err
 }
+
+# Initialise DC
+DC_new
 
 # vim helpers -----------------------------------------------------------------
 #include globals.sh

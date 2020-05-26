@@ -125,6 +125,9 @@ UT_cleanup() {
 
 # Private Functions -----------------------------------------------------------
 
+# Initialise UT
+UT_new
+
 # vim helpers -----------------------------------------------------------------
 #include globals.sh
 # vim:ft=sh:sw=2:et:ts=2:

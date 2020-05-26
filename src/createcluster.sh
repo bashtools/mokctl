@@ -10,30 +10,6 @@ declare OK ERROR STDERR STOP TRUE
 
 # Getters/Setters -------------------------------------------------------------
 
-# CC_setflag_skipmastersetup setter sets the skipmastersetup array item.
-# This function is called by the parser.
-CC_setflag_skipmastersetup() {
-  CC[skipmastersetup]="$1"
-}
-
-# CC_setflag_skipworkersetup setter sets the skipmastersetup array item.
-# This function is called by the parser.
-CC_setflag_skipworkersetup() {
-  CC[skipworkersetup]="$1"
-}
-
-# CC_setflag_skiplbsetup setter sets the skipmastersetup array item.
-# This function is called by the parser.
-CC_setflag_skiplbsetup() {
-  CC[skiplbsetup]="$1"
-}
-
-# CC_setflag_withlb setter sets the skipmastersetup array item.
-# This function is called by the parser.
-CC_setflag_withlb() {
-  CC[withlb]="$1"
-}
-
 # CC_set_clustername setter sets the clustername array item.
 CC_set_clustername() {
   CC[clustername]="$1"
@@ -66,8 +42,18 @@ CC_new() {
   CC[nummasters]=
   CC[numworkers]=
   CC[k8sver]="1.18.2"
+  # Program the parser's state machine
+  PA_add_state_callback "COMMAND" "create" "SUBCOMMAND" ""
+  PA_add_state_callback "SUBCOMMAND" "cluster" "ARG2" ""
+  PA_add_state_callback "ARG1" "createcluster" "ARG2" "CC_set_clustername"
+  PA_add_state_callback "ARG2" "createcluster" "ARG3" "CC_set_nummasters"
+  PA_add_state_callback "ARG3" "createcluster" "END" "CC_set_numworkers"
+  # Set up the parser's option callbacks
   PA_add_option_callback "create" "CC_process_options" || return
   PA_add_option_callback "createcluster" "CC_process_options" || return
+  # Set up the parser's usage callbacks
+  PA_add_usage_callback "create" "CC_usage" || return
+  PA_add_usage_callback "createcluster" "CC_usage" || return
 }
 
 # CC_process_options checks if arg1 is in a list of valid build image
@@ -144,37 +130,12 @@ create cluster [flags] options:
 EnD
 }
 
-# CC_sanity_checks is expected to run some quick and simple checks to see if it
-# has all it's key components. This function is called in main.sh. At this
-# point all parsing has been completed and flags set.
-# Args: None expected.
-# ---------------------------------------------------------------------------
-CC_sanity_checks() {
-
-  if [[ -z ${CC[clustername]} ]]; then
-    CC_usage
-    printf 'Please provide the Cluster NAME to create.\n' >"${STDERR}"
-    return "${ERROR}"
-  fi
-
-  if [[ -z ${CC[nummasters]} || ${CC[nummasters]} -le 0 ]]; then
-    CC_usage
-    printf 'Please provide the number of Masters to create. Must be 1 or more.\n' \
-      >"${STDERR}"
-    return "${ERROR}"
-  fi
-
-  if [[ -z ${CC[numworkers]} ]]; then
-    CC_usage
-    printf 'Please provide the number of Workers to create.\n' >"${STDERR}"
-    return "${ERROR}"
-  fi
-}
-
 # CC_run creates the kubernetes cluster.
 # This function is called by main.sh.
 # Args: None expected.
 CC_run() {
+
+  _CC_sanity_checks || return
 
   declare -i numnodes=0
 
@@ -219,6 +180,33 @@ CC_run() {
   }
 
   return "${OK}"
+}
+
+# CC_sanity_checks is expected to run some quick and simple checks to see if it
+# has all it's key components. This function is called in main.sh. At this
+# point all parsing has been completed and flags set.
+# Args: None expected.
+# ---------------------------------------------------------------------------
+_CC_sanity_checks() {
+
+  if [[ -z ${CC[clustername]} ]]; then
+    CC_usage
+    printf 'Please provide the Cluster NAME to create.\n' >"${STDERR}"
+    return "${ERROR}"
+  fi
+
+  if [[ -z ${CC[nummasters]} || ${CC[nummasters]} -le 0 ]]; then
+    CC_usage
+    printf 'Please provide the number of Masters to create. Must be 1 or more.\n' \
+      >"${STDERR}"
+    return "${ERROR}"
+  fi
+
+  if [[ -z ${CC[numworkers]} ]]; then
+    CC_usage
+    printf 'Please provide the number of Workers to create.\n' >"${STDERR}"
+    return "${ERROR}"
+  fi
 }
 
 # ---------------------------------------------------------------------------
@@ -789,12 +777,8 @@ EnD
   docker exec "$1" bash /root/setup.sh || err
 }
 
-# ---------------------------------------------------------------------------
-
-# Calls main() if we're called from the command line
-if [ "$0" = "${BASH_SOURCE[0]}" ] || [ -z "${BASH_SOURCE[0]}" ]; then
-  main "$@"
-fi
+# Initialise CC
+CC_new
 
 # vim helpers -----------------------------------------------------------------
 #include globals.sh

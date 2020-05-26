@@ -15,14 +15,9 @@ docker-hub-upload: mokctl-docker
 
 mokctl.deploy: src/*.sh mok-centos-7
 	bash src/embed-dockerfile.sh
-	#cd src && cat \
-	#	main.sh globals.sh error.sh util.sh parser.sh getcluster.sh \
-	#	exec.sh deletecluster.sh createcluster.sh container.sh \
-	#	buildimage.deploy | grep -E -v '(^ *#|^ *$$)' | \
-	#sed 's/#.*//' >../mokctl.deploy
 	cd src && ( echo '#!/usr/bin/env bash'; cat \
-		main.sh globals.sh error.sh util.sh parser.sh \
-		container.sh \
+		main.sh globals.sh error.sh util.sh parser.sh getcluster.sh \
+		exec.sh deletecluster.sh createcluster.sh container.sh \
 		buildimage.deploy; \
 		printf 'if [ "$$0" = "$${BASH_SOURCE[0]}" ] || [ -z "$${BASH_SOURCE[0]}" ]; then\n  main "$$@"\nfi\n' \
 		) >../mokctl.deploy

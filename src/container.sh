@@ -27,16 +27,6 @@ CU_labelkey() {
 
 # Public Functions ------------------------------------------------------------
 
-# CU_new sets the initial values for the Container Utils associative array.
-# Args: None expected.
-CU_new() {
-  _CU[imgprefix]=
-  _CU[labelkey]="MokCluster"
-  _CU[containerrt]=
-
-  _CU_podman_or_docker
-}
-
 # CU_cleanup removes artifacts that were created during execution. Currently
 # this does nothing.
 CU_cleanup() { :; }
@@ -184,6 +174,16 @@ EnD
 
 # Private Functions -----------------------------------------------------------
 
+# _CU_new sets the initial values for the Container Utils associative array.
+# Args: None expected.
+_CU_new() {
+  _CU[imgprefix]=
+  _CU[labelkey]="MokCluster"
+  _CU[containerrt]=
+
+  _CU_podman_or_docker
+}
+
 # CU_podman_or_docker checks to see if docker and/or podman are installed and
 # sets the imgprefix and containerrt array members accordingly. It also defines
 # the docker function to run the detected container runtime. Podman is
@@ -229,7 +229,7 @@ EnD
 }
 
 # Initialise _CU
-CU_new
+_CU_new
 
 # vim helpers -----------------------------------------------------------------
 #include globals.sh

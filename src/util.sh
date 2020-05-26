@@ -1,7 +1,7 @@
 # UT - Utilities
 
-# UT is an associative array that holds data specific to shared utilities.
-declare -A UT
+# _UT is an associative array that holds data specific to shared utilities.
+declare -A _UT
 
 # Declare externally defined global variables ---------------------------------
 
@@ -9,54 +9,35 @@ declare OK STDERR
 
 # Getters/Setters -------------------------------------------------------------
 
-# UT_runlogfile outputs the value of UT[runlogfile], which contains the name of
+# UT_runlogfile outputs the value of _UT[runlogfile], which contains the name of
 # the file written to when running UT_run_with_progress.
 UT_runlogfile() {
-  printf '%s' "${UT[runlogfile]}"
+  printf '%s' "${_UT[runlogfile]}"
 }
 
 # Public Functions ------------------------------------------------------------
 
-# UT_new sets the initial values for the UT associative array.
-# This function is called by parse_options once it knows which component is
-# being requested but before it sets any array members.
-# Args: None expected.
-UT_new() {
-  UT[yellow]=$(tput setaf 3)
-  UT[green]=$(tput setaf 2)
-  UT[red]=$(tput setaf 1)
-  UT[normal]=$(tput sgr0)
-  UT[probablysuccess]="${UT[yellow]}✓${UT[normal]}"
-  UT[success]="${UT[green]}✓${UT[normal]}"
-  UT[failure]="${UT[red]}✕${UT[normal]}"
-  UT[runlogfile]=
-  UT[spinnerchars]='◐◓◑◒'
-}
-
 # UT_disable_colours resets variables used for colourised output so that they
 # contain no colour terminal escapes. Useful if stdin is not a terminal.
 UT_disable_colours() {
-  UT[yellow]=
-  UT[green]=
-  UT[red]=
-  UT[normal]=
-  UT[probablysuccess]="✓"
-  UT[success]="✓"
-  UT[failure]="✕"
+  _UT[yellow]=
+  _UT[green]=
+  _UT[red]=
+  _UT[normal]=
+  _UT[probablysuccess]="✓"
+  _UT[success]="✓"
+  _UT[failure]="✕"
 }
 
-# ---------------------------------------------------------------------------
+# UT_run_with_progress displays a progress spinner, display item text, display
+# a tick or cross based on the exit code.
+# Args: arg1   - the text to display.
+#       arg2-N - remaining args are the program to run and its arguments.
 UT_run_with_progress() {
-
-  # Display a progress spinner, display item text, display a tick or cross
-  # based on the exit code.
-  # Args:
-  #   arg1 - the text to display.
-  #   argN - remaining args are the program to run and its arguments.
 
   local displaytext=$1 retval int spinner=()
 
-  UT[runlogfile]=$(mktemp -p /var/tmp) || {
+  _UT[runlogfile]=$(mktemp -p /var/tmp) || {
     printf 'ERROR: mktmp failed.\n' >"${STDERR}"
     err || return
   }
@@ -64,11 +45,11 @@ UT_run_with_progress() {
 
   while read -r char; do
     spinner+=("${char}")
-  done <<<"$(grep -o . <<<"${UT[spinnerchars]}")"
+  done <<<"$(grep -o . <<<"${_UT[spinnerchars]}")"
 
   # Run the command in the background
   (
-    eval "$*" &>"${UT[runlogfile]}"
+    eval "$*" &>"${_UT[runlogfile]}"
   ) &
 
   # Turn the cursor off
@@ -93,11 +74,11 @@ UT_run_with_progress() {
   # Mark success/fail
   if [[ ${retval} -eq 127 ]]; then
     # The job finished before we started waiting for it
-    printf '\r  %s\n' "${UT[probablysuccess]}"
+    printf '\r  %s\n' "${_UT[probablysuccess]}"
   elif [[ ${retval} -eq 0 ]]; then
-    printf '\r  %s\n' "${UT[success]}"
+    printf '\r  %s\n' "${_UT[success]}"
   else
-    printf '\r  %s\n' "${UT[failure]}"
+    printf '\r  %s\n' "${_UT[failure]}"
   fi
 
   # Restore the cursor
@@ -106,7 +87,7 @@ UT_run_with_progress() {
   return "${retval}"
 }
 
-# ---------------------------------------------------------------------------
+# UT_cleanup removes artifacts that were created during execution.
 UT_cleanup() {
 
   # Called when the script exits.
@@ -114,7 +95,7 @@ UT_cleanup() {
   local int
 
   # Kill the spinny, and anything else, if they're running
-  [[ -n $(jobs -p) ]] && printf '%s\r  ✕%s\n' "${UT[red]}" "${UT[normal]}"
+  [[ -n $(jobs -p) ]] && printf '%s\r  ✕%s\n' "${_UT[red]}" "${_UT[normal]}"
   for int in $(jobs -p); do kill "${int}"; done
 
   # If progress spinner crashed make sure the cursor is shown
@@ -125,8 +106,24 @@ UT_cleanup() {
 
 # Private Functions -----------------------------------------------------------
 
-# Initialise UT
-UT_new
+# _UT_new sets the initial values for the _UT associative array.
+# This function is called by parse_options once it knows which component is
+# being requested but before it sets any array members.
+# Args: None expected.
+_UT_new() {
+  _UT[yellow]=$(tput setaf 3)
+  _UT[green]=$(tput setaf 2)
+  _UT[red]=$(tput setaf 1)
+  _UT[normal]=$(tput sgr0)
+  _UT[probablysuccess]="${_UT[yellow]}✓${_UT[normal]}"
+  _UT[success]="${_UT[green]}✓${_UT[normal]}"
+  _UT[failure]="${_UT[red]}✕${_UT[normal]}"
+  _UT[runlogfile]=
+  _UT[spinnerchars]='◐◓◑◒'
+}
+
+# Initialise _UT
+_UT_new
 
 # vim helpers -----------------------------------------------------------------
 #include globals.sh

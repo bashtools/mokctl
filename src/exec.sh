@@ -60,16 +60,6 @@ exec options:
 EnD
 }
 
-EX_new() {
-  _EX[containername]=
-  # Program the parser's state machine
-  PA_add_state "COMMAND" "exec" "ARG1" ""
-  PA_add_state "ARG1" "exec" "END" "EX_set_containername"
-  # Set up the parser's option callbacks
-  PA_add_option_callback "exec" "EX_process_options" || return
-  PA_add_usage_callback "exec" "EX_usage" || return
-}
-
 # ---------------------------------------------------------------------------
 EX_run() {
 
@@ -136,6 +126,18 @@ EX_run() {
   fi
 }
 
+# Private Functions -----------------------------------------------------------
+
+_EX_new() {
+  _EX[containername]=
+  # Program the parser's state machine
+  PA_add_state "COMMAND" "exec" "ARG1" ""
+  PA_add_state "ARG1" "exec" "END" "EX_set_containername"
+  # Set up the parser's option callbacks
+  PA_add_option_callback "exec" "EX_process_options" || return
+  PA_add_usage_callback "exec" "EX_usage" || return
+}
+
 # EX_sanity_checks is expected to run some quick and simple checks to
 # see if it has all it's key components. For exec this does nothing.
 # Args: None expected.
@@ -162,7 +164,7 @@ _EX_exec() {
 }
 
 # Initialise EX
-EX_new
+_EX_new
 
 # vim helpers -----------------------------------------------------------------
 #include globals.sh

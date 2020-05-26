@@ -130,6 +130,33 @@ PA_parse_args() {
           return "${ERROR}"
         }
         ;;
+      ARG4)
+        _PA_check_token "${1}" "ARG3"
+        [[ $? -eq ${ERROR} ]] && {
+          _PA_usage
+          printf 'Invalid ARG for %s %s, "%s".\n\n' "${PA[command]}" \
+            "${PA[subcommand]}" "${1}" >"${STDERR}"
+          return "${ERROR}"
+        }
+        ;;
+      ARG5)
+        _PA_check_token "${1}" "ARG3"
+        [[ $? -eq ${ERROR} ]] && {
+          _PA_usage
+          printf 'Invalid ARG for %s %s, "%s".\n\n' "${PA[command]}" \
+            "${PA[subcommand]}" "${1}" >"${STDERR}"
+          return "${ERROR}"
+        }
+        ;;
+      ARG6)
+        _PA_check_token "${1}" "ARG3"
+        [[ $? -eq ${ERROR} ]] && {
+          _PA_usage
+          printf 'Invalid ARG for %s %s, "%s".\n\n' "${PA[command]}" \
+            "${PA[subcommand]}" "${1}" >"${STDERR}"
+          return "${ERROR}"
+        }
+        ;;
       END)
         _PA_usage
         printf 'ERROR No more args expected, "%s" is unexpected for "%s %s"\n' \

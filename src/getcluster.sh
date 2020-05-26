@@ -67,23 +67,6 @@ get cluster(s) options:
 EnD
 }
 
-# GC_new sets the initial values for the _GC associative array.
-# This function is called by main().
-# Args: None expected.
-GC_new() {
-  _GC[showheader]=
-  # Program the parser's state machine
-  PA_add_state "COMMAND" "get" "SUBCOMMAND" ""
-  PA_add_state "SUBCOMMAND" "getcluster" "ARG1" ""
-  PA_add_state "ARG1" "getcluster" "END" "GC_set_clustername"
-  # Set up the parser's option callbacks
-  PA_add_option_callback "get" "GC_process_options" || return
-  PA_add_option_callback "getcluster" "GC_process_options" || return
-  # Set up the parser's usage callbacks
-  PA_add_usage_callback "get" "GC_usage" || return
-  PA_add_usage_callback "getcluster" "GC_usage" || return
-}
-
 # GC_run gets information about cluster(s).
 # This function is called in main.sh.
 # Args: None expected.
@@ -141,6 +124,26 @@ GC_run() {
   column -t "${output}" || err
 }
 
+# _GC_new sets the initial values for the _GC associative array.
+# This function is called by main().
+# Args: None expected.
+_GC_new() {
+  _GC[showheader]=
+
+  # Program the parser's state machine
+  PA_add_state "COMMAND" "get" "SUBCOMMAND" ""
+  PA_add_state "SUBCOMMAND" "getcluster" "ARG1" ""
+  PA_add_state "ARG1" "getcluster" "END" "GC_set_clustername"
+
+  # Set up the parser's option callbacks
+  PA_add_option_callback "get" "GC_process_options" || return
+  PA_add_option_callback "getcluster" "GC_process_options" || return
+
+  # Set up the parser's usage callbacks
+  PA_add_usage_callback "get" "GC_usage" || return
+  PA_add_usage_callback "getcluster" "GC_usage" || return
+}
+
 # GC_sanity_checks is expected to run some quick and simple checks to
 # see if it has all it's key components. For build image this does nothing.
 # This function should not be deleted as it is called in main.sh.
@@ -148,7 +151,7 @@ GC_run() {
 _GC_sanity_checks() { :; }
 
 # Initialise _GC
-GC_new
+_GC_new
 
 # vim helpers -----------------------------------------------------------------
 #include globals.sh

@@ -1,7 +1,7 @@
 # BI - Build Image
 
-# BI is an associative array that holds data specific to building an image.
-declare -A BI
+# _BI is an associative array that holds data specific to building an image.
+declare -A _BI
 
 # Declare externally defined variables ----------------------------------------
 
@@ -13,42 +13,23 @@ declare OK ERROR STDERR STOP TRUE
 # BI_setflag_useprebuiltimage setter sets the useprebuiltimage array item.
 # This is called by the parser.
 BI_setflag_useprebuiltimage() {
-  BI[useprebuiltimage]="$1"
+  _BI[useprebuiltimage]="$1"
 }
 
-# BI_k8sver outputs the value of the BI[k8sver], the kubernetes version to be
+# BI_k8sver outputs the value of the _BI[k8sver], the kubernetes version to be
 # installed.
 # Args: None expected.
 BI_k8sver() {
-  printf '%s' "${BI[baseimagename]}"
+  printf '%s' "${_BI[baseimagename]}"
 }
 
-# BI_baseimagename outputs the value of the BI[baseimagename].
+# BI_baseimagename outputs the value of the _BI[baseimagename].
 # Args: None expected.
 BI_baseimagename() {
-  printf '%s' "${BI[baseimagename]}"
+  printf '%s' "${_BI[baseimagename]}"
 }
 
 # Public Functions ------------------------------------------------------------
-
-# BI_new resets the initial values for the BI associative array.
-# Args: None expected.
-BI_new() {
-  BI[k8sver]="1.18.2"
-  BI[baseimagename]="mok-centos-7"
-  BI[useprebuiltimage]=
-  BI[dockerbuildtmpdir]=
-  BI[runwithprogress_output]=
-  # Program the parser's state machine
-  PA_add_state "COMMAND" "build" "SUBCOMMAND" ""
-  PA_add_state "SUBCOMMAND" "buildimage" "END" ""
-  # Set up the parser's option callbacks
-  PA_add_option_callback "build" "BI_process_options" || return
-  PA_add_option_callback "buildimage" "BI_process_options" || return
-  # Set up the parser's usage callbacks
-  PA_add_usage_callback "build" "BI_usage" || return
-  PA_add_usage_callback "buildimage" "BI_usage" || return
-}
 
 # BI_usage outputs help text for the build image component.
 # It is called by PA_usage().
@@ -76,10 +57,10 @@ EnD
 # This function is called by the 'cleanup' trap only.
 # Args: None expected.
 BI_cleanup() {
-  [[ -e ${BI[dockerbuildtmpdir]} ]] &&
-    [[ ${BI[dockerbuildtmpdir]} == "/var/tmp/"* ]] && {
-    rm -rf "${BI[dockerbuildtmpdir]}" || {
-      printf 'ERROR: "rm -rf %s" failed.\n' "${BI[dockerbuildtmpdir]}" \
+  [[ -e ${_BI[dockerbuildtmpdir]} ]] &&
+    [[ ${_BI[dockerbuildtmpdir]} == "/var/tmp/"* ]] && {
+    rm -rf "${_BI[dockerbuildtmpdir]}" || {
+      printf 'ERROR: "rm -rf %s" failed.\n' "${_BI[dockerbuildtmpdir]}" \
         >"${STDERR}"
       err || return
     }
@@ -89,6 +70,7 @@ BI_cleanup() {
 # BI_check_valid_options checks if arg1 is in a list of valid build image
 # options. This function is called by the parser.
 # Args: arg1 - the option to check.
+#       arg2 - value of the item to be set, optional
 BI_process_options() {
 
   case "$1" in
@@ -97,7 +79,7 @@ BI_process_options() {
     return "${STOP}"
     ;;
   --get-prebuilt-image)
-    BI[useprebuiltimage]="${TRUE}"
+    _BI[useprebuiltimage]="${TRUE}"
     return "${OK}"
     ;;
   *)
@@ -132,6 +114,28 @@ BI_run() {
 
 # Private Functions -----------------------------------------------------------
 
+# _BI_new resets the initial values for the _BI associative array.
+# Args: None expected.
+_BI_new() {
+  _BI[k8sver]="1.18.2"
+  _BI[baseimagename]="mok-centos-7"
+  _BI[useprebuiltimage]=
+  _BI[dockerbuildtmpdir]=
+  _BI[runwithprogress_output]=
+
+  # Program the parser's state machine
+  PA_add_state "COMMAND" "build" "SUBCOMMAND" ""
+  PA_add_state "SUBCOMMAND" "buildimage" "END" ""
+
+  # Set up the parser's option callbacks
+  PA_add_option_callback "build" "BI_process_options" || return
+  PA_add_option_callback "buildimage" "BI_process_options" || return
+
+  # Set up the parser's usage callbacks
+  PA_add_usage_callback "build" "BI_usage" || return
+  PA_add_usage_callback "buildimage" "BI_usage" || return
+}
+
 # BI_sanity_checks is expected to run some quick and simple checks to
 # see if it has all it's key components. For build image this does nothing.
 # This function should not be deleted as it is called in main.sh.
@@ -147,17 +151,17 @@ _BI_build_container_image() {
 
   _BI_create_docker_build_dir || return
 
-  buildargs=$(_BI_get_build_args_for_k8s_ver "${BI[k8sver]}") || return
-  tagname="${BI[baseimagename]}-v${BI[k8sver]}"
+  buildargs=$(_BI_get_build_args_for_k8s_ver "${_BI[k8sver]}") || return
+  tagname="${_BI[baseimagename]}-v${_BI[k8sver]}"
 
   local imgprefix
   imgprefix=$(CU_imgprefix) || err || return
-  if [[ -z ${BI[useprebuiltimage]} ]]; then
+  if [[ -z ${_BI[useprebuiltimage]} ]]; then
     cmd="docker build \
       -t "${imgprefix}local/${tagname}" \
       --force-rm \
       ${buildargs} \
-      ${BI[dockerbuildtmpdir]}/${BI[baseimagename]}"
+      ${_BI[dockerbuildtmpdir]}/${_BI[baseimagename]}"
     text="Creating"
   else
     cmd="docker pull mclarkson/${tagname}"
@@ -187,7 +191,7 @@ _BI_get_build_args_for_k8s_ver() {
 
   local buildargs
 
-  case "${BI[k8sver]}" in
+  case "${_BI[k8sver]}" in
   "1.18.2")
     buildargs="--build-arg"
     buildargs="${buildargs} CRIO_VERSION=1.18"
@@ -197,7 +201,7 @@ _BI_get_build_args_for_k8s_ver() {
     buildargs="${buildargs} K8SBINVER=-1.18.2"
     ;;
   *)
-    printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
+    printf 'INTERNAL ERROR: This should not happen.\n' >"${STDERR}"
     err || return
     ;;
   esac
@@ -210,7 +214,7 @@ _BI_get_build_args_for_k8s_ver() {
 # Args: None expected
 _BI_create_docker_build_dir() {
 
-  BI[dockerbuildtmpdir]="$(mktemp -d -p /var/tmp)" || {
+  _BI[dockerbuildtmpdir]="$(mktemp -d -p /var/tmp)" || {
     printf 'ERROR: mktmp failed.\n' >"${STDERR}"
     err || return
   }
@@ -223,8 +227,8 @@ _BI_create_docker_build_dir() {
   #mok-centos-7-tarball-end
 }
 
-# Initialise BI
-BI_new
+# Initialise _BI
+_BI_new
 
 # vim helpers -----------------------------------------------------------------
 #include globals.sh

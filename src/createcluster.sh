@@ -1,7 +1,7 @@
 # CC - Create Cluster
 
 # CC is an associative array that holds data specific to creating a cluster.
-declare -A CC
+declare -A _CC
 
 # Declare externally defined variables ----------------------------------------
 
@@ -12,45 +12,48 @@ declare OK ERROR STDERR STOP TRUE
 
 # CC_set_clustername setter sets the clustername array item.
 CC_set_clustername() {
-  CC[clustername]="$1"
+  _CC[clustername]="$1"
 }
 
 # CC_set_nummasters setter sets the nummasters array item.
 # This function is called by the parser.
 CC_set_nummasters() {
-  CC[nummasters]="$1"
+  _CC[nummasters]="$1"
 }
 
 # CC_set_numworkers setter sets the numworkers array item.
 # This function is called by the parser.
 CC_set_numworkers() {
-  CC[numworkers]="$1"
+  _CC[numworkers]="$1"
 }
 
 # Public Functions ------------------------------------------------------------
 
-# CC_new sets the initial values for the CC associative array.
+# CC_new sets the initial values for the _CC associative array.
 # This function is called by parse_options once it knows which component is
 # being requested but before it sets any array members.
 # Args: None expected.
 CC_new() {
-  CC[skipmastersetup]=
-  CC[skipworkersetup]=
-  CC[skiplbsetup]=
-  CC[withlb]=
-  CC[clustername]=
-  CC[nummasters]=
-  CC[numworkers]=
-  CC[k8sver]="1.18.2"
+  _CC[skipmastersetup]=
+  _CC[skipworkersetup]=
+  _CC[skiplbsetup]=
+  _CC[withlb]=
+  _CC[clustername]=
+  _CC[nummasters]=
+  _CC[numworkers]=
+  _CC[k8sver]="1.18.2"
+
   # Program the parser's state machine
   PA_add_state "COMMAND" "create" "SUBCOMMAND" ""
   PA_add_state "SUBCOMMAND" "cluster" "ARG2" ""
   PA_add_state "ARG1" "createcluster" "ARG2" "CC_set_clustername"
   PA_add_state "ARG2" "createcluster" "ARG3" "CC_set_nummasters"
   PA_add_state "ARG3" "createcluster" "END" "CC_set_numworkers"
+
   # Set up the parser's option callbacks
   PA_add_option_callback "create" "CC_process_options" || return
   PA_add_option_callback "createcluster" "CC_process_options" || return
+
   # Set up the parser's usage callbacks
   PA_add_usage_callback "create" "CC_usage" || return
   PA_add_usage_callback "createcluster" "CC_usage" || return
@@ -68,19 +71,19 @@ CC_process_options() {
     return "${STOP}"
     ;;
   --skiplbsetup)
-    CC[skiplbsetup]="${TRUE}" && return
+    _CC[skiplbsetup]="${TRUE}" && return
     ;;
   --k8sver)
-    CC[k8sver]="$2" && return
+    _CC[k8sver]="$2" && return
     ;;
   --with-lb)
-    CC[withlb]="${TRUE}" && return
+    _CC[withlb]="${TRUE}" && return
     ;;
   --skipmastersetup)
-    CC[skipmastersetup]="${TRUE}" && return
+    _CC[skipmastersetup]="${TRUE}" && return
     ;;
   --skipworkersetup)
-    CC[skipworkersetup]="${TRUE}" && return
+    _CC[skipworkersetup]="${TRUE}" && return
     ;;
   *)
     CC_usage
@@ -139,43 +142,43 @@ CC_run() {
 
   declare -i numnodes=0
 
-  numnodes=$(get_cluster_size "${CC[clustername]}") || return
+  numnodes=$(get_cluster_size "${_CC[clustername]}") || return
 
   [[ ${numnodes} -gt 0 ]] && {
-    printf '\nERROR: Cluster, "%s", exists! Aborting.\n\n' "${CC[clustername]}" \
+    printf '\nERROR: Cluster, "%s", exists! Aborting.\n\n' "${_CC[clustername]}" \
       >"${STDERR}"
     return "${ERROR}"
   }
 
   printf '\n'
 
-  [[ ${CC[withlb]} -gt 0 ]] && {
-    create_lb_node "${CC[nummasters]}" || return
+  [[ ${_CC[withlb]} -gt 0 ]] && {
+    create_lb_node "${_CC[nummasters]}" || return
   }
 
-  [[ ${CC[nummasters]} -gt 0 ]] && {
-    create_master_nodes "${CC[nummasters]}" || return
+  [[ ${_CC[nummasters]} -gt 0 ]] && {
+    create_master_nodes "${_CC[nummasters]}" || return
   }
 
-  #[[ -z ${CC[skipmastersetup]} ]] && {
+  #[[ -z ${_CC[skipmastersetup]} ]] && {
   #  # TODO Query the server for all pods ready instead
   #  UT_run_with_progress \
   #    "    Waiting for master to be ready." \
   #    sleep 40
   #}
 
-  [[ ${CC[withlb]} -gt 0 ]] && {
-    setup_lb_node "${CC[nummasters]}" || return
+  [[ ${_CC[withlb]} -gt 0 ]] && {
+    setup_lb_node "${_CC[nummasters]}" || return
   }
 
-  [[ ${CC[numworkers]} -gt 0 ]] && {
-    create_worker_nodes "${CC[numworkers]}" || return
+  [[ ${_CC[numworkers]} -gt 0 ]] && {
+    create_worker_nodes "${_CC[numworkers]}" || return
   }
 
   printf '\n'
 
-  [[ -z ${CC[skipmastersetup]} ]] && {
-    printf 'Cluster, "%s", can be accessed using:\n\n' "${CC[clustername]}"
+  [[ -z ${_CC[skipmastersetup]} ]] && {
+    printf 'Cluster, "%s", can be accessed using:\n\n' "${_CC[clustername]}"
     printf 'export KUBECONFIG=/var/tmp/admin.conf\n\n'
   }
 
@@ -189,20 +192,20 @@ CC_run() {
 # ---------------------------------------------------------------------------
 _CC_sanity_checks() {
 
-  if [[ -z ${CC[clustername]} ]]; then
+  if [[ -z ${_CC[clustername]} ]]; then
     CC_usage
     printf 'Please provide the Cluster NAME to create.\n' >"${STDERR}"
     return "${ERROR}"
   fi
 
-  if [[ -z ${CC[nummasters]} || ${CC[nummasters]} -le 0 ]]; then
+  if [[ -z ${_CC[nummasters]} || ${_CC[nummasters]} -le 0 ]]; then
     CC_usage
     printf 'Please provide the number of Masters to create. Must be 1 or more.\n' \
       >"${STDERR}"
     return "${ERROR}"
   fi
 
-  if [[ -z ${CC[numworkers]} ]]; then
+  if [[ -z ${_CC[numworkers]} ]]; then
     CC_usage
     printf 'Please provide the number of Workers to create.\n' >"${STDERR}"
     return "${ERROR}"
@@ -215,51 +218,54 @@ create_lb_node() {
   # Create the load balancer nodes
   # Args:
 
-  local labelkey
+  local labelkey runlogfile
   labelkey=$(CU_labelkey) || err || return
 
   # Ceate container
   UT_run_with_progress \
-    "    Creating load balancer container, '${CC[clustername]}-lb'" \
+    "    Creating load balancer container, '${_CC[clustername]}-lb'" \
     CU_create_container \
-    "${CC[clustername]}-lb" \
-    "${labelkey}=${CC[clustername]}" \
-    "${CC[k8sver]}"
+    "${_CC[clustername]}-lb" \
+    "${labelkey}=${_CC[clustername]}" \
+    "${_CC[k8sver]}"
 
   [[ ${r} -ne 0 ]] && {
-    printf '\n' >"$E"
-    cat $RUNWITHPROGRESS_OUTPUT >"$E"
-    printf '\nERROR: Set up failed. See above, and also in the file:' >"$E"
-    printf '%s\n' "$RUNWITHPROGRESS_OUTPUT" >"$E"
-    return $ERROR
+    runlogfile=$(UT_runlogfile) || err || return
+    printf '\n' >"${STDERR}"
+    cat "${runlogfile}" >"${STDERR}"
+    printf '\nERROR: Set up failed. See above, and also in the file:' >"${STDERR}"
+    printf '%s\n' "${runlogfile}" >"${STDERR}"
+    return "${ERROR}"
   }
 
-  return $OK
+  return "${OK}"
 }
 
 # ---------------------------------------------------------------------------
+# Create the load balancer nodes
+# Args:
 setup_lb_node() {
 
-  # Create the load balancer nodes
-  # Args:
+  local runlogfile
 
   # Set up
-  [[ -z $CREATE_CLUSTER_SKIPLBSETUP ]] && {
+  [[ -z ${_CC[skiplbsetup]} ]] && {
     UT_run_with_progress \
-      "    Setting up '${CC[clustername]}-lb'" \
-      set_up_lb_node_real "${CC[clustername]}-lb"
+      "    Setting up '${_CC[clustername]}-lb'" \
+      set_up_lb_node_real "${_CC[clustername]}-lb"
     r=$?
 
-    [[ $r -ne 0 ]] && {
-      printf '\n' >"$E"
-      cat $RUNWITHPROGRESS_OUTPUT >"$E"
-      printf '\nERROR: Set up failed. See above, and also in the file:' >"$E"
-      printf '%s\n' "$RUNWITHPROGRESS_OUTPUT" >"$E"
-      return $ERROR
+    [[ ${r} -ne 0 ]] && {
+      runlogfile=$(UT_runlogfile) || err || return
+      printf '\n' >"${STDERR}"
+      cat "${runlogfile}" >"${STDERR}"
+      printf '\nERROR: Set up failed. See above, and also in the file:' >"${STDERR}"
+      printf '%s\n' "${runlogfile}" >"${STDERR}"
+      return "${ERROR}"
     }
   }
 
-  return $OK
+  return "${OK}"
 }
 
 # ---------------------------------------------------------------------------
@@ -272,19 +278,19 @@ set_up_lb_node_real() {
   local setupfile nl idx masteriplist
 
   setupfile=$(mktemp -p /var/tmp) || {
-    printf 'ERROR: mktmp failed.\n' >"$E"
-    return $ERROR
+    printf 'ERROR: mktmp failed.\n' >"${STDERR}"
+    return "${ERROR}"
   }
 
   masteriplist=
   nl=
-  for idx in $(seq 1 "${CC[nummasters]}"); do
-    ip=$(CU_get_container_ip "${CC[clustername]}-master-${idx}") || return
+  for idx in $(seq 1 "${_CC[nummasters]}"); do
+    ip=$(CU_get_container_ip "${_CC[clustername]}-master-${idx}") || return
     masteriplist="${masteriplist}${nl}    server master-${idx} ${ip}:6443 check fall 3 rise 2"
     nl='\n'
   done
 
-  cat <<EnD >"$setupfile"
+  cat <<EnD >"${setupfile}"
 # Disable ipv6
 sysctl -w net.ipv6.conf.all.disable_ipv6=1
 sysctl -w net.ipv6.conf.default.disable_ipv6=1
@@ -306,7 +312,7 @@ backend kubernetes-master-nodes
     mode tcp
     balance roundrobin
     option tcp-check
-\$(echo -e "$masteriplist")
+\$(echo -e "${masteriplist}")
 EOF
 
 systemctl restart haproxy
@@ -314,9 +320,9 @@ systemctl enable haproxy
 
 EnD
 
-  docker cp "$setupfile" "$1":/root/setup.sh || err || {
-    rm -f "$setupfile"
-    return $ERROR
+  docker cp "${setupfile}" "$1":/root/setup.sh || err || {
+    rm -f "${setupfile}"
+    return "${ERROR}"
   }
 
   docker exec "$1" bash /root/setup.sh || err
@@ -331,38 +337,39 @@ create_master_nodes() {
 
   declare -i int=0 r
 
-  local labelkey
+  local labelkey runlogfile
   labelkey=$(CU_labelkey) || err || return
 
   for int in $(seq 1 "$1"); do
     UT_run_with_progress \
-      "    Creating master container, '${CC[clustername]}-master-${int}'" \
+      "    Creating master container, '${_CC[clustername]}-master-${int}'" \
       CU_create_container \
-      "${CC[clustername]}-master-${int}" \
-      "${labelkey}=${CC[clustername]}" \
-      "${CC[k8sver]}"
+      "${_CC[clustername]}-master-${int}" \
+      "${labelkey}=${_CC[clustername]}" \
+      "${_CC[k8sver]}"
     r=$?
 
-    [[ $r -ne 0 ]] && {
+    [[ ${r} -ne 0 ]] && {
+      runlogfile=$(UT_runlogfile) || err || return
       printf '\n'
-      cat $RUNWITHPROGRESS_OUTPUT >"$E"
-      rm $RUNWITHPROGRESS_OUTPUT
-      printf '\nERROR: Docker failed.\n' >"$E"
-      return $ERROR
+      cat "${runlogfile}" >"${STDERR}"
+      printf '\nERROR: Docker failed.\n' >"${STDERR}"
+      return "${ERROR}"
     }
 
-    [[ -z ${CC[skipmastersetup]} ]] && {
+    [[ -z ${_CC[skipmastersetup]} ]] && {
       UT_run_with_progress \
-        "    Setting up '${CC[clustername]}-master-$int'" \
-        set_up_master_node "${CC[clustername]}-master-$int"
+        "    Setting up '${_CC[clustername]}-master-${int}'" \
+        set_up_master_node "${_CC[clustername]}-master-${int}"
       r=$?
 
-      [[ $r -ne 0 ]] && {
-        printf '\n' >"$E"
-        cat $RUNWITHPROGRESS_OUTPUT >"$E"
-        printf '\nERROR: Set up failed. See above, and also in the file:' >"$E"
-        printf '%s\n' "$RUNWITHPROGRESS_OUTPUT" >"$E"
-        return $ERROR
+      [[ ${r} -ne 0 ]] && {
+        runlogfile=$(UT_runlogfile) || err || return
+        printf '\n' >"${STDERR}"
+        cat "${runlogfile}" >"${STDERR}"
+        printf '\nERROR: Set up failed. See above, and also in the file:' >"${STDERR}"
+        printf '%s\n' "${runlogfile}" >"${STDERR}"
+        return "${ERROR}"
       }
     }
   done
@@ -371,15 +378,15 @@ create_master_nodes() {
 
   masternum="${1##*-}" # <- eg. for xxx-master-1, masternum=1
 
-  [[ -z ${CC[skipmastersetup]} && $masternum -eq 1 ]] && {
+  [[ -z ${_CC[skipmastersetup]} && ${masternum} -eq 1 ]] && {
     mkdir -p ~/.mok/
-    if [[ ${CC[withlb]} -eq $TRUE ]]; then
-      lbaddr=$(CU_get_container_ip "${CC[clustername]}-lb")
-      docker cp "${CC[clustername]}-master-1":/etc/kubernetes/admin.conf \
+    if [[ ${_CC[withlb]} -eq ${TRUE} ]]; then
+      lbaddr=$(CU_get_container_ip "${_CC[clustername]}-lb")
+      docker cp "${_CC[clustername]}-master-1":/etc/kubernetes/admin.conf \
         /var/tmp/admin.conf || err || return
-      sed -i 's#\(server: https://\)[0-9.]*\(:.*\)#\1'"$lbaddr"'\2#' /var/tmp/admin.conf
+      sed -i 's#\(server: https://\)[0-9.]*\(:.*\)#\1'"${lbaddr}"'\2#' /var/tmp/admin.conf
     else
-      docker cp "${CC[clustername]}-master-1":/etc/kubernetes/admin.conf \
+      docker cp "${_CC[clustername]}-master-1":/etc/kubernetes/admin.conf \
         /var/tmp/admin.conf || err || return
     fi
   }
@@ -388,7 +395,7 @@ create_master_nodes() {
     err || return
   }
 
-  return $OK
+  return "${OK}"
 }
 
 # ---------------------------------------------------------------------------
@@ -398,9 +405,13 @@ set_up_master_node() {
   # Args
   #   arg1 - the container ID to set up
 
-  case "$BUILD_IMAGE_K8SVER" in
+  case "${_CC[k8sver]}" in
   "1.18.2")
     set_up_master_node_v1_18_2 "$@"
+    ;;
+  *)
+    printf 'ERROR: Version not found, "%s".\n' "${_CC[k8sver]}" >"${STDERR}"
+    err || return
     ;;
   esac
 }
@@ -416,16 +427,16 @@ create_worker_nodes() {
   local cahash token t
   declare -i int=0
 
-  [[ -n $CREATE_CLUSTER_SKIPWORKERSETUP || -n \
-  ${CC[skipmastersetup]} ]] || {
+  [[ -n ${_CC[skipworkersetup]} || -n \
+  ${_CC[skipmastersetup]} ]] || {
     # Runs a script on master node to get details
-    t=$(get_master_join_details "${CC[clustername]}-master-1") || {
-      printf '\nERROR: Problem with "get_master_join_details".\n\n' >"$E"
-      return $ERROR
+    t=$(get_master_join_details "${_CC[clustername]}-master-1") || {
+      printf '\nERROR: Problem with "get_master_join_details".\n\n' >"${STDERR}"
+      return "${ERROR}"
     }
 
     # Sets cahash, token, and masterip:
-    eval "$t"
+    eval "${t}"
   }
 
   local labelkey
@@ -433,35 +444,35 @@ create_worker_nodes() {
 
   for int in $(seq 1 "$1"); do
     UT_run_with_progress \
-      "    Creating worker container, '${CC[clustername]}-worker-$int'" \
+      "    Creating worker container, '${_CC[clustername]}-worker-${int}'" \
       CU_create_container \
-      "${CC[clustername]}-worker-${int}" \
-      "${labelkey}=${CC[clustername]}" \
-      "${CC[k8sver]}"
+      "${_CC[clustername]}-worker-${int}" \
+      "${labelkey}=${_CC[clustername]}" \
+      "${_CC[k8sver]}"
     r=$?
 
-    [[ $r -ne 0 ]] && {
-      printf '\n' >"$E"
-      cat $RUNWITHPROGRESS_OUTPUT >"$E"
-      rm $RUNWITHPROGRESS_OUTPUT >"$E"
-      printf '\nERROR: Docker failed.\n' >"$E"
-      return $ERROR
+    [[ ${r} -ne 0 ]] && {
+      printf '\n' >"${STDERR}"
+      cat $RUNWITHPROGRESS_OUTPUT >"${STDERR}"
+      rm $RUNWITHPROGRESS_OUTPUT >"${STDERR}"
+      printf '\nERROR: Docker failed.\n' >"${STDERR}"
+      return "${ERROR}"
     }
 
     [[ -n $CREATE_CLUSTER_SKIPWORKERSETUP || -n \
-    ${CC[skipmastersetup]} ]] || {
+    ${_CC[skipmastersetup]} ]] || {
       UT_run_with_progress \
-        "    Setting up '${CC[clustername]}-worker-$int'" \
-        set_up_worker_node "${CC[clustername]}-worker-$int" \
+        "    Setting up '${_CC[clustername]}-worker-$int'" \
+        set_up_worker_node "${_CC[clustername]}-worker-$int" \
         "$cahash" "$token" "$masterip"
       r=$?
 
       [[ $r -ne 0 ]] && {
-        printf '\n' >"$E"
-        cat $RUNWITHPROGRESS_OUTPUT >"$E"
-        printf '\nERROR: Set up failed. See above, and also in the file:\n' >"$E"
-        printf '%s\n' "$RUNWITHPROGRESS_OUTPUT" >"$E"
-        return $ERROR
+        printf '\n' >"${STDERR}"
+        cat $RUNWITHPROGRESS_OUTPUT >"${STDERR}"
+        printf '\nERROR: Set up failed. See above, and also in the file:\n' >"${STDERR}"
+        printf '%s\n' "$RUNWITHPROGRESS_OUTPUT" >"${STDERR}"
+        return "${ERROR}"
       }
     }
   done
@@ -495,11 +506,11 @@ get_master_join_details() {
   local joinvarsfile master1ip
 
   joinvarsfile=$(mktemp -p /var/tmp) || {
-    printf 'ERROR: mktmp failed.\n' >"$E"
-    return $ERROR
+    printf 'ERROR: mktmp failed.\n' >"${STDERR}"
+    return "${ERROR}"
   }
 
-  master1ip=$(CU_get_container_ip "${CC[clustername]}-master-1") || err || return
+  master1ip=$(CU_get_container_ip "${_CC[clustername]}-master-1") || err || return
 
   cat <<EnD >"$joinvarsfile"
 #!/bin/bash
@@ -541,23 +552,23 @@ set_up_master_node_v1_18_2() {
   local cahash token masterip
 
   setupfile=$(mktemp -p /var/tmp) || {
-    printf 'ERROR: mktmp failed.\n' >"$E"
-    return $ERROR
+    printf 'ERROR: mktmp failed.\n' >"${STDERR}"
+    return "${ERROR}"
   }
 
   masternum="${1##*-}" # <- eg. for xxx-master-1, masternum=1
 
-  if [[ ${CC[withlb]} == "$TRUE" && $masternum -eq 1 ]]; then
+  if [[ ${_CC[withlb]} == "$TRUE" && $masternum -eq 1 ]]; then
 
     # This is the first master node
 
     # Sets cahash, token, and masterip:
-    lbaddr=$(CU_get_container_ip "${CC[clustername]}-lb")
+    lbaddr=$(CU_get_container_ip "${_CC[clustername]}-lb")
     certSANs="certSANs: [ '$lbaddr' ]"
     uploadcerts="--upload-certs"
     certkey="CertificateKey: f8802e114ef118304e561c3acd4d0b543adc226b7a27f675f56564185ffe0c07"
 
-  elif [[ ${CC[withlb]} == "$TRUE" && $masternum -ne 1 ]]; then
+  elif [[ ${_CC[withlb]} == "$TRUE" && $masternum -ne 1 ]]; then
 
     # This is not the first master node, so join with the master
     # https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/
@@ -565,12 +576,12 @@ set_up_master_node_v1_18_2() {
     # Keep trying to get join details until apiserver is ready or we run out of tries
     for try in $(seq 1 9); do
       # Runs a script on master node to get join details
-      t=$(get_master_join_details "${CC[clustername]}-master-1")
+      t=$(get_master_join_details "${_CC[clustername]}-master-1")
       retval=$?
       [[ $retval -eq 0 ]] && break
       [[ $try -eq 9 ]] && {
-        printf '\nERROR: Problem with "get_master_join_details". Tried %d times\n\n' "$try" >"$E"
-        return $ERROR
+        printf '\nERROR: Problem with "get_master_join_details". Tried %d times\n\n' "$try" >"${STDERR}"
+        return "${ERROR}"
       }
       sleep 5
     done
@@ -680,7 +691,7 @@ EnD
 
   docker cp "$setupfile" "$1":/root/setup.sh || err || {
     rm -f "$setupfile"
-    return $ERROR
+    return "${ERROR}"
   }
 
   # Run the file
@@ -688,11 +699,11 @@ EnD
 
   # Remove the taint if we're setting up a single node cluster
 
-  [[ ${CC[numworkers]} -eq 0 ]] && {
+  [[ ${_CC[numworkers]} -eq 0 ]] && {
 
     removetaint=$(mktemp -p /var/tmp) || {
-      printf 'ERROR: mktmp failed.\n' >"$E"
-      return $ERROR
+      printf 'ERROR: mktmp failed.\n' >"${STDERR}"
+      return "${ERROR}"
     }
 
     # Write the file
@@ -703,7 +714,7 @@ EnD
 
     docker cp "$removetaint" "$1":/root/removetaint.sh || err || {
       rm -f "$removetaint"
-      return $ERROR
+      return "${ERROR}"
     }
 
     # Run the file
@@ -723,12 +734,12 @@ set_up_worker_node_v1_18_2() {
   local setupfile cahash="$2" token="$3" masterip="$4"
 
   setupfile=$(mktemp -p /var/tmp) || {
-    printf 'ERROR: mktmp failed.\n' >"$E"
-    return $ERROR
+    printf 'ERROR: mktmp failed.\n' >"${STDERR}"
+    return "${ERROR}"
   }
 
-  if [[ ${CC[withlb]} == "${TRUE}" ]]; then
-    masterip=$(CU_get_container_ip "${CC[clustername]}-lb") || return
+  if [[ ${_CC[withlb]} == "${TRUE}" ]]; then
+    masterip=$(CU_get_container_ip "${_CC[clustername]}-lb") || return
   fi
 
   cat <<EnD >"$setupfile"
@@ -771,7 +782,7 @@ EnD
 
   docker cp "$setupfile" "$1":/root/setup.sh 2>$E || err || {
     rm -f "$setupfile"
-    return $ERROR
+    return "${ERROR}"
   }
 
   docker exec "$1" bash /root/setup.sh || err

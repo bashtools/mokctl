@@ -1,12 +1,12 @@
 # GL - Globals
 
-# Public Functions ------------------------------------------------------------
+# Private Functions -----------------------------------------------------------
 
 # GL_new sets the only global variables that should be in use anywhere.  The
 # only other globals are the associative arrays. All the globals are constant
 # (readonly) variables. Declare these globals, where needed, in other files.
 # Args: None expected.
-GL_new() {
+_GL_new() {
 
   # Returns, exit codes
   declare -rg OK=0
@@ -39,7 +39,7 @@ GL_new() {
 }
 
 # Initialise GL
-GL_new
+_GL_new
 
 # vim helpers -----------------------------------------------------------------
 

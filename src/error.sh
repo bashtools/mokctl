@@ -10,12 +10,6 @@ declare ERROR TRUE STDERR
 
 # Public Functions ------------------------------------------------------------
 
-# ER_new sets the initial values for the ER associative array.
-# Args: None expected.
-ER_new() {
-  ER[errcalled]=
-}
-
 # ER_err outputs a stacktrace and returns ERROR status.
 # Args: None expected.
 ER_err() {
@@ -40,8 +34,16 @@ err() {
   return
 }
 
+# Private Functions -----------------------------------------------------------
+
+# ER_new sets the initial values for the ER associative array.
+# Args: None expected.
+_ER_new() {
+  ER[errcalled]=
+}
+
 # Initialise ER
-ER_new
+_ER_new
 
 # vim helpers -----------------------------------------------------------------
 #include globals.sh

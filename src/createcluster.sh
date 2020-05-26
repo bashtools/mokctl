@@ -43,11 +43,11 @@ CC_new() {
   CC[numworkers]=
   CC[k8sver]="1.18.2"
   # Program the parser's state machine
-  PA_add_state_callback "COMMAND" "create" "SUBCOMMAND" ""
-  PA_add_state_callback "SUBCOMMAND" "cluster" "ARG2" ""
-  PA_add_state_callback "ARG1" "createcluster" "ARG2" "CC_set_clustername"
-  PA_add_state_callback "ARG2" "createcluster" "ARG3" "CC_set_nummasters"
-  PA_add_state_callback "ARG3" "createcluster" "END" "CC_set_numworkers"
+  PA_add_state "COMMAND" "create" "SUBCOMMAND" ""
+  PA_add_state "SUBCOMMAND" "cluster" "ARG2" ""
+  PA_add_state "ARG1" "createcluster" "ARG2" "CC_set_clustername"
+  PA_add_state "ARG2" "createcluster" "ARG3" "CC_set_nummasters"
+  PA_add_state "ARG3" "createcluster" "END" "CC_set_numworkers"
   # Set up the parser's option callbacks
   PA_add_option_callback "create" "CC_process_options" || return
   PA_add_option_callback "createcluster" "CC_process_options" || return

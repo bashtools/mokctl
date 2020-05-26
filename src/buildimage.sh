@@ -39,12 +39,13 @@ BI_new() {
   BI[useprebuiltimage]=
   BI[dockerbuildtmpdir]=
   BI[runwithprogress_output]=
-  # Program the state machine
-  PA_add_state_callback "COMMAND" "build" "SUBCOMMAND" ""
-  PA_add_state_callback "SUBCOMMAND" "image" "END" ""
-  # Set up option callbacks
+  # Program the parser's state machine
+  PA_add_state "COMMAND" "build" "SUBCOMMAND" ""
+  PA_add_state "SUBCOMMAND" "buildimage" "END" ""
+  # Set up the parser's option callbacks
   PA_add_option_callback "build" "BI_process_options" || return
   PA_add_option_callback "buildimage" "BI_process_options" || return
+  # Set up the parser's usage callbacks
   PA_add_usage_callback "build" "BI_usage" || return
   PA_add_usage_callback "buildimage" "BI_usage" || return
 }

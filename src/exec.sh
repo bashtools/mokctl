@@ -1,13 +1,17 @@
 # EX - EXec
 
 # EX is an associative array that holds data specific to the get cluster command.
-#declare -A EX
+declare -A _EX
 
 # Declare externally defined variables ----------------------------------------
 
 declare OK ERROR STDERR TRUE FALSE
 
 # Getters/Setters -------------------------------------------------------------
+
+EX_set_containername() {
+  _EX[containername]="$1"
+}
 
 # Public Functions ------------------------------------------------------------
 
@@ -57,9 +61,10 @@ EnD
 }
 
 EX_new() {
+  _EX[containername]=
   # Program the parser's state machine
-  PA_add_state_callback "COMMAND" "exec" "ARG1" ""
-  PA_add_state_callback "ARG1" "exec" "END" "EX_set_containername"
+  PA_add_state "COMMAND" "exec" "ARG1" ""
+  PA_add_state "ARG1" "exec" "END" "EX_set_containername"
   # Set up the parser's option callbacks
   PA_add_option_callback "exec" "EX_process_options" || return
   PA_add_usage_callback "exec" "EX_usage" || return
@@ -84,17 +89,17 @@ EX_run() {
   names=$(printf '%s' "${names}" | awk '{ print $3; }')
   readarray -t containernames <<<"${names}"
 
-  if [[ -n $1 ]]; then
+  if [[ -n ${_EX[containername]} ]]; then
 
     # The caller gave a specific name for exec.
     # Check if the container name exists
 
-    if grep -qs "^$1$" <<<"${names}"; then
-      _EX_exec "$1" || return
+    if grep -qs "^${_EX[containername]}$" <<<"${names}"; then
+      _EX_exec "${_EX[containername]}" || return
       return "${OK}"
     else
       printf 'ERROR: Cannot exec into non-existent container: "%s".\n' \
-        "$1"
+        "${_EX[containername]}"
       return "${ERROR}"
     fi
 

@@ -40,13 +40,13 @@ PA_add_usage_callback() {
   PA[usagecallbacks]+="$1,$2 "
 }
 
-# PA_add_state_callback adds a callback to the list of callbacks used for
+# PA_add_state adds a callback to the list of callbacks used for
 # programming the state machine.
 # Args: arg1 - Current state to match.
 #       arg2 - The value of the state to match.
 #       arg3 - The new state if arg1 and arg2 match.
 #       arg4 - The function to call, optional.
-PA_add_state_callback() {
+PA_add_state() {
   PA[statecallbacks]+="$1,$2,$3,$4 "
 }
 
@@ -95,7 +95,7 @@ PA_parse_args() {
         }
         ;;
       SUBCOMMAND)
-        _PA_check_token "${1}" "SUBCOMMAND" "subcommand"
+        _PA_check_token "$1" "SUBCOMMAND" "subcommand"
         [[ $? -eq ${ERROR} ]] && {
           _PA_usage
           printf 'Invalid SUBCOMMAND for %s, "%s".\n\n' "${PA[command]}" "${1}" \
@@ -161,10 +161,20 @@ _PA_check_token() {
 
   local item
 
+  if [[ -n ${PA[subcommand]} ]]; then
+    cmdsubcommand="${PA[command]}${PA[subcommand]}"
+  elif [[ -n ${PA[command]} && ${PA[state]} != "ARG"* ]]; then
+    cmdsubcommand="${PA[command]}$1"
+  elif [[ -n ${PA[command]} && ${PA[state]} == "ARG"* ]]; then
+    cmdsubcommand="${PA[command]}"
+  else
+    cmdsubcommand="$1"
+  fi
+
   for item in ${PA[statecallbacks]}; do
     IFS=, read -r state component newstate func <<<"${item}"
     [[ ${state} == "$2" ]] && {
-      [[ ${component} == "$1" ]] && {
+      [[ ${component} == "${cmdsubcommand}" ]] && {
         [[ -n $3 ]] && PA["$3"]="$1"
         PA[state]="${newstate}"
         [[ -n ${func} ]] && {

@@ -73,9 +73,9 @@ EnD
 GC_new() {
   _GC[showheader]=
   # Program the parser's state machine
-  PA_add_state_callback "COMMAND" "get" "SUBCOMMAND" ""
-  PA_add_state_callback "SUBCOMMAND" "cluster" "ARG1" ""
-  PA_add_state_callback "ARG1" "getcluster" "END" "GC_set_clustername"
+  PA_add_state "COMMAND" "get" "SUBCOMMAND" ""
+  PA_add_state "SUBCOMMAND" "getcluster" "ARG1" ""
+  PA_add_state "ARG1" "getcluster" "END" "GC_set_clustername"
   # Set up the parser's option callbacks
   PA_add_option_callback "get" "GC_process_options" || return
   PA_add_option_callback "getcluster" "GC_process_options" || return

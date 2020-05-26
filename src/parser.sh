@@ -1,12 +1,12 @@
 # PA - PArser
 
-# PA is holds data specific to parsing the command line arguments.
+# PA holds data specific to parsing the command line arguments.
 declare -A PA
 
 # Declare externally defined variables ----------------------------------------
 
-# Defined in ER (error.sh)
-declare OK ERROR TRUE STOP STDERR
+# Defined in ER (globals.sh)
+declare OK ERROR STDERR
 
 # Getters/Setters -------------------------------------------------------------
 
@@ -24,67 +24,46 @@ PA_subcommand() {
 
 # Public Functions ------------------------------------------------------------
 
+# PA_add_option_callback adds a callback to the list of callbacks used for
+# processing options.
+# Args: arg1 - Null string (for global options), COMMAND or COMMANDSUBCOMMAND.
+#       arg2 - The function to call.
+PA_add_option_callback() {
+  PA[optscallbacks]+="$1,$2 "
+}
+
 # PA_new sets the initial values for the PArser's associative array.
 # Args: None expected.
 PA_new() {
   PA[command]=
   PA[subcommand]=
   PA[state]="COMMAND"
+  PA[optscallbacks]=
 }
 
-# PA_parse_options implements an interleaved state machine to process the
-# user request. It allows for strict checking of arguments and options. All
+# PA_parse_args implements an interleaved state machine to process the
+# user request. It allows for strict checking of arguments and args. All
 # command line arguments are processed in order from left to right.
 #
 # Each COMMAND can have a different set of requirements which are controlled
 # by setting the next state at each transition.
 #
-# --global-option COMMAND SUBCOMMAND --command-option OPTION1 OPTION2 OPTION3 ...
+# --global-options COMMAND --command-options SUBCOMMAND --subcommand-options \
+#  ARG1 ARG2 ARG3 ...
 #
-# --global-options are those before or just after COMMAND.
+# --global-options are those before COMMAND.
 # --command-options can be anywhere after the SUBCOMMAND.
+# --subcommand-options can be anywhere after the SUBCOMMAND.
 #
 # Args: arg1-N - The arguments given to mokctl by the user on the command line
-PA_parse_options() {
+PA_parse_args() {
 
   set -- "$@"
   local ARGN=$#
   while [ "${ARGN}" -ne 0 ]; do
-    case "${1}" in
-    --skipmastersetup)
-      _PA_verify_option '--skipmastersetup' || return
-      CC_setflag_skipmastersetup "${TRUE}"
-      ;;
-    --skipworkersetup)
-      _PA_verify_option '--skipworkersetup' || return
-      CC_setflag_skipworkersetup "${TRUE}"
-      ;;
-    --skiplbsetup)
-      _PA_verify_option '--skiplbsetup' || return
-      CC_setflag_skiplbsetup "${TRUE}"
-      ;;
-    --with-lb)
-      _PA_verify_option '--with-lb' || return
-      CC_setflag_with_lb "${TRUE}"
-      ;;
-    --k8sver)
-      _PA_verify_option '--k8sver' || return
-      # enable later -> BUILD_IMAGE_K8SVER="$1"
-      shift
-      ;;
-    --get-prebuilt-image)
-      _PA_verify_option '--get-prebuilt-image' || return
-      BI_setflag_useprebuiltimage "${TRUE}"
-      ;;
-    --help) ;&
-    -h)
-      _PA_usage
-      return "${STOP}"
-      ;;
-    --?*)
-      _PA_usage
-      printf 'Invalid option: "%s"\n' "$1" >"${STDERR}"
-      return "${ERROR}"
+    case "$1" in
+    --* | -*)
+      _PA_process_option "$1" || return "$?"
       ;;
     *)
       case "${PA[state]}" in
@@ -105,36 +84,36 @@ PA_parse_options() {
           return "${ERROR}"
         }
         ;;
-      OPTION)
-        _PA_check_option_token "${1}"
+      ARG)
+        _PA_check_arg_token "${1}"
         [[ $? -eq ${ERROR} ]] && {
           _PA_usage
-          printf 'Invalid OPTION for %s %s, "%s".\n\n' "${PA[command]}" \
+          printf 'Invalid ARG for %s %s, "%s".\n\n' "${PA[command]}" \
             "${PA[subcommand]}" "${1}" >"${STDERR}"
           return "${ERROR}"
         }
         ;;
-      OPTION2)
-        _PA_check_option2_token "$1"
+      ARG2)
+        _PA_check_arg2_token "$1"
         [[ $? -eq ${ERROR} ]] && {
           _PA_usage
-          printf 'Invalid OPTION for %s %s, "%s".\n\n' "${PA[command]}" \
+          printf 'Invalid ARG for %s %s, "%s".\n\n' "${PA[command]}" \
             "${PA[subcommand]}" "${1}" >"${STDERR}"
           return "${ERROR}"
         }
         ;;
-      OPTION3)
-        _PA_check_option3_token "${1}"
+      ARG3)
+        _PA_check_arg3_token "${1}"
         [[ $? -eq ${ERROR} ]] && {
           _PA_usage
-          printf 'Invalid OPTION for %s %s, "%s".\n\n' "${PA[command]}" \
+          printf 'Invalid ARG for %s %s, "%s".\n\n' "${PA[command]}" \
             "${PA[subcommand]}" "${1}" >"${STDERR}"
           return "${ERROR}"
         }
         ;;
       END)
         _PA_usage
-        printf 'ERROR No more options expected, "%s" is unexpected for "%s %s"\n' \
+        printf 'ERROR No more args expected, "%s" is unexpected for "%s %s"\n' \
           "${1}" "${PA[command]}" "${PA[subcommand]}" >"${STDERR}"
         return "${ERROR}"
         ;;
@@ -192,14 +171,14 @@ _PA_usage() {
     return
     ;;
   *)
-    printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-    err || return
+    # Just fall out and output the entire help since the user
+    # has not selected a valid command.
     ;;
   esac
 
   cat <<'EnD'
 
-Usage: mokctl [-h] <command> [subcommand] [OPTIONS...]
+Usage: mokctl [-h] <command> [subcommand] [ARGS...]
  
 Global options:
  
@@ -275,7 +254,7 @@ _PA_check_command_token() {
   exec)
     PA[command]="exec"
     PA[subcommand]="unused"
-    PA[state]="OPTION"
+    PA[state]="ARG"
     ;;
   *) return "${ERROR}" ;;
   esac
@@ -312,7 +291,7 @@ _PA_check_create_subcommand_token() {
   *) return "${ERROR}" ;;
   esac
 
-  PA[state]="OPTION"
+  PA[state]="ARG"
 
   return "${OK}"
 }
@@ -330,7 +309,7 @@ _PA_check_delete_subcommand_token() {
   *) return "${ERROR}" ;;
   esac
 
-  PA[state]=OPTION
+  PA[state]=ARG
 }
 
 # _PA_check_build_subcommand_token checks for a valid token in subcommand
@@ -342,7 +321,6 @@ _PA_check_build_subcommand_token() {
   case $1 in
   image)
     PA[subcommand]="image"
-    BI_new
     ;;
   *) return "${ERROR}" ;;
   esac
@@ -365,20 +343,20 @@ _PA_check_get_subcommand_token() {
   *) return "${ERROR}" ;;
   esac
 
-  PA[state]=OPTION
+  PA[state]=ARG
 }
 
-# _PA_check_option_token checks for a valid token in option
+# _PA_check_arg_token checks for a valid token in arg
 # state.
 # Args: arg1 - the token to check
-_PA_check_option_token() {
+_PA_check_arg_token() {
 
   case "${PA[command]}" in
   create)
     case "${PA[subcommand]}" in
     cluster)
       CC_set_clustername "${1}"
-      PA[state]="OPTION2"
+      PA[state]="ARG2"
       ;;
     *)
       printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
@@ -421,17 +399,17 @@ _PA_check_option_token() {
   esac
 }
 
-# _PA_check_option2_token checks for a valid token in option2
+# _PA_check_arg2_token checks for a valid token in arg2
 # state.
 # Args: arg1 - the token to check
-_PA_check_option2_token() {
+_PA_check_arg2_token() {
 
   case "${PA[command]}" in
   create)
     case "${PA[subcommand]}" in
     cluster)
       CC_set_nummasters "$1"
-      PA[state]="OPTION3"
+      PA[state]="ARG3"
       ;;
     *)
       printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
@@ -457,10 +435,10 @@ _PA_check_option2_token() {
   esac
 }
 
-# _PA_check_option3_token checks for a valid token in option3
+# _PA_check_arg3_token checks for a valid token in arg3
 # state.
 # Args: arg1 - the token to check
-_PA_check_option3_token() {
+_PA_check_arg3_token() {
 
   case "${PA[command]}" in
   create)
@@ -493,62 +471,23 @@ _PA_check_option3_token() {
   esac
 }
 
-# ===========================================================================
-#                              FLAG PROCESSING
-# ===========================================================================
-
-# _PA_verify_option checks that the sent option is valid for the
+# _PA_process_option checks that the sent option is valid for the
 # command-subcommand or global options.
 # Args: arg1 - The option to check.
-_PA_verify_option() {
+_PA_process_option() {
 
-  case "${PA[command]}${PA[subcommand]}" in
-  create) ;& # Treat flags located just before
-  delete) ;& # or just after COMMAND
-  build) ;&  # as global options.
-  get) ;&
-  '')
-    _PA_check_valid_global_opts "$1"
-    ;;
-  createcluster)
-    CC_check_valid_options "$1"
-    ;;
-  deletecluster)
-    DE_check_valid_options "$1"
-    ;;
-  execcluster)
-    EX_check_valid_options "$1"
-    ;;
-  buildimage)
-    BI_check_valid_options "$1"
-    ;;
-  getcluster)
-    GE_check_valid_options "$1"
-    ;;
-  *)
-    printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-    err || return
-    ;;
-  esac && return
+  local item curcmdsubcmd
 
-  return "${ERROR}"
-}
+  curcmdsubcmd="${PA[command]}${PA[subcommand]}"
 
-# _PA_check_valid_global_opts checks that the global option is valid.
-# Args: arg1 - The option to check.
-_PA_check_valid_global_opts() {
-
-  local int validopts=(
-    "--help"
-    "-h"
-  )
-
-  for int in "${validopts[@]}"; do
-    [[ $1 == "${int}" ]] && return
+  for item in ${PA[optscallbacks]}; do
+    IFS=, read -r cmdsubcmd func <<<"${item}"
+    [[ ${curcmdsubcmd} == "${cmdsubcmd}" ]] && {
+      eval "${func} $1"
+      return
+    }
   done
 
-  _PA_usage
-  printf 'ERROR: "%s" is not a valid global option.\n' "$1" >"${STDERR}"
   return "${ERROR}"
 }
 

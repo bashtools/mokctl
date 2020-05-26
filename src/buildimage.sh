@@ -6,7 +6,7 @@ declare -A BI
 # Declare externally defined variables ----------------------------------------
 
 # Defined in GL (globals.sh)
-declare OK ERROR STDERR
+declare OK ERROR STDERR STOP TRUE
 
 # Getters/Setters -------------------------------------------------------------
 
@@ -31,9 +31,7 @@ BI_baseimagename() {
 
 # Public Functions ------------------------------------------------------------
 
-# BI_new sets the initial values for the BI associative array.
-# This function is called by parse_options once it knows which component is
-# being requested but before it sets any array members.
+# BI_new resets the initial values for the BI associative array.
 # Args: None expected.
 BI_new() {
   BI[k8sver]="1.18.2"
@@ -41,6 +39,8 @@ BI_new() {
   BI[useprebuiltimage]=
   BI[dockerbuildtmpdir]=
   BI[runwithprogress_output]=
+  PA_add_option_callback "build" "BI_process_options" || return
+  PA_add_option_callback "buildimage" "BI_process_options" || return
 }
 
 # BI_usage outputs help text for the build image component.
@@ -82,22 +82,24 @@ BI_cleanup() {
 # BI_check_valid_options checks if arg1 is in a list of valid build image
 # options. This function is called by the parser.
 # Args: arg1 - the option to check.
-BI_check_valid_options() {
+BI_process_options() {
 
-  local opt validopts=(
-    "--help"
-    "-h"
-    "--get-prebuilt-image"
-  )
-
-  for opt in "${validopts[@]}"; do
-    [[ ${1} == "${opt}" ]] && return
-  done
-
-  BI_usage
-  printf 'ERROR: "%s" is not a valid "build image" option.\n' "${1}" \
-    >"${STDERR}"
-  return "${ERROR}"
+  case "$1" in
+  -h | --help)
+    BI_usage
+    return "${STOP}"
+    ;;
+  --get-prebuilt-image)
+    BI[useprebuiltimage]="${TRUE}"
+    return "${OK}"
+    ;;
+  *)
+    BI_usage
+    printf 'ERROR: "%s" is not a valid "build" option.\n' "${1}" \
+      >"${STDERR}"
+    return "${ERROR}"
+    ;;
+  esac
 }
 
 # BI_sanity_checks is expected to run some quick and simple checks to

@@ -10,9 +10,11 @@ main() {
   trap cleanup EXIT
   init || return
   sanity_checks || return
+  #register_parser || return
+  register_parser_options || return
 
   local retval="${OK}"
-  PA_parse_options "$@" || retval=$?
+  PA_parse_args "$@" || retval=$?
   if [[ ${retval} -eq ${ERROR} ]]; then
     return "${ERROR}"
   elif [[ ${retval} -eq ${STOP} ]]; then
@@ -34,6 +36,28 @@ main() {
   esac
 }
 
+register_parser_options() {
+  PA_add_option_callback "" "process_global_options" || return
+  PA_add_option_callback "delete" "DE_process_options" || return
+  PA_add_option_callback "deletecluster" "DE_process_options" || return
+  PA_add_option_callback "exec" "EX_process_options" || return
+  PA_add_option_callback "get" "GE_process_options" || return
+  PA_add_option_callback "getcluster" "GE_process_options" || return
+}
+
+process_global_options() {
+  case "$1" in
+  -h | --help)
+    _PA_usage
+    return "${STOP}"
+    ;;
+  *)
+    printf 'INTERNAL ERROR: Invalid global option, "%s".' "$1"
+    return "${ERROR}"
+    ;;
+  esac
+}
+
 # init sets start values for variables and calls the init in each utility
 # 'module'. Other XX_new functions are called in the parser when it knows
 # what command and subcommand the user has requested.
@@ -44,6 +68,7 @@ init() {
   UT_new || return # <- new utilities
   PA_new || return # <- new parser
   CU_new || return # <- new container utils
+  BI_new || return # <- new build image
 }
 
 # cleanup is called from an EXIT trap only, when the program exits.

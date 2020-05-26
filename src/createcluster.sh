@@ -6,7 +6,7 @@ declare -A CC
 # Declare externally defined variables ----------------------------------------
 
 # Defined in GL (globals.sh)
-declare OK ERROR STDERR
+declare OK ERROR STDERR STOP TRUE
 
 # Getters/Setters -------------------------------------------------------------
 
@@ -58,32 +58,51 @@ CC_set_numworkers() {
 # being requested but before it sets any array members.
 # Args: None expected.
 CC_new() {
-
+  CC[skipmastersetup]=
+  CC[skipworkersetup]=
+  CC[skiplbsetup]=
+  CC[withlb]=
+  CC[clustername]=
+  CC[nummasters]=
+  CC[numworkers]=
   CC[k8sver]="1.18.2"
+  PA_add_option_callback "create" "CC_process_options" || return
+  PA_add_option_callback "createcluster" "CC_process_options" || return
 }
 
-# CC_check_valid_options checks if arg1 is in a list of valid create cluster
+# CC_process_options checks if arg1 is in a list of valid build image
 # options. This function is called by the parser.
 # Args: arg1 - the option to check.
-CC_check_valid_options() {
+#       arg2 - value of the item to be set, optional
+CC_process_options() {
 
-  local opt validopts=(
-    "--help"
-    "-h"
-    "--skipmastersetup"
-    "--skipworkersetup"
-    "--skiplbsetup"
-    "--k8sver"
-    "--with-lb"
-  )
-
-  for opt in "${validopts[@]}"; do
-    [[ $1 == "${opt}" ]] && return
-  done
-
-  CC_usage
-  printf 'ERROR: "%s" is not a valid "create cluster" option.\n' "$1" >"${STDERR}"
-  return "${ERROR}"
+  case "$1" in
+  -h | --help)
+    CC_usage
+    return "${STOP}"
+    ;;
+  --skiplbsetup)
+    CC[skiplbsetup]="${TRUE}" && return
+    ;;
+  --k8sver)
+    CC[k8sver]="$2" && return
+    ;;
+  --with-lb)
+    CC[withlb]="${TRUE}" && return
+    ;;
+  --skipmastersetup)
+    CC[skipmastersetup]="${TRUE}" && return
+    ;;
+  --skipworkersetup)
+    CC[skipworkersetup]="${TRUE}" && return
+    ;;
+  *)
+    CC_usage
+    printf 'ERROR: "%s" is not a valid "create" option.\n' "${1}" \
+      >"${STDERR}"
+    return "${ERROR}"
+    ;;
+  esac
 }
 
 # CC_usage outputs help text for the create cluster component.

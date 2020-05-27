@@ -1,7 +1,7 @@
 FROM centos:7
 ARG CRIO_VERSION=1.18
 ARG CRICTL_VERSION=v1.18.0
-ARG K8SBINVER=-1.18.2
+ARG K8SBINVER=-1.18.3
 # Tell systemd that it's running in a container
 ENV container docker
 COPY kubernetes.repo /etc/yum.repos.d/kubernetes.repo
@@ -34,6 +34,7 @@ RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do \
     && sed -i 's/\(conmon = .*\)/#\1/' /etc/crio/crio.conf \
     && rm -f /etc/cni/net.d/100-crio-bridge.conf \
     && rm -f /etc/cni/net.d/200-loopback.conf \
+    && sed -i 's/\(^driver = \).*/\1"vfs"/' /etc/containers/storage.conf \
     && systemctl enable crio \
     && curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz \
     && tar zxvf crictl-$CRICTL_VERSION-linux-amd64.tar.gz -C /usr/local/bin \

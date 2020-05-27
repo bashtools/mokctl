@@ -6,7 +6,7 @@ declare -A _CC
 # Declare externally defined variables ----------------------------------------
 
 # Defined in GL (globals.sh)
-declare OK ERROR STDERR STOP TRUE
+declare OK ERROR STDERR STOP TRUE FALSE
 
 # Getters/Setters -------------------------------------------------------------
 
@@ -29,36 +29,6 @@ CC_set_numworkers() {
 
 # Public Functions ------------------------------------------------------------
 
-# CC_new sets the initial values for the _CC associative array.
-# This function is called by parse_options once it knows which component is
-# being requested but before it sets any array members.
-# Args: None expected.
-CC_new() {
-  _CC[skipmastersetup]=
-  _CC[skipworkersetup]=
-  _CC[skiplbsetup]=
-  _CC[withlb]=
-  _CC[clustername]=
-  _CC[nummasters]=
-  _CC[numworkers]=
-  _CC[k8sver]="1.18.2"
-
-  # Program the parser's state machine
-  PA_add_state "COMMAND" "create" "SUBCOMMAND" ""
-  PA_add_state "SUBCOMMAND" "cluster" "ARG2" ""
-  PA_add_state "ARG1" "createcluster" "ARG2" "CC_set_clustername"
-  PA_add_state "ARG2" "createcluster" "ARG3" "CC_set_nummasters"
-  PA_add_state "ARG3" "createcluster" "END" "CC_set_numworkers"
-
-  # Set up the parser's option callbacks
-  PA_add_option_callback "create" "CC_process_options" || return
-  PA_add_option_callback "createcluster" "CC_process_options" || return
-
-  # Set up the parser's usage callbacks
-  PA_add_usage_callback "create" "CC_usage" || return
-  PA_add_usage_callback "createcluster" "CC_usage" || return
-}
-
 # CC_process_options checks if arg1 is in a list of valid build image
 # options. This function is called by the parser.
 # Args: arg1 - the option to check.
@@ -74,7 +44,7 @@ CC_process_options() {
     _CC[skiplbsetup]="${TRUE}" && return
     ;;
   --k8sver)
-    _CC[k8sver]="$2" && return
+    _CC[k8sver]="$2" && return "${_CC[shift]}"
     ;;
   --with-lb)
     _CC[withlb]="${TRUE}" && return
@@ -84,6 +54,16 @@ CC_process_options() {
     ;;
   --skipworkersetup)
     _CC[skipworkersetup]="${TRUE}" && return
+    ;;
+  --masters)
+    _CC[nummasters]="$2" && return "${_CC[shift]}"
+    ;;
+  --workers)
+    _CC[numworkers]="$2" && return "${_CC[shift]}"
+    ;;
+  --tailf)
+    _CC[tailf]="${TRUE}"
+    return "${OK}"
     ;;
   *)
     CC_usage
@@ -129,6 +109,7 @@ create cluster [flags] options:
          and set up to reverse proxy to the master node(s), unless
          --skiplbsetup is used.
   --k8sver VERSION - Unimplemented.
+  --tailf - Show the log output whilst creating the cluster.
 
 EnD
 }
@@ -140,9 +121,13 @@ CC_run() {
 
   _CC_sanity_checks || return
 
+  [[ ${_CC[tailf]} == "${TRUE}" ]] && {
+    UT_set_tailf "${TRUE}" || err || return
+  }
+
   declare -i numnodes=0
 
-  numnodes=$(get_cluster_size "${_CC[clustername]}") || return
+  numnodes=$(CU_get_cluster_size "${_CC[clustername]}") || return
 
   [[ ${numnodes} -gt 0 ]] && {
     printf '\nERROR: Cluster, "%s", exists! Aborting.\n\n' "${_CC[clustername]}" \
@@ -150,29 +135,20 @@ CC_run() {
     return "${ERROR}"
   }
 
-  printf '\n'
-
   [[ ${_CC[withlb]} -gt 0 ]] && {
-    create_lb_node "${_CC[nummasters]}" || return
+    _CC_create_lb_node "${_CC[nummasters]}" || return
   }
 
   [[ ${_CC[nummasters]} -gt 0 ]] && {
-    create_master_nodes "${_CC[nummasters]}" || return
+    _CC_create_master_nodes "${_CC[nummasters]}" || return
   }
 
-  #[[ -z ${_CC[skipmastersetup]} ]] && {
-  #  # TODO Query the server for all pods ready instead
-  #  UT_run_with_progress \
-  #    "    Waiting for master to be ready." \
-  #    sleep 40
-  #}
-
   [[ ${_CC[withlb]} -gt 0 ]] && {
-    setup_lb_node "${_CC[nummasters]}" || return
+    _CC_setup_lb_node "${_CC[nummasters]}" || return
   }
 
   [[ ${_CC[numworkers]} -gt 0 ]] && {
-    create_worker_nodes "${_CC[numworkers]}" || return
+    _CC_create_worker_nodes "${_CC[numworkers]}" || return
   }
 
   printf '\n'
@@ -183,6 +159,42 @@ CC_run() {
   }
 
   return "${OK}"
+}
+
+# Private Functions -----------------------------------------------------------
+
+# CC_new sets the initial values for the _CC associative array.
+# This function is called by parse_options once it knows which component is
+# being requested but before it sets any array members.
+# Args: None expected.
+_CC_new() {
+  _CC[tailf]="${FALSE}"
+  _CC[skipmastersetup]=
+  _CC[skipworkersetup]=
+  _CC[skiplbsetup]=
+  _CC[withlb]=
+  _CC[clustername]=
+  _CC[nummasters]=0
+  _CC[numworkers]=0
+  _CC[k8sver]="1.18.3"
+
+  # The return value if the main loop needs an extra shift:
+  _CC[shift]=3
+
+  # Program the parser's state machine
+  PA_add_state "COMMAND" "create" "SUBCOMMAND" ""
+  PA_add_state "SUBCOMMAND" "createcluster" "ARG2" ""
+  PA_add_state "ARG1" "createcluster" "ARG2" "CC_set_clustername"
+  PA_add_state "ARG2" "createcluster" "ARG3" "CC_set_nummasters"
+  PA_add_state "ARG3" "createcluster" "END" "CC_set_numworkers"
+
+  # Set up the parser's option callbacks
+  PA_add_option_callback "create" "CC_process_options" || return
+  PA_add_option_callback "createcluster" "CC_process_options" || return
+
+  # Set up the parser's usage callbacks
+  PA_add_usage_callback "create" "CC_usage" || return
+  PA_add_usage_callback "createcluster" "CC_usage" || return
 }
 
 # CC_sanity_checks is expected to run some quick and simple checks to see if it
@@ -213,7 +225,7 @@ _CC_sanity_checks() {
 }
 
 # ---------------------------------------------------------------------------
-create_lb_node() {
+_CC_create_lb_node() {
 
   # Create the load balancer nodes
   # Args:
@@ -244,7 +256,7 @@ create_lb_node() {
 # ---------------------------------------------------------------------------
 # Create the load balancer nodes
 # Args:
-setup_lb_node() {
+_CC_setup_lb_node() {
 
   local runlogfile
 
@@ -252,7 +264,7 @@ setup_lb_node() {
   [[ -z ${_CC[skiplbsetup]} ]] && {
     UT_run_with_progress \
       "    Setting up '${_CC[clustername]}-lb'" \
-      set_up_lb_node_real "${_CC[clustername]}-lb"
+      _CC_set_up_lb_node_real "${_CC[clustername]}-lb"
     r=$?
 
     [[ ${r} -ne 0 ]] && {
@@ -269,7 +281,7 @@ setup_lb_node() {
 }
 
 # ---------------------------------------------------------------------------
-set_up_lb_node_real() {
+_CC_set_up_lb_node_real() {
 
   # Call the correct set up function based on the version
   # Args
@@ -329,7 +341,7 @@ EnD
 }
 
 # ---------------------------------------------------------------------------
-create_master_nodes() {
+_CC_create_master_nodes() {
 
   # Create the master nodes
   # Args:
@@ -360,7 +372,7 @@ create_master_nodes() {
     [[ -z ${_CC[skipmastersetup]} ]] && {
       UT_run_with_progress \
         "    Setting up '${_CC[clustername]}-master-${int}'" \
-        set_up_master_node "${_CC[clustername]}-master-${int}"
+        _CC_set_up_master_node "${_CC[clustername]}-master-${int}"
       r=$?
 
       [[ ${r} -ne 0 ]] && {
@@ -399,15 +411,15 @@ create_master_nodes() {
 }
 
 # ---------------------------------------------------------------------------
-set_up_master_node() {
+_CC_set_up_master_node() {
 
   # Call the correct set up function based on the version
   # Args
   #   arg1 - the container ID to set up
 
   case "${_CC[k8sver]}" in
-  "1.18.2")
-    set_up_master_node_v1_18_2 "$@"
+  "1.18.3")
+    _CC_set_up_master_node_v1_18_2 "$@"
     ;;
   *)
     printf 'ERROR: Version not found, "%s".\n' "${_CC[k8sver]}" >"${STDERR}"
@@ -418,7 +430,7 @@ set_up_master_node() {
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
-create_worker_nodes() {
+_CC_create_worker_nodes() {
 
   # Create the master nodes
   # Args:
@@ -430,8 +442,8 @@ create_worker_nodes() {
   [[ -n ${_CC[skipworkersetup]} || -n \
   ${_CC[skipmastersetup]} ]] || {
     # Runs a script on master node to get details
-    t=$(get_master_join_details "${_CC[clustername]}-master-1") || {
-      printf '\nERROR: Problem with "get_master_join_details".\n\n' >"${STDERR}"
+    t=$(_CC_get_master_join_details "${_CC[clustername]}-master-1") || {
+      printf '\nERROR: Problem with "_CC_get_master_join_details".\n\n' >"${STDERR}"
       return "${ERROR}"
     }
 
@@ -452,50 +464,55 @@ create_worker_nodes() {
     r=$?
 
     [[ ${r} -ne 0 ]] && {
-      printf '\n' >"${STDERR}"
-      cat $RUNWITHPROGRESS_OUTPUT >"${STDERR}"
-      rm $RUNWITHPROGRESS_OUTPUT >"${STDERR}"
+      runlogfile=$(UT_runlogfile) || err || return
+      printf '\n'
+      cat "${runlogfile}" >"${STDERR}"
       printf '\nERROR: Docker failed.\n' >"${STDERR}"
       return "${ERROR}"
     }
 
-    [[ -n $CREATE_CLUSTER_SKIPWORKERSETUP || -n \
+    [[ -n ${_CC[skipworkersetup]} || -n \
     ${_CC[skipmastersetup]} ]] || {
       UT_run_with_progress \
-        "    Setting up '${_CC[clustername]}-worker-$int'" \
-        set_up_worker_node "${_CC[clustername]}-worker-$int" \
-        "$cahash" "$token" "$masterip"
+        "    Setting up '${_CC[clustername]}-worker-${int}'" \
+        _CC_set_up_worker_node "${_CC[clustername]}-worker-${int}" \
+        "${cahash}" "${token}" "${masterip}"
       r=$?
 
-      [[ $r -ne 0 ]] && {
+      [[ ${r} -ne 0 ]] && {
+        runlogfile=$(UT_runlogfile) || err || return
         printf '\n' >"${STDERR}"
-        cat $RUNWITHPROGRESS_OUTPUT >"${STDERR}"
-        printf '\nERROR: Set up failed. See above, and also in the file:\n' >"${STDERR}"
-        printf '%s\n' "$RUNWITHPROGRESS_OUTPUT" >"${STDERR}"
+        cat "${runlogfile}" >"${STDERR}"
+        printf '\nERROR: Set up failed. See above, and also in the file:' >"${STDERR}"
+        printf '%s\n' "${runlogfile}" >"${STDERR}"
         return "${ERROR}"
       }
     }
   done
 
-  return $OK
+  return "${OK}"
 }
 
 # ---------------------------------------------------------------------------
-set_up_worker_node() {
+_CC_set_up_worker_node() {
 
   # Call the correct set up function based on the version
   # Args
   #   arg1 - the container ID to set up
 
-  case "$BUILD_IMAGE_K8SVER" in
-  "1.18.2")
-    set_up_worker_node_v1_18_2 "$@"
+  case "${_CC[k8sver]}" in
+  "1.18.3")
+    _CC_set_up_worker_node_v1_18_2 "$@"
+    ;;
+  *)
+    printf 'ERROR: Version not found, "%s".\n' "${_CC[k8sver]}" >"${STDERR}"
+    err || return
     ;;
   esac
 }
 
 # ---------------------------------------------------------------------------
-get_master_join_details() {
+_CC_get_master_join_details() {
 
   # 'docker exec' into the master to get CA hash, a token, and the master IP.
   # The caller can eval the output of this function to set the variables:
@@ -512,11 +529,11 @@ get_master_join_details() {
 
   master1ip=$(CU_get_container_ip "${_CC[clustername]}-master-1") || err || return
 
-  cat <<EnD >"$joinvarsfile"
+  cat <<EnD >"${joinvarsfile}"
 #!/bin/bash
 set -e
 
-sed 's#\(server: https://\)[0-9.]*\(:.*\)#\1'"$master1ip"'\2#' \
+sed 's#\(server: https://\)[0-9.]*\(:.*\)#\1'"${master1ip}"'\2#' \
   /etc/kubernetes/admin.conf >/etc/kubernetes/admin2.conf
 
 cahash=\$(openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | \
@@ -530,10 +547,11 @@ printf 'cahash=%s\ntoken=%s\nmasterip=%s' "\$cahash" "\$token" "\$ip"
 exit 0
 EnD
 
-  docker cp "$joinvarsfile" "$1":/root/joinvars.sh 2>$E || err || return
-  rm -f "$joinvarsfile" 2>$E || err || return
+  docker cp "${joinvarsfile}" "$1":/root/joinvars.sh 2>"${STDERR}" ||
+    err || return
+  rm -f "${joinvarsfile}" 2>"${STDERR}" || err || return
 
-  docker exec "$1" bash /root/joinvars.sh 2>$E || err
+  docker exec "$1" bash /root/joinvars.sh 2>"${STDERR}" || err
 }
 
 # ===========================================================================
@@ -541,14 +559,14 @@ EnD
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
-set_up_master_node_v1_18_2() {
+_CC_set_up_master_node_v1_18_2() {
 
   # Use kubeadm to set up the master node.
   # Args:
   #   arg1 - the container to set up.
 
   local setupfile lbaddr certSANs certkey masternum t
-  # Set by get_master_join_details:
+  # Set by _CC_get_master_join_details:
   local cahash token masterip
 
   setupfile=$(mktemp -p /var/tmp) || {
@@ -558,17 +576,17 @@ set_up_master_node_v1_18_2() {
 
   masternum="${1##*-}" # <- eg. for xxx-master-1, masternum=1
 
-  if [[ ${_CC[withlb]} == "$TRUE" && $masternum -eq 1 ]]; then
+  if [[ ${_CC[withlb]} == "${TRUE}" && ${masternum} -eq 1 ]]; then
 
     # This is the first master node
 
     # Sets cahash, token, and masterip:
     lbaddr=$(CU_get_container_ip "${_CC[clustername]}-lb")
-    certSANs="certSANs: [ '$lbaddr' ]"
+    certSANs="certSANs: [ '${lbaddr}' ]"
     uploadcerts="--upload-certs"
     certkey="CertificateKey: f8802e114ef118304e561c3acd4d0b543adc226b7a27f675f56564185ffe0c07"
 
-  elif [[ ${_CC[withlb]} == "$TRUE" && $masternum -ne 1 ]]; then
+  elif [[ ${_CC[withlb]} == "${TRUE}" && ${masternum} -ne 1 ]]; then
 
     # This is not the first master node, so join with the master
     # https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/
@@ -576,27 +594,24 @@ set_up_master_node_v1_18_2() {
     # Keep trying to get join details until apiserver is ready or we run out of tries
     for try in $(seq 1 9); do
       # Runs a script on master node to get join details
-      t=$(get_master_join_details "${_CC[clustername]}-master-1")
+      t=$(_CC_get_master_join_details "${_CC[clustername]}-master-1")
       retval=$?
-      [[ $retval -eq 0 ]] && break
-      [[ $try -eq 9 ]] && {
-        printf '\nERROR: Problem with "get_master_join_details". Tried %d times\n\n' "$try" >"${STDERR}"
+      [[ ${retval} -eq 0 ]] && break
+      [[ ${try} -eq 9 ]] && {
+        printf '\nERROR: Problem with "_CC_get_master_join_details". Tried %d times\n\n' "${try}" \
+          >"${STDERR}"
         return "${ERROR}"
       }
       sleep 5
     done
-    eval "$t"
+    eval "${t}"
   fi
 
   # Write the file
-  cat <<EnD >"$setupfile"
+  cat <<EnD >"${setupfile}"
 # Disable ipv6
 sysctl -w net.ipv6.conf.all.disable_ipv6=1
 sysctl -w net.ipv6.conf.default.disable_ipv6=1
-
-# CRIO version 1.18 needs storage changing to VFS
-sed -i 's/\(^driver = \).*/\1"vfs"/' /etc/containers/storage.conf
-systemctl restart crio
 
 # Use a custom configuration. Default config created from kubeadm with:
 #   kubeadm config print init-defaults
@@ -609,7 +624,7 @@ servicesubnet="10.96.0.0/16"
 cat <<EOF >kubeadm-init-defaults.yaml
 apiVersion: kubeadm.k8s.io/v1beta2
 kind: InitConfiguration
-$certkey
+${certkey}
 bootstrapTokens:
 - groups:
   - system:bootstrappers:kubeadm:default-node-token
@@ -641,7 +656,7 @@ kind: ClusterConfiguration
 controlPlaneEndpoint: "${lbaddr:-\$ipaddr}:6443"
 apiServer:
   timeoutForControlPlane: 4m0s
-  $certSANs
+  ${certSANs}
 apiVersion: kubeadm.k8s.io/v1beta2
 certificatesDir: /etc/kubernetes/pki
 clusterName: kubernetes
@@ -652,7 +667,7 @@ etcd:
   local:
     dataDir: /var/lib/etcd
 imageRepository: k8s.gcr.io
-kubernetesVersion: v1.18.2
+kubernetesVersion: v1.18.3
 networking:
   dnsDomain: cluster.local
   podSubnet: \$podsubnet
@@ -660,10 +675,10 @@ networking:
 scheduler: {}
 EOF
 
-if [[ -z "$masterip" ]]; then
+if [[ -z "${masterip}" ]]; then
   kubeadm init \\
     --ignore-preflight-errors Swap \\
-    --config=kubeadm-init-defaults.yaml $uploadcerts
+    --config=kubeadm-init-defaults.yaml ${uploadcerts}
 
   export KUBECONFIG=/etc/kubernetes/admin.conf
 
@@ -678,19 +693,19 @@ if [[ -z "$masterip" ]]; then
   # Calico is e2e tested by k8s team. Requires --pod-network-cidr=192.168.0.0/16
   #curl https://docs.projectcalico.org/v3.11/manifests/calico.yaml | sed 's#192.168.0.0/16#10.123.0.0/16#' | kubectl apply -f -
 else
-  kubeadm join $masterip:6443 \\
+  kubeadm join ${masterip}:6443 \\
     --ignore-preflight-errors Swap \\
     --control-plane \\
-    --token $token \\
-    --discovery-token-ca-cert-hash sha256:$cahash \\
+    --token ${token} \\
+    --discovery-token-ca-cert-hash sha256:${cahash} \\
     --certificate-key f8802e114ef118304e561c3acd4d0b543adc226b7a27f675f56564185ffe0c07
 fi
 
 systemctl enable kubelet
 EnD
 
-  docker cp "$setupfile" "$1":/root/setup.sh || err || {
-    rm -f "$setupfile"
+  docker cp "${setupfile}" "$1":/root/setup.sh || err || {
+    rm -f "${setupfile}"
     return "${ERROR}"
   }
 
@@ -707,13 +722,13 @@ EnD
     }
 
     # Write the file
-    cat <<'EnD' >"$removetaint"
+    cat <<'EnD' >"${removetaint}"
 export KUBECONFIG=/etc/kubernetes/admin.conf
 kubectl taint nodes --all node-role.kubernetes.io/master-
 EnD
 
-    docker cp "$removetaint" "$1":/root/removetaint.sh || err || {
-      rm -f "$removetaint"
+    docker cp "${removetaint}" "$1":/root/removetaint.sh || err || {
+      rm -f "${removetaint}"
       return "${ERROR}"
     }
 
@@ -725,7 +740,7 @@ EnD
 }
 
 # ---------------------------------------------------------------------------
-set_up_worker_node_v1_18_2() {
+_CC_set_up_worker_node_v1_18_2() {
 
   # Use kubeadm to set up the master node
   # Args:
@@ -742,14 +757,14 @@ set_up_worker_node_v1_18_2() {
     masterip=$(CU_get_container_ip "${_CC[clustername]}-lb") || return
   fi
 
-  cat <<EnD >"$setupfile"
+  cat <<EnD >"${setupfile}"
 # CRIO version 1.18 needs storage changing to VFS
 sed -i 's/\(^driver = \).*/\1"vfs"/' /etc/containers/storage.conf
 systemctl restart crio
 
 # Wait for the master API to become ready
 while true; do
-  curl -k https://$masterip:6443/
+  curl -k https://${masterip}:6443/
   [[ \$? -eq 0 ]] && break
   sleep 1
 done
@@ -757,17 +772,17 @@ done
 # Do the preflight tests (ignoring swap error)
 kubeadm join \\
   phase preflight \\
-    --token $token \\
-    --discovery-token-ca-cert-hash sha256:$cahash \\
+    --token ${token} \\
+    --discovery-token-ca-cert-hash sha256:${cahash} \\
     --ignore-preflight-errors Swap \\
-    $masterip:6443
+    ${masterip}:6443
 
 # Set up the kubelet
 kubeadm join \\
   phase kubelet-start \\
-    --token $token \\
-    --discovery-token-ca-cert-hash sha256:$cahash \\
-    $masterip:6443 &
+    --token ${token} \\
+    --discovery-token-ca-cert-hash sha256:${cahash} \\
+    ${masterip}:6443 &
 
 while true; do
   [[ -e /var/lib/kubelet/config.yaml ]] && break
@@ -780,8 +795,8 @@ echo "failSwapOn: false" >>/var/lib/kubelet/config.yaml
 systemctl enable --now kubelet
 EnD
 
-  docker cp "$setupfile" "$1":/root/setup.sh 2>$E || err || {
-    rm -f "$setupfile"
+  docker cp "${setupfile}" "$1":/root/setup.sh 2>"${STDERR}" || err || {
+    rm -f "${setupfile}"
     return "${ERROR}"
   }
 
@@ -789,7 +804,7 @@ EnD
 }
 
 # Initialise CC
-CC_new
+_CC_new
 
 # vim helpers -----------------------------------------------------------------
 #include globals.sh

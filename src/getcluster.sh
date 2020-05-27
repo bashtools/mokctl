@@ -128,7 +128,7 @@ GC_run() {
 # This function is called by main().
 # Args: None expected.
 _GC_new() {
-  _GC[showheader]=
+  _GC[showheader]="${TRUE}"
 
   # Program the parser's state machine
   PA_add_state "COMMAND" "get" "SUBCOMMAND" ""

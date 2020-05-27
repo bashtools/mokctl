@@ -1,7 +1,7 @@
 # PA - PArser
 
-# PA holds data specific to parsing the command line arguments.
-declare -A PA
+# _PA holds data specific to parsing the command line arguments.
+declare -A _PA
 
 # Declare externally defined variables ----------------------------------------
 
@@ -10,16 +10,16 @@ declare OK ERROR STDERR
 
 # Getters/Setters -------------------------------------------------------------
 
-# PA_command outputs the PA[command] array member. This contains the command
+# PA_command outputs the _PA[command] array member. This contains the command
 # the user requested.
 PA_command() {
-  printf '%s' "${PA[command]}"
+  printf '%s' "${_PA[command]}"
 }
 
-# PA_subcommand outputs the PA[subcommand] array member. This contains the
+# PA_subcommand outputs the _PA[subcommand] array member. This contains the
 # subcommand the user requested.
 PA_subcommand() {
-  printf '%s' "${PA[subcommand]}"
+  printf '%s' "${_PA[subcommand]}"
 }
 
 # Public Functions ------------------------------------------------------------
@@ -29,7 +29,7 @@ PA_subcommand() {
 # Args: arg1 - Null string (for global options), COMMAND or COMMANDSUBCOMMAND.
 #       arg2 - The function to call.
 PA_add_option_callback() {
-  PA[optscallbacks]+="$1,$2 "
+  _PA[optscallbacks]+="$1,$2 "
 }
 
 # PA_add_usage_callback adds a callback to the list of callbacks used for
@@ -37,7 +37,7 @@ PA_add_option_callback() {
 # Args: arg1 - Null string (for global help), COMMAND or COMMANDSUBCOMMAND.
 #       arg2 - The function to call.
 PA_add_usage_callback() {
-  PA[usagecallbacks]+="$1,$2 "
+  _PA[usagecallbacks]+="$1,$2 "
 }
 
 # PA_add_state adds a callback to the list of callbacks used for
@@ -47,17 +47,7 @@ PA_add_usage_callback() {
 #       arg3 - The new state if arg1 and arg2 match.
 #       arg4 - The function to call, optional.
 PA_add_state() {
-  PA[statecallbacks]+="$1,$2,$3,$4 "
-}
-
-# PA_new sets the initial values for the PArser's associative array.
-# Args: None expected.
-PA_new() {
-  PA[command]=
-  PA[subcommand]=
-  PA[state]="COMMAND"
-  PA[optscallbacks]=
-  PA[usagecallbacks]=
+  _PA[statecallbacks]+="$1,$2,$3,$4 "
 }
 
 # PA_parse_args implements an interleaved state machine to process the
@@ -78,14 +68,21 @@ PA_new() {
 PA_parse_args() {
 
   set -- "$@"
-  local ARGN=$# ARGNUM=0
+  local ARGN=$# ARGNUM=0 retval=0
   while [ "${ARGN}" -ne 0 ]; do
     case "$1" in
     --* | -*)
-      _PA_process_option "$1" || return "$?"
+      _PA_process_option "$1" "$2" || {
+        retval=$?
+        if [[ ${retval} == "${_PA[shift]}" ]]; then
+          shift
+        else
+          return "${retval}"
+        fi
+      }
       ;;
     *)
-      case "${PA[state]}" in
+      case "${_PA[state]}" in
       COMMAND)
         _PA_check_token "${1}" "COMMAND" "command"
         [[ $? -eq ${ERROR} ]] && {
@@ -98,7 +95,7 @@ PA_parse_args() {
         _PA_check_token "$1" "SUBCOMMAND" "subcommand"
         [[ $? -eq ${ERROR} ]] && {
           _PA_usage
-          printf 'Invalid SUBCOMMAND for %s, "%s".\n\n' "${PA[command]}" "${1}" \
+          printf 'Invalid SUBCOMMAND for %s, "%s".\n\n' "${_PA[command]}" "${1}" \
             >"${STDERR}"
           return "${ERROR}"
         }
@@ -108,19 +105,19 @@ PA_parse_args() {
         _PA_check_token "${1}" "ARG${ARGNUM}"
         [[ $? -eq ${ERROR} ]] && {
           _PA_usage
-          printf 'Invalid ARG1 for %s %s, "%s".\n\n' "${PA[command]}" \
-            "${PA[subcommand]}" "${1}" >"${STDERR}"
+          printf 'Invalid ARG1 for %s %s, "%s".\n\n' "${_PA[command]}" \
+            "${_PA[subcommand]}" "${1}" >"${STDERR}"
           return "${ERROR}"
         }
         ;;
       END)
         _PA_usage
         printf 'ERROR No more args expected, "%s" is unexpected for "%s %s"\n' \
-          "${1}" "${PA[command]}" "${PA[subcommand]}" >"${STDERR}"
+          "${1}" "${_PA[command]}" "${_PA[subcommand]}" >"${STDERR}"
         return "${ERROR}"
         ;;
       *)
-        printf 'Internal ERROR. Invalid state "%s"\n' "${PA[state]}" >"${STDERR}"
+        printf 'Internal ERROR. Invalid state "%s"\n' "${_PA[state]}" >"${STDERR}"
         return "${ERROR}"
         ;;
       esac
@@ -135,6 +132,16 @@ PA_parse_args() {
 
 # Private Functions -----------------------------------------------------------
 
+# PA_new sets the initial values for the PArser's associative array.
+# Args: None expected.
+_PA_new() {
+  _PA[command]=
+  _PA[subcommand]=
+  _PA[state]="COMMAND"
+  _PA[optscallbacks]=
+  _PA[usagecallbacks]=
+}
+
 # _PA_check_token checks for a valid token in arg2 state.
 # Args: arg1 - the token to check.
 #       arg2 - the current state.
@@ -144,22 +151,22 @@ _PA_check_token() {
 
   local item
 
-  if [[ -n ${PA[subcommand]} ]]; then
-    cmdsubcommand="${PA[command]}${PA[subcommand]}"
-  elif [[ -n ${PA[command]} && ${PA[state]} != "ARG"* ]]; then
-    cmdsubcommand="${PA[command]}$1"
-  elif [[ -n ${PA[command]} && ${PA[state]} == "ARG"* ]]; then
-    cmdsubcommand="${PA[command]}"
+  if [[ -n ${_PA[subcommand]} ]]; then
+    cmdsubcommand="${_PA[command]}${_PA[subcommand]}"
+  elif [[ -n ${_PA[command]} && ${_PA[state]} != "ARG"* ]]; then
+    cmdsubcommand="${_PA[command]}$1"
+  elif [[ -n ${_PA[command]} && ${_PA[state]} == "ARG"* ]]; then
+    cmdsubcommand="${_PA[command]}"
   else
     cmdsubcommand="$1"
   fi
 
-  for item in ${PA[statecallbacks]}; do
+  for item in ${_PA[statecallbacks]}; do
     IFS=, read -r state component newstate func <<<"${item}"
     [[ ${state} == "$2" ]] && {
       [[ ${component} == "${cmdsubcommand}" ]] && {
-        [[ -n $3 ]] && PA["$3"]="$1"
-        PA[state]="${newstate}"
+        [[ -n $3 ]] && _PA["$3"]="$1"
+        _PA[state]="${newstate}"
         [[ -n ${func} ]] && {
           eval "${func} $1" || return
         }
@@ -177,12 +184,12 @@ _PA_process_option() {
 
   local item curcmdsubcmd
 
-  curcmdsubcmd="${PA[command]}${PA[subcommand]}"
+  curcmdsubcmd="${_PA[command]}${_PA[subcommand]}"
 
-  for item in ${PA[optscallbacks]}; do
+  for item in ${_PA[optscallbacks]}; do
     IFS=, read -r cmdsubcmd func <<<"${item}"
     [[ ${curcmdsubcmd} == "${cmdsubcmd}" ]] && {
-      eval "${func} $1"
+      eval "${func} \"$1\" \"$2\" "
       return
     }
   done
@@ -195,9 +202,9 @@ _PA_process_option() {
 # Args: None expected.
 _PA_usage() {
 
-  curcmdsubcmd="${PA[command]}${PA[subcommand]}"
+  curcmdsubcmd="${_PA[command]}${_PA[subcommand]}"
 
-  for item in ${PA[usagecallbacks]}; do
+  for item in ${_PA[usagecallbacks]}; do
     IFS=, read -r cmdsubcmd func <<<"${item}"
     [[ ${curcmdsubcmd} == "${cmdsubcmd}" ]] && {
       eval "${func}"
@@ -205,11 +212,11 @@ _PA_usage() {
     }
   done
 
-  eval "${PA[usage]}"
+  eval "${_PA[usage]}"
 }
 
-# Initialise PA
-PA_new
+# Initialise _PA
+_PA_new
 
 # vim helpers -----------------------------------------------------------------
 #include globals.sh

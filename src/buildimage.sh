@@ -6,7 +6,7 @@ declare -A _BI
 # Declare externally defined variables ----------------------------------------
 
 # Defined in GL (globals.sh)
-declare OK ERROR STDERR STOP TRUE
+declare OK ERROR STDERR STOP TRUE FALSE
 
 # Getters/Setters -------------------------------------------------------------
 
@@ -47,6 +47,7 @@ build image options:
   build image
 
  Flags:
+  --tailf - Show the build output whilst building.
   --get-prebuilt-image - Instead of building a 'node' image
          locally, download it from a container registry instead.
 
@@ -78,6 +79,10 @@ BI_process_options() {
     BI_usage
     return "${STOP}"
     ;;
+  --tailf)
+    _BI[tailf]="${TRUE}"
+    return "${OK}"
+    ;;
   --get-prebuilt-image)
     _BI[useprebuiltimage]="${TRUE}"
     return "${OK}"
@@ -98,6 +103,10 @@ BI_run() {
 
   _BI_sanity_checks || return
 
+  [[ ${_BI[tailf]} == "${TRUE}" ]] && {
+    UT_set_tailf "${TRUE}" || err || return
+  }
+
   local retval=0
   _BI_build_container_image
   retval=$?
@@ -117,7 +126,8 @@ BI_run() {
 # _BI_new resets the initial values for the _BI associative array.
 # Args: None expected.
 _BI_new() {
-  _BI[k8sver]="1.18.2"
+  _BI[tailf]="${FALSE}"
+  _BI[k8sver]="1.18.3"
   _BI[baseimagename]="mok-centos-7"
   _BI[useprebuiltimage]=
   _BI[dockerbuildtmpdir]=
@@ -147,7 +157,7 @@ _BI_sanity_checks() { :; }
 # Args: No args expected.
 _BI_build_container_image() {
 
-  local cmd retval tagname buildargs text
+  local cmd retval tagname buildargs text buildtype
 
   _BI_create_docker_build_dir || return
 
@@ -157,6 +167,7 @@ _BI_build_container_image() {
   local imgprefix
   imgprefix=$(CU_imgprefix) || err || return
   if [[ -z ${_BI[useprebuiltimage]} ]]; then
+    buildtype="create"
     cmd="docker build \
       -t "${imgprefix}local/${tagname}" \
       --force-rm \
@@ -164,6 +175,7 @@ _BI_build_container_image() {
       ${_BI[dockerbuildtmpdir]}/${_BI[baseimagename]}"
     text="Creating"
   else
+    buildtype="download"
     cmd="docker pull mclarkson/${tagname}"
     text="Downloading"
   fi
@@ -181,6 +193,68 @@ _BI_build_container_image() {
     return "${ERROR}"
   }
 
+  [[ ${buildtype} == "create" ]] && {
+    cmd="_BI_modify_container_image"
+
+    UT_run_with_progress \
+      "    Modifying base image (pulling kubernetes images)" "${cmd}"
+
+    retval=$?
+    [[ ${retval} -ne ${OK} ]] && {
+      local runlogfile
+      runlogfile=$(UT_runlogfile) || err || return
+      printf 'ERROR: Docker returned an error, shown below\n\n' >"${STDERR}"
+      cat "${runlogfile}" >"${STDERR}"
+      printf '\n' >"${STDERR}"
+      return "${ERROR}"
+    }
+  }
+
+  return "${OK}"
+}
+
+# _BI_modify_container_image starts a container suitable for running kubernetes
+# components (since the build environment isn't suitable), makes some
+# modifications and then 'commits' the image. The modifications allow `mokctl
+# create ...` to complete more quickly.
+# Args: No args expected.
+_BI_modify_container_image() {
+
+  # Delete container, just in case it was left behind
+  docker stop -t 5 mok-build-modify &>/dev/null
+  docker rm mok-build-modify &>/dev/null
+
+  # Start container
+  CU_create_container "mok-build-modify" "mok-build-modify" "${_BI[k8sver]}" ||
+    return
+
+  # Wait for crio to become ready
+  printf '\n\n ** WAITING FOR CRIO TO BECOME READY **\n\n'
+  while ! docker exec mok-build-modify systemctl status crio; do
+    sleep 1
+    [[ ${counter} -gt 10 ]] && {
+      printf '\nERROR: CRI-O did not start after %d tries.\n' "${counter}"
+      err || return
+    }
+    ((counter++))
+  done
+
+  # Modify container
+  docker exec mok-build-modify kubeadm config images pull || return
+
+  # Stop container
+  docker stop -t 5 "mok-build-modify"
+
+  # Write image
+  local imgprefix tagname
+  imgprefix=$(CU_imgprefix) || err || return
+  tagname="${_BI[baseimagename]}-v${_BI[k8sver]}"
+  docker commit mok-build-modify "${imgprefix}local/${tagname}" || return
+
+  # Delete container, just in case it was left behind
+  docker stop -t 5 mok-build-modify
+  docker rm mok-build-modify || err || return
+
   return "${OK}"
 }
 
@@ -192,13 +266,13 @@ _BI_get_build_args_for_k8s_ver() {
   local buildargs
 
   case "${_BI[k8sver]}" in
-  "1.18.2")
+  "1.18.3")
     buildargs="--build-arg"
     buildargs="${buildargs} CRIO_VERSION=1.18"
     buildargs="${buildargs} --build-arg"
     buildargs="${buildargs} CRICTL_VERSION=v1.18.0"
     buildargs="${buildargs} --build-arg"
-    buildargs="${buildargs} K8SBINVER=-1.18.2"
+    buildargs="${buildargs} K8SBINVER=-1.18.3"
     ;;
   *)
     printf 'INTERNAL ERROR: This should not happen.\n' >"${STDERR}"

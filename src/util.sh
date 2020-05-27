@@ -5,7 +5,7 @@ declare -A _UT
 
 # Declare externally defined global variables ---------------------------------
 
-declare OK STDERR
+declare OK STDERR FALSE
 
 # Getters/Setters -------------------------------------------------------------
 
@@ -13,6 +13,20 @@ declare OK STDERR
 # the file written to when running UT_run_with_progress.
 UT_runlogfile() {
   printf '%s' "${_UT[runlogfile]}"
+}
+
+# UT_tailf getter indicates whether a log will be shown during the 'run',
+# TRUE, or not, FALSE.
+# Args
+UT_tailf() {
+  printf '%s' "${_UT[tailf]}"
+}
+
+# UT_tailf getter indicates whether a log should be shown during the 'run',
+# TRUE, or not, FALSE.
+# Args: arg1 - Whether to tail, TRUE or FALSE.
+UT_set_tailf() {
+  _UT[tailf]="$1"
 }
 
 # Public Functions ------------------------------------------------------------
@@ -43,46 +57,75 @@ UT_run_with_progress() {
   }
   shift
 
-  while read -r char; do
-    spinner+=("${char}")
-  done <<<"$(grep -o . <<<"${_UT[spinnerchars]}")"
+  if [[ ${_UT[tailf]} == "${FALSE}" ]]; then
 
-  # Run the command in the background
-  (
-    eval "$*" &>"${_UT[runlogfile]}"
-  ) &
+    while read -r char; do
+      spinner+=("${char}")
+    done <<<"$(grep -o . <<<"${_UT[spinnerchars]}")"
 
-  # Turn the cursor off
-  tput civis
+    (
+      eval "$*" &>"${_UT[runlogfile]}"
+    ) &
 
-  # Start the spin animation
-  printf "%s" "${displaytext}"
-  (while true; do
-    for int in {0..3}; do
-      printf '\r  %s ' "${spinner[int]}"
-      sleep .1
-    done
-  done) &
+    # Turn the cursor off
+    tput civis
 
-  # Wait for the command to finish
-  wait %1 2>/dev/null
-  retval=$?
+    # Start the spin animation
+    printf "%s" "${displaytext}"
+    (while true; do
+      for int in {0..3}; do
+        printf '\r  %s ' "${spinner[int]}"
+        sleep .1
+      done
+    done) &
 
-  # Kill the spinner
-  kill %2 2>/dev/null
+    # Wait for the command to finish
+    wait %1 2>/dev/null
+    retval=$?
 
-  # Mark success/fail
-  if [[ ${retval} -eq 127 ]]; then
-    # The job finished before we started waiting for it
-    printf '\r  %s\n' "${_UT[probablysuccess]}"
-  elif [[ ${retval} -eq 0 ]]; then
-    printf '\r  %s\n' "${_UT[success]}"
+    # Kill the spinner
+    kill %2 2>/dev/null
+
+    # Mark success/fail
+    if [[ ${retval} -eq 127 ]]; then
+      # The job finished before we started waiting for it
+      printf '\r  %s\n' "${_UT[probablysuccess]}"
+    elif [[ ${retval} -eq 0 ]]; then
+      printf '\r  %s\n' "${_UT[success]}"
+    else
+      printf '\r  %s\n' "${_UT[failure]}"
+    fi
+
+    # Restore the cursor
+    tput cnorm
+
   else
-    printf '\r  %s\n' "${_UT[failure]}"
-  fi
 
-  # Restore the cursor
-  tput cnorm
+    (
+      eval "$*" &>/dev/stdout
+    ) &
+    sleep 1
+    (
+      tail -f "${_UT[runlogfile]}"
+    ) &
+
+    # Wait for the command to finish
+    wait %1 2>/dev/null
+    retval=$?
+
+    # Kill the tail
+    kill %2 2>/dev/null
+
+    # Mark success/fail
+    if [[ ${retval} -eq 127 ]]; then
+      # The job finished before we started waiting for it
+      printf '\n\nSTATUS: OK - (Probably)\n\n'
+    elif [[ ${retval} -eq 0 ]]; then
+      printf '\n\nSTATUS: OK\n\n'
+    else
+      printf '\n\nSTATUS: FAIL\n\n'
+    fi
+  fi
 
   return "${retval}"
 }
@@ -95,11 +138,15 @@ UT_cleanup() {
   local int
 
   # Kill the spinny, and anything else, if they're running
-  [[ -n $(jobs -p) ]] && printf '%s\r  ✕%s\n' "${_UT[red]}" "${_UT[normal]}"
-  for int in $(jobs -p); do kill "${int}"; done
+  if [[ ${_UT[tailf]} == "${FALSE}" ]]; then
+    [[ -n $(jobs -p) ]] && printf '%s\r  ✕%s\n' "${_UT[red]}" "${_UT[normal]}"
+    for int in $(jobs -p); do kill "${int}"; done
 
-  # If progress spinner crashed make sure the cursor is shown
-  [ -t 1 ] && tput cnorm
+    # If progress spinner crashed make sure the cursor is shown
+    [ -t 1 ] && tput cnorm
+  else
+    for int in $(jobs -p); do kill "${int}"; done
+  fi
 
   return "${OK}"
 }
@@ -111,6 +158,7 @@ UT_cleanup() {
 # being requested but before it sets any array members.
 # Args: None expected.
 _UT_new() {
+  _UT[tailf]="${FALSE}"
   _UT[yellow]=$(tput setaf 3)
   _UT[green]=$(tput setaf 2)
   _UT[red]=$(tput setaf 1)

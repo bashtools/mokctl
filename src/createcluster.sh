@@ -43,25 +43,32 @@ CC_process_options() {
     return "${STOP}"
     ;;
   --skiplbsetup)
-    _CC[skiplbsetup]="${TRUE}" && return
+    _CC[skiplbsetup]="${TRUE}"
+    return
     ;;
   --k8sver)
-    _CC[k8sver]="$2" && return "${_CC[shift]}"
+    _CC[k8sver]="$2"
+    return "$(PA_shift)"
     ;;
   --with-lb)
-    _CC[withlb]="${TRUE}" && return
+    _CC[withlb]="${TRUE}"
+    return
     ;;
   --skipmastersetup)
-    _CC[skipmastersetup]="${TRUE}" && return
+    _CC[skipmastersetup]="${TRUE}"
+    return
     ;;
   --skipworkersetup)
-    _CC[skipworkersetup]="${TRUE}" && return
+    _CC[skipworkersetup]="${TRUE}"
+    return
     ;;
   --masters)
-    _CC[nummasters]="$2" && return "${_CC[shift]}"
+    _CC[nummasters]="$2"
+    return "$(PA_shift)"
     ;;
   --workers)
-    _CC[numworkers]="$2" && return "${_CC[shift]}"
+    _CC[numworkers]="$2"
+    return "$(PA_shift)"
     ;;
   --tailf)
     _CC[tailf]="${TRUE}"
@@ -89,7 +96,7 @@ CREATE subcommands are:
 create cluster [flags] options:
  
  Format:
-  create cluster NAME NUM_MASTERS NUM_WORKERS
+  create cluster NAME [NUM_MASTERS] [NUM_WORKERS]
   NAME        - The name of the cluster. This will be used as
                 the prefix in the name for newly created
                 docker containers.
@@ -111,6 +118,10 @@ create cluster [flags] options:
          and set up to reverse proxy to the master node(s), unless
          --skiplbsetup is used.
   --k8sver VERSION - Unimplemented.
+  --masters - The number of master containers to create.
+  --workers - The number of worker containers to create. If NUM_WORKERS is
+              zero then the 'node-role.kubernetes.io/master' taint will be
+              removed from master nodes so that pods are schedulable.
   --tailf - Show the log output whilst creating the cluster.
 
 EnD
@@ -177,9 +188,6 @@ _CC_new() {
   _CC[nummasters]=0
   _CC[numworkers]=0
   _CC[k8sver]="1.18.3"
-
-  # The return value if the main loop needs an extra shift:
-  _CC[shift]=3
 
   # Program the parser's state machine
   PA_add_state "COMMAND" "create" "SUBCOMMAND" ""
@@ -415,8 +423,8 @@ _CC_set_up_master_node() {
   esac
 }
 
-# _CC_create_master_nodes creates the master nodes.
-# Args: arg1 - number of master nodes to create
+# _CC_create_worker_nodes creates the master nodes.
+# Args: arg1 - number of worker nodes to create
 _CC_create_worker_nodes() {
 
   local cahash token t
@@ -771,7 +779,7 @@ EnD
 }
 
 # Initialise _CC
-_CC_new
+_CC_new || exit 1
 
 # vim helpers -----------------------------------------------------------------
 #include globals.sh

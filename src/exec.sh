@@ -5,7 +5,7 @@ declare -A _EX
 
 # Declare externally defined variables ----------------------------------------
 
-declare OK ERROR STDERR TRUE FALSE
+declare OK ERROR STDERR TRUE
 
 # Getters/Setters -------------------------------------------------------------
 
@@ -60,23 +60,20 @@ exec options:
 EnD
 }
 
+# Execs into the container referenced by _EX[containername]. If just 'mokctl
+# exec' is called without options then the user is offered a selection of
+# existing clusters to exec into.
+# Args: None expected.
 # ---------------------------------------------------------------------------
 EX_run() {
 
   _EX_sanity_checks || return
 
-  # Execs into the container referenced by arg1. If just 'mokctl exec' is
-  # called without options then the user is offered a selection of existing
-  # clusters to exec into.
-  #
-  # Args
-  #  arg1 - Full name of container
+  local names int ans lines containernames gcoutput
 
-  local names int ans lines containernames
-
-  GC_set_showheader "${FALSE}" || err || return
-  names=$(GC_run) || return
-  names=$(printf '%s' "${names}" | awk '{ print $3; }')
+  GC_set_showheader "${TRUE}" || err || return
+  gcoutput=$(GC_run) || return
+  names=$(printf '%s' "${gcoutput}" | awk '{ print $3; }')
   readarray -t containernames <<<"${names}"
 
   if [[ -n ${_EX[containername]} ]]; then
@@ -93,10 +90,10 @@ EX_run() {
       return "${ERROR}"
     fi
 
-  elif [[ ${#containernames[*]} == 1 ]]; then
+  elif [[ ${#containernames[*]} == 2 ]]; then
 
     # If there's only one container just log into it without asking
-    _EX_exec "${containernames[0]}"
+    _EX_exec "${containernames[1]}"
 
   else
 
@@ -105,8 +102,7 @@ EX_run() {
 
     printf 'Choose the container to log in to:\n\n'
 
-    GC_set_showheader "${TRUE}" || err || return
-    readarray -t lines <<<"$(do_get_clusters_nomutate)" || return
+    readarray -t lines <<<"${gcoutput}" || return
 
     # Print the header then print the items in the loop
     printf '   %s\n' "${lines[0]}"
@@ -122,7 +118,7 @@ EX_run() {
       return "${OK}"
     }
 
-    _EX_exec "${containernames[ans - 1]}"
+    _EX_exec "${containernames[ans]}"
   fi
 }
 
@@ -164,7 +160,7 @@ _EX_exec() {
 }
 
 # Initialise EX
-_EX_new
+_EX_new || exit 1
 
 # vim helpers -----------------------------------------------------------------
 #include globals.sh

@@ -171,7 +171,7 @@ _UT_new() {
 }
 
 # Initialise _UT
-_UT_new
+_UT_new || exit 1
 
 # vim helpers -----------------------------------------------------------------
 #include globals.sh

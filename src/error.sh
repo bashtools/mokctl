@@ -43,7 +43,7 @@ _ER_new() {
 }
 
 # Initialise ER
-_ER_new
+_ER_new || exit 1
 
 # vim helpers -----------------------------------------------------------------
 #include globals.sh

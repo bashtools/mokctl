@@ -229,7 +229,7 @@ EnD
 }
 
 # Initialise _CU
-_CU_new
+_CU_new || exit 1
 
 # vim helpers -----------------------------------------------------------------
 #include globals.sh

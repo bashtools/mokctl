@@ -1,15 +1,15 @@
-# MAIN - execution starts here
+# MA - execution starts here
 
 # Defined in GL (globals.sh)
 declare OK ERROR STOP STDERR
 
 # main is the start point for this application.
 # Args: arg1-N - the command line arguments sent by the user.
-main() {
+MA_main() {
 
-  trap cleanup EXIT
-  sanity_checks || return
-  register_parser_global_options || return
+  trap MA_cleanup EXIT
+  MA_sanity_checks || return
+  MA_register_parser_global_options || return
 
   local retval="${OK}"
   PA_parse_args "$@" || retval=$?
@@ -35,15 +35,15 @@ main() {
   esac
 }
 
-register_parser_global_options() {
-  PA_add_option_callback "" "process_global_options"
-  PA_add_usage_callback "" "usage"
+MA_register_parser_global_options() {
+  PA_add_option_callback "" "MA_process_global_options"
+  PA_add_usage_callback "" "MA_usage"
 }
 
-# process_global_options is called by the parser when a global option is
+# MA_process_global_options is called by the parser when a global option is
 # encountered for processing.
 # Args: arg1 - the global option that was found.
-process_global_options() {
+MA_process_global_options() {
   case "$1" in
   -h | --help)
     _PA_usage
@@ -56,10 +56,10 @@ process_global_options() {
   esac
 }
 
-# cleanup is called from an EXIT trap only, when the program exits.
-# It calls the cleanup functions from other 'modules'.
+# MA_cleanup is called from an EXIT trap only, when the program exits.
+# It calls the MA_cleanup functions from other 'modules'.
 # Args: No args expected.
-cleanup() {
+MA_cleanup() {
   local retval="${OK}"
   UT_cleanup || retval=$?
   CU_cleanup || retval=$?
@@ -67,10 +67,10 @@ cleanup() {
   return "${retval}"
 }
 
-# sanity_checks is expected to run some quick and simple checks to
+# MA_sanity_checks is expected to run some quick and simple checks to
 # see if key components are available.
 # Args: No args expected.
-sanity_checks() {
+MA_sanity_checks() {
 
   local binary
 
@@ -86,9 +86,9 @@ sanity_checks() {
   [ -t 1 ] || UT_disable_colours
 }
 
-# usage outputs help text for all components then quits with no error.
+# MA_usage outputs help text for all components then quits with no error.
 # Args: None expected.
-usage() {
+MA_usage() {
 
   cat <<'EnD'
 

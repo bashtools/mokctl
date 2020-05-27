@@ -13,13 +13,13 @@ docker-hub-upload: mokctl-docker
 	sudo podman tag localhost/local/mok-centos-7-v1.18.3 docker.io/mclarkson/mok-centos-7-v1.18.3
 	sudo podman push docker.io/mclarkson/mok-centos-7-v1.18.3
 
-mokctl.deploy: src/*.sh mok-centos-7
+mokctl.deploy: src/*.sh src/lib/*.sh mok-centos-7
 	bash src/embed-dockerfile.sh
 	cd src && ( echo '#!/usr/bin/env bash'; cat \
-		main.sh globals.sh error.sh util.sh parser.sh getcluster.sh \
+		main.sh lib/parser.sh globals.sh error.sh util.sh getcluster.sh \
 		exec.sh deletecluster.sh createcluster.sh container.sh \
-		buildimage.deploy; \
-		printf 'if [ "$$0" = "$${BASH_SOURCE[0]}" ] || [ -z "$${BASH_SOURCE[0]}" ]; then\n  main "$$@"\nfi\n' \
+		buildimage.deploy lib/JSONPath.sh; \
+		printf 'if [ "$$0" = "$${BASH_SOURCE[0]}" ] || [ -z "$${BASH_SOURCE[0]}" ]; then\n  MA_main "$$@"\nfi\n' \
 		) >../mokctl.deploy
 	chmod +x mokctl.deploy
 
@@ -50,7 +50,7 @@ buildtest: clean mokctl.deploy
 	./tests/build-tests.sh
 
 tags: src/*.sh
-	ctags --language-force=sh src/*.sh tests/unit-tests.sh
+	ctags --language-force=sh src/*.sh src/lib/*.sh tests/unit-tests.sh
 
 .PHONY: docs
 docs:

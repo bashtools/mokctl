@@ -145,7 +145,7 @@ _DC_delete() {
 }
 
 # Initialise _DC
-_DC_new
+_DC_new || exit 1
 
 # vim helpers -----------------------------------------------------------------
 #include globals.sh

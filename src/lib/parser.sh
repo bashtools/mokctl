@@ -22,6 +22,12 @@ PA_subcommand() {
   printf '%s' "${_PA[subcommand]}"
 }
 
+# PA_shift outputs the _PA[shift] array member, used when the caller
+# asks for an extra shift when consuming option values.
+PA_shift() {
+  printf '%s' "${_PA[shift]}"
+}
+
 # Public Functions ------------------------------------------------------------
 
 # PA_add_option_callback adds a callback to the list of callbacks used for
@@ -75,6 +81,7 @@ PA_parse_args() {
       _PA_process_option "$1" "$2" || {
         retval=$?
         if [[ ${retval} == "${_PA[shift]}" ]]; then
+          ARGN=$((ARGN - 1))
           shift
         else
           return "${retval}"
@@ -140,6 +147,8 @@ _PA_new() {
   _PA[state]="COMMAND"
   _PA[optscallbacks]=
   _PA[usagecallbacks]=
+  # The return value if the caller asked for an extra shift:
+  _PA[shift]=3
 }
 
 # _PA_check_token checks for a valid token in arg2 state.
@@ -189,8 +198,8 @@ _PA_process_option() {
   for item in ${_PA[optscallbacks]}; do
     IFS=, read -r cmdsubcmd func <<<"${item}"
     [[ ${curcmdsubcmd} == "${cmdsubcmd}" ]] && {
-      eval "${func} \"$1\" \"$2\" "
-      return
+      eval "${func} \"$1\" \"$2\""
+      return $?
     }
   done
 

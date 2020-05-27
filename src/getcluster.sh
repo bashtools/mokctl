@@ -148,7 +148,7 @@ _GC_new() {
 _GC_sanity_checks() { :; }
 
 # Initialise _GC
-_GC_new
+_GC_new || exit 1
 
 # vim helpers -----------------------------------------------------------------
 #include globals.sh

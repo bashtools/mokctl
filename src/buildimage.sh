@@ -302,7 +302,7 @@ _BI_create_docker_build_dir() {
 }
 
 # Initialise _BI
-_BI_new
+_BI_new || exit 1
 
 # vim helpers -----------------------------------------------------------------
 #include globals.sh

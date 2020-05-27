@@ -78,7 +78,7 @@ PA_new() {
 PA_parse_args() {
 
   set -- "$@"
-  local ARGN=$#
+  local ARGN=$# ARGNUM=0
   while [ "${ARGN}" -ne 0 ]; do
     case "$1" in
     --* | -*)
@@ -103,56 +103,12 @@ PA_parse_args() {
           return "${ERROR}"
         }
         ;;
-      ARG1)
-        _PA_check_token "${1}" "ARG1"
+      ARG*)
+        ((ARGNUM++))
+        _PA_check_token "${1}" "ARG${ARGNUM}"
         [[ $? -eq ${ERROR} ]] && {
           _PA_usage
           printf 'Invalid ARG1 for %s %s, "%s".\n\n' "${PA[command]}" \
-            "${PA[subcommand]}" "${1}" >"${STDERR}"
-          return "${ERROR}"
-        }
-        ;;
-      ARG2)
-        _PA_check_token "${1}" "ARG2"
-        [[ $? -eq ${ERROR} ]] && {
-          _PA_usage
-          printf 'Invalid ARG for %s %s, "%s".\n\n' "${PA[command]}" \
-            "${PA[subcommand]}" "${1}" >"${STDERR}"
-          return "${ERROR}"
-        }
-        ;;
-      ARG3)
-        _PA_check_token "${1}" "ARG3"
-        [[ $? -eq ${ERROR} ]] && {
-          _PA_usage
-          printf 'Invalid ARG for %s %s, "%s".\n\n' "${PA[command]}" \
-            "${PA[subcommand]}" "${1}" >"${STDERR}"
-          return "${ERROR}"
-        }
-        ;;
-      ARG4)
-        _PA_check_token "${1}" "ARG3"
-        [[ $? -eq ${ERROR} ]] && {
-          _PA_usage
-          printf 'Invalid ARG for %s %s, "%s".\n\n' "${PA[command]}" \
-            "${PA[subcommand]}" "${1}" >"${STDERR}"
-          return "${ERROR}"
-        }
-        ;;
-      ARG5)
-        _PA_check_token "${1}" "ARG3"
-        [[ $? -eq ${ERROR} ]] && {
-          _PA_usage
-          printf 'Invalid ARG for %s %s, "%s".\n\n' "${PA[command]}" \
-            "${PA[subcommand]}" "${1}" >"${STDERR}"
-          return "${ERROR}"
-        }
-        ;;
-      ARG6)
-        _PA_check_token "${1}" "ARG3"
-        [[ $? -eq ${ERROR} ]] && {
-          _PA_usage
-          printf 'Invalid ARG for %s %s, "%s".\n\n' "${PA[command]}" \
             "${PA[subcommand]}" "${1}" >"${STDERR}"
           return "${ERROR}"
         }

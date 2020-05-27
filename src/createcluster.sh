@@ -192,6 +192,7 @@ _CC_new() {
   # Program the parser's state machine
   PA_add_state "COMMAND" "create" "SUBCOMMAND" ""
   PA_add_state "SUBCOMMAND" "createcluster" "ARG2" ""
+
   # Support for the legacy style of create (less to type):
   PA_add_state "ARG1" "createcluster" "ARG2" "CC_set_clustername"
   PA_add_state "ARG2" "createcluster" "ARG3" "CC_set_nummasters"

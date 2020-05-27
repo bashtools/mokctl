@@ -126,9 +126,11 @@ EX_run() {
 
 _EX_new() {
   _EX[containername]=
+
   # Program the parser's state machine
   PA_add_state "COMMAND" "exec" "ARG1" ""
   PA_add_state "ARG1" "exec" "END" "EX_set_containername"
+
   # Set up the parser's option callbacks
   PA_add_option_callback "exec" "EX_process_options" || return
   PA_add_usage_callback "exec" "EX_usage" || return

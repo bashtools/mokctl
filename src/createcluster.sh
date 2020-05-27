@@ -32,7 +32,9 @@ CC_set_numworkers() {
 # CC_process_options checks if arg1 is in a list of valid build image
 # options. This function is called by the parser.
 # Args: arg1 - the option to check.
-#       arg2 - value of the item to be set, optional
+#       arg2 - value of the option to be set, optional. This depends on the
+#              type of option. For example, '--masters' should be sent
+#              with a value but boolean options, like 'skiplbsetup' should not.
 CC_process_options() {
 
   case "$1" in
@@ -75,7 +77,7 @@ CC_process_options() {
 }
 
 # CC_usage outputs help text for the create cluster component.
-# It is called by PA_usage().
+# It is called in this file and by _PA_usage().
 # Args: None expected.
 CC_usage() {
 
@@ -115,7 +117,6 @@ EnD
 }
 
 # CC_run creates the kubernetes cluster.
-# This function is called by main.sh.
 # Args: None expected.
 CC_run() {
 
@@ -163,9 +164,8 @@ CC_run() {
 
 # Private Functions -----------------------------------------------------------
 
-# CC_new sets the initial values for the _CC associative array.
-# This function is called by parse_options once it knows which component is
-# being requested but before it sets any array members.
+# _CC_new sets the initial values for the _CC associative array and sets up the
+# parser ready for processing the command line arguments, options and usage.
 # Args: None expected.
 _CC_new() {
   _CC[tailf]="${FALSE}"
@@ -184,6 +184,7 @@ _CC_new() {
   # Program the parser's state machine
   PA_add_state "COMMAND" "create" "SUBCOMMAND" ""
   PA_add_state "SUBCOMMAND" "createcluster" "ARG2" ""
+  # Support for the legacy style of create (less to type):
   PA_add_state "ARG1" "createcluster" "ARG2" "CC_set_clustername"
   PA_add_state "ARG2" "createcluster" "ARG3" "CC_set_nummasters"
   PA_add_state "ARG3" "createcluster" "END" "CC_set_numworkers"
@@ -198,10 +199,8 @@ _CC_new() {
 }
 
 # CC_sanity_checks is expected to run some quick and simple checks to see if it
-# has all it's key components. This function is called in main.sh. At this
-# point all parsing has been completed and flags set.
+# has all it's key components.
 # Args: None expected.
-# ---------------------------------------------------------------------------
 _CC_sanity_checks() {
 
   if [[ -z ${_CC[clustername]} ]]; then
@@ -224,11 +223,9 @@ _CC_sanity_checks() {
   fi
 }
 
-# ---------------------------------------------------------------------------
+# _CC_create_lb_node creates the load balancer node.
+# Args: None expected.
 _CC_create_lb_node() {
-
-  # Create the load balancer nodes
-  # Args:
 
   local labelkey runlogfile
   labelkey=$(CU_labelkey) || err || return
@@ -253,9 +250,8 @@ _CC_create_lb_node() {
   return "${OK}"
 }
 
-# ---------------------------------------------------------------------------
-# Create the load balancer nodes
-# Args:
+# _CC_setup_lb_node sets up the load balancer node.
+# Args: None expected.
 _CC_setup_lb_node() {
 
   local runlogfile
@@ -280,12 +276,9 @@ _CC_setup_lb_node() {
   return "${OK}"
 }
 
-# ---------------------------------------------------------------------------
+# _CC_set_up_lb_node_real sets up the lb node.
+# Args: arg1 - the container ID to set up
 _CC_set_up_lb_node_real() {
-
-  # Call the correct set up function based on the version
-  # Args
-  #   arg1 - the container ID to set up
 
   local setupfile nl idx masteriplist
 
@@ -340,12 +333,9 @@ EnD
   docker exec "$1" bash /root/setup.sh || err
 }
 
-# ---------------------------------------------------------------------------
+# _CC_create_master_nodes creates the master node(s).
+# Args: arg1 - number of master nodes to create
 _CC_create_master_nodes() {
-
-  # Create the master nodes
-  # Args:
-  #   arg1 - number of master nodes to create
 
   declare -i int=0 r
 
@@ -410,16 +400,13 @@ _CC_create_master_nodes() {
   return "${OK}"
 }
 
-# ---------------------------------------------------------------------------
+# _CC_set_up_master_node calls the correct set up function based on the version
+# Args: arg1 - the container ID to set up
 _CC_set_up_master_node() {
-
-  # Call the correct set up function based on the version
-  # Args
-  #   arg1 - the container ID to set up
 
   case "${_CC[k8sver]}" in
   "1.18.3")
-    _CC_set_up_master_node_v1_18_2 "$@"
+    _CC_set_up_master_node_v1_18_3 "$@"
     ;;
   *)
     printf 'ERROR: Version not found, "%s".\n' "${_CC[k8sver]}" >"${STDERR}"
@@ -428,13 +415,9 @@ _CC_set_up_master_node() {
   esac
 }
 
-# ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
+# _CC_create_master_nodes creates the master nodes.
+# Args: arg1 - number of master nodes to create
 _CC_create_worker_nodes() {
-
-  # Create the master nodes
-  # Args:
-  #   arg1 - number of master nodes to create
 
   local cahash token t
   declare -i int=0
@@ -493,12 +476,9 @@ _CC_create_worker_nodes() {
   return "${OK}"
 }
 
-# ---------------------------------------------------------------------------
+# _CC_set_up_worker_node calls the correct set up function based on the version.
+# Args: arg1 - the container ID to set up
 _CC_set_up_worker_node() {
-
-  # Call the correct set up function based on the version
-  # Args
-  #   arg1 - the container ID to set up
 
   case "${_CC[k8sver]}" in
   "1.18.3")
@@ -511,14 +491,11 @@ _CC_set_up_worker_node() {
   esac
 }
 
-# ---------------------------------------------------------------------------
+# _CC_get_master_join_details uses 'docker exec' to run a script on the master
+# to get CA hash, a token, and the master IP.  The caller can eval the output
+# of this function to set the variables: cahash, token, and masterip.
+# Args: arg1 - id/name of master container
 _CC_get_master_join_details() {
-
-  # 'docker exec' into the master to get CA hash, a token, and the master IP.
-  # The caller can eval the output of this function to set the variables:
-  # cahash, token, and masterip.
-  # Args:
-  #   arg1 - id/name of master container
 
   local joinvarsfile master1ip
 
@@ -554,16 +531,9 @@ EnD
   docker exec "$1" bash /root/joinvars.sh 2>"${STDERR}" || err
 }
 
-# ===========================================================================
-# Funtions for installing specific vesions of kubernetes
-# ===========================================================================
-
-# ---------------------------------------------------------------------------
-_CC_set_up_master_node_v1_18_2() {
-
-  # Use kubeadm to set up the master node.
-  # Args:
-  #   arg1 - the container to set up.
+# _CC_set_up_worker_node_v1_18_2 uses kubeadm to set up the master node.
+# Args: arg1 - the container to set up.
+_CC_set_up_master_node_v1_18_3() {
 
   local setupfile lbaddr certSANs certkey masternum t
   # Set by _CC_get_master_join_details:
@@ -739,12 +709,9 @@ EnD
   return "${OK}"
 }
 
-# ---------------------------------------------------------------------------
+# _CC_set_up_worker_node_v1_18_2 uses kubeadm to set up the worker node.
+# Args: arg1 - the container to set up.
 _CC_set_up_worker_node_v1_18_2() {
-
-  # Use kubeadm to set up the master node
-  # Args:
-  #   arg1 - the container to set up.
 
   local setupfile cahash="$2" token="$3" masterip="$4"
 
@@ -803,7 +770,7 @@ EnD
   docker exec "$1" bash /root/setup.sh || err
 }
 
-# Initialise CC
+# Initialise _CC
 _CC_new
 
 # vim helpers -----------------------------------------------------------------

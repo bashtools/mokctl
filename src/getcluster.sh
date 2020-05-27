@@ -105,17 +105,14 @@ GC_run() {
 
     info=$(CU_get_container_info "${id}") || return
 
-    clustname=$(sed -rn \
-      '/Labels/,/}/ {s/[":,]//g; s/^ *'"${labelkey}"' ([^ ]*).*/\1/p }' \
-      <<<"${info}") || err || return
+    clustname=$(JSONPath ".[0].Config.Labels.${labelkey}" -b <<<"${info}") ||
+      err || return
 
-    containerhostname=$(sed -rn \
-      '/"Config"/,/}/ {s/[":,]//g; s/^ *Hostname ([^ ]*).*/\1/p }' \
-      <<<"${info}") || err || return
+    containerhostname=$(JSONPath '.[0].Config.Hostname' -b <<<"${info}") ||
+      err || return
 
-    containerip=$(sed -rn \
-      '/NetworkSettings/,/Networks/ {s/[":,]//g; s/^ *IPAddress ([^ ]*).*/\1/p }' \
-      <<<"${info}") || err || return
+    containerip=$(JSONPath '.[0].NetworkSettings.IPAddress' -b <<<"${info}") ||
+      err || return
 
     printf '%s %s %s %s\n' "${clustname}" "${id}" "${containerhostname}" "${containerip}"
 

@@ -1,6 +1,57 @@
 .PHONY: all
 all: mokctl.deploy tags
 
+mokctl-docker: all
+	cp mokctl.deploy package/
+	sudo podman build --force-rm -t local/mokctl package
+
+.PHONY: docker-hub-upload
+docker-hub-upload: mokctl-docker
+	sudo podman tag local/mokctl docker.io/mclarkson/mokctl
+	sudo podman push docker.io/mclarkson/mokctl
+	# Build with 'mokctl build image'
+	sudo podman tag localhost/local/mok-centos-7-v1.18.3 docker.io/mclarkson/mok-centos-7-v1.18.3
+	sudo podman push docker.io/mclarkson/mok-centos-7-v1.18.3
+
+mokctl.deploy: src/*.sh src/lib/*.sh mok-centos-7
+	bash src/embed-dockerfile.sh
+	cd src && ( echo '#!/usr/bin/env bash'; cat \
+		main.sh lib/parser.sh globals.sh error.sh util.sh getcluster.sh \
+		exec.sh deletecluster.sh createcluster.sh versions.sh container.sh \
+		buildimage.deploy lib/JSONPath.sh; \
+		printf 'if [ "$$0" = "$${BASH_SOURCE[0]}" ] || [ -z "$${BASH_SOURCE[0]}" ]; then\n  MA_main "$$@"\nfi\n' \
+		) >../mokctl.deploy
+	chmod +x mokctl.deploy
+
+.PHONY: install
+install: all
+	install mokctl.deploy /usr/local/bin/mokctl
+
+.PHONY: uninstall
+uninstall:
+	rm -f /usr/local/bin/mokctl
+
+.PHONY: purge
+purge: uninstall
+	rm -rf ~/.mok
+
+.PHONY: clean
+clean:
+	rm -f mokctl.deploy
+
+.PHONY: test
+test: clean mokctl.deploy
+	./tests/unit-tests.sh
+	shellcheck src/*.sh mokctl.deploy
+	shfmt -s -i 2 -d src/*.sh
+
+.PHONY: buildtest
+buildtest: clean mokctl.deploy
+	./tests/build-tests.sh
+
+tags: src/*.sh
+	ctags --language-force=sh src/*.sh src/lib/*.sh tests/unit-tests.sh
+
 .PHONY: docs
 docs:
 	./cmdline-player/scr2md.sh $$PWD/cmdline-player/install-mokctl-linux.scr \
@@ -57,49 +108,5 @@ docs:
 	./cmdline-player/scr2md.sh $$PWD/cmdline-player/kthw-14.scr \
 	  "KTHW 14 Cleaning Up" \
 		$$PWD/docs/kubernetes-the-hard-way/14-cleanup.md
-
-mokctl-docker: all
-	cp mokctl.deploy package/
-	sudo podman build --force-rm -t local/mokctl package
-
-.PHONY: docker-hub-upload
-docker-hub-upload: mokctl-docker
-	sudo podman tag local/mokctl docker.io/mclarkson/mokctl
-	sudo podman push docker.io/mclarkson/mokctl
-	# Build with 'mokctl build image'
-	sudo podman tag localhost/local/mok-centos-7-v1.18.2 docker.io/mclarkson/mok-centos-7-v1.18.2
-	sudo podman push docker.io/mclarkson/mok-centos-7-v1.18.2
-
-mokctl.deploy: mokctl mok-centos-7
-	bash mokctl/embed-dockerfile.sh
-	chmod +x mokctl.deploy
-
-.PHONY: install
-install: all
-	install mokctl.deploy /usr/local/bin/mokctl
-
-.PHONY: uninstall
-uninstall:
-	rm -f /usr/local/bin/mokctl
-
-.PHONY: purge
-purge: uninstall
-	rm -rf ~/.mok
-
-.PHONY: clean
-clean:
-	rm -f mokctl.deploy
-
-.PHONY: test
-test: clean mokctl.deploy
-	./tests/unit-tests.sh
-	shellcheck mokctl/mokctl
-	shfmt -s -i 2 -d mokctl/mokctl
-
-buildtest: clean mokctl.deploy
-	./tests/build-tests.sh
-
-tags: mokctl
-	ctags --language-force=sh mokctl/mokctl tests/unit-tests.sh
 
 # vim:noet:ts=2:sw=2

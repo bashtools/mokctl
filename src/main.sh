@@ -56,14 +56,16 @@ MA_process_global_options() {
   esac
 }
 
-# MA_cleanup is called from an EXIT trap only, when the program exits.
-# It calls the MA_cleanup functions from other 'modules'.
+# MA_cleanup is called from an EXIT trap only, when the program exits, and
+# calls every other function ending in '_cleanup'.
 # Args: No args expected.
 MA_cleanup() {
-  local retval="${OK}"
-  UT_cleanup || retval=$?
-  CU_cleanup || retval=$?
-  BI_cleanup || retval=$?
+  local retval="${OK}" funcs func
+  funcs=$(declare -F | awk '{print $NF;}' | grep '^.._cleanup')
+  for func in ${funcs}; do
+    [[ ${func} == "${FUNCNAME[0]}" ]] && continue
+    eval "${func}" || retval=$?
+  done
   return "${retval}"
 }
 
@@ -130,12 +132,12 @@ Build the image used for masters and workers:
 Create a single node cluster:
 Note that the master node will be made schedulable for pods.
  
-  mokctl create cluster mycluster 1 0
+  mokctl create cluster mycluster --masters 1
  
 Create a single master and single node cluster:
 Note that the master node will NOT be schedulable for pods.
  
-  mokctl create cluster mycluster 1 1
+  mokctl create cluster mycluster --masters 1 --workers 2
  
 Delete a cluster:
  

@@ -5,7 +5,7 @@ declare -A _DC
 
 # Declare externally defined variables ----------------------------------------
 
-declare OK ERROR STDERR STOP FALSE
+declare OK ERROR STDERR STOP TRUE
 
 # Getters/Setters -------------------------------------------------------------
 
@@ -75,7 +75,7 @@ DC_run() {
 
   printf 'The following containers will be deleted:\n\n'
 
-  GC_set_showheader "${FALSE}"
+  GC_set_showheader "${TRUE}"
   GC_run "${_DC[clustername]}" || return
 
   printf "\nAre you sure you want to delete the cluster? (y/N) >"

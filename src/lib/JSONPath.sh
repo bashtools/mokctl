@@ -1,98 +1,97 @@
 #!/usr/bin/env bash
 
-# ---------------------------------------------------------------------------
-# GLOBALS
-# ---------------------------------------------------------------------------
+declare -A JSONPath
 
-DEBUG=0
-INCLEMPTY=0
-NOCASE=0
-WHOLEWORD=0
-FILE=
-NO_HEAD=0
-NORMALIZE_SOLIDUS=0
-BRIEF=0
-PASSTHROUGH=0
-JSON=0
-PRINT=1
-MULTIPASS=0
-FLATTEN=0
-STDINFILE=/var/tmp/JSONPath.$$.stdin
-STDINFILE2=/var/tmp/JSONPath.$$.stdin2
-PASSFILE=/var/tmp/JSONPath.$$.pass1
-declare -a INDEXMATCH_QUERY
+JSONPath_new() {
+  JSONPath[DEBUG]=0
+  JSONPath[INCLEMPTY]=0
+  JSONPath[NOCASE]=0
+  JSONPath[WHOLEWORD]=0
+  JSONPath[FILE]=
+  JSONPath[NO_HEAD]=0
+  JSONPath[NORMALIZE_SOLIDUS]=0
+  JSONPath[BRIEF]=0
+  JSONPath[PASSTHROUGH]=0
+  JSONPath[JSON]=0
+  JSONPath[MULTIPASS]=0
+  JSONPath[FLATTEN]=0
+  JSONPath[STDINFILE]=/var/tmp/JSONPath.$$.stdin
+  JSONPath[STDINFILE2]=/var/tmp/JSONPath.$$.stdin2
+  JSONPath[PASSFILE]=/var/tmp/JSONPath.$$.pass1
+  declare -a INDEXMATCH_QUERY
+}
 
-# ---------------------------------------------------------------------------
+# JSONPath reads JSON from stdin and applies a JSON Path query.
+# Args: arg1-N - command line arguments to be parsed.
 JSONPath() {
-  # ---------------------------------------------------------------------------
-  # It all starts here
 
-  sanity_checks
-  parse_options "$@"
+  JSONPath_sanity_checks
+  JSONPath_parse_options "$@"
 
-  trap cleanup EXIT
+  trap JSONPath_cleanup EXIT
 
-  if [[ $QUERY == *'?(@'* ]]; then
+  if [[ ${QUERY} == *'?(@'* ]]; then
     # This will be a multipass query
 
-    [[ -n $FILE ]] && STDINFILE=$FILE
-    [[ -z $FILE ]] && cat >$STDINFILE
+    [[ -n ${JSONPath[FILE]} ]] && JSONPath[STDINFILE]=${JSONPath[FILE]}
+    [[ -z ${JSONPath[FILE]} ]] && cat >"${JSONPath[STDINFILE]}"
 
     while true; do
-      tokenize_path
-      create_filter
+      JSONPath_tokenize_path
+      JSONPath_create_filter
 
-      cat "$STDINFILE" | tokenize | parse | filter | indexmatcher >$PASSFILE
+      JSONPath_tokenize | JSONPath_parse | JSONPath_filter |
+        JSONPath_indexmatcher >"${JSONPath[PASSFILE]}" <"${JSONPath[STDINFILE]}"
 
-      [[ $MULTIPASS -eq 1 ]] && {
+      [[ ${JSONPath[MULTIPASS]} -eq 1 ]] && {
         # replace filter expression with index sequence
-        SET=$(sed -rn 's/.*[[,"]+([0-9]+)[],].*/\1/p' $PASSFILE | tr '\n' ,)
+        SET=$(sed -rn 's/.*[[,"]+([0-9]+)[],].*/\1/p' "${JSONPath[PASSFILE]}" | tr '\n' ,)
         SET=${SET%,}
-        QUERY=$(echo $QUERY | sed "s/?(@[^)]\+)/$SET/")
-        [[ $DEBUG -eq 1 ]] && echo "QUERY=$QUERY" >/dev/stderr
-        reset
+        #QUERY=$(sed "s/?(@[^)]\+)/${SET}/" <<<"${QUERY}")
+        # Testing:
+        QUERY="${QUERY//\?\(@*)/${SET}}"
+        [[ ${JSONPath[DEBUG]} -eq 1 ]] && echo "QUERY=${QUERY}" >/dev/stderr
+        JSONPath_reset
         continue
       }
 
-      cat $PASSFILE | flatten | json | brief
+      JSONPath_flatten | JSONPath_json | JSONPath_brief <<<"${JSONPath[PASSFILE]}"
 
       break
     done
 
   else
 
-    tokenize_path
-    create_filter
+    JSONPath_tokenize_path
+    JSONPath_create_filter
 
-    if [[ $PASSTHROUGH -eq 1 ]]; then
-      JSON=1
-      flatten | json
-    elif [[ -z $FILE ]]; then
-      tokenize | parse | filter | indexmatcher | flatten | json | brief
+    if [[ ${JSONPath[PASSTHROUGH]} -eq 1 ]]; then
+      JSONPath[JSON]=1
+      JSONPath_flatten | JSONPath_json
+    elif [[ -z ${JSONPath[FILE]} ]]; then
+      JSONPath_tokenize | JSONPath_parse | JSONPath_filter | JSONPath_indexmatcher | JSONPath_flatten | JSONPath_json | JSONPath_brief
     else
-      cat "$FILE" | tokenize | parse | filter | indexmatcher | flatten |
-        json | brief
+      JSONPath_tokenize | JSONPath_parse | JSONPath_filter | JSONPath_indexmatcher | JSONPath_flatten <"${JSONPath[FILE]}"
+      JSONPath_json | JSONPath_brief
     fi
 
   fi
 }
 
-# ---------------------------------------------------------------------------
-sanity_checks() {
-  # ---------------------------------------------------------------------------
+JSONPath_sanity_checks() {
+
+  local binary
 
   # Reset some vars
   for binary in gawk grep sed; do
-    if ! which $binary >&/dev/null; then
-      echo "ERROR: $binary binary not found in path. Aborting."
+    if ! command -v "${binary}" >&/dev/null; then
+      echo "ERROR: ${binary} binary not found in path. Aborting."
       exit 1
     fi
   done
 }
 
-# ---------------------------------------------------------------------------
-reset() {
-  # ---------------------------------------------------------------------------
+JSONPath_reset() {
 
   # Reset some vars
   declare -a INDEXMATCH_QUERY
@@ -100,21 +99,18 @@ reset() {
   FILTER=
   OPERATOR=
   RHS=
-  MULTIPASS=0
+  JSONPath[MULTIPASS]=0
 }
 
-# ---------------------------------------------------------------------------
-cleanup() {
-  # ---------------------------------------------------------------------------
+JSONPath_cleanup() {
 
-  [[ -e $PASSFILE ]] && rm -f "$PASSFILE"
-  [[ -e $STDINFILE2 ]] && rm -f "$STDINFILE2"
-  [[ -z $FILE && -e $STDINFILE ]] && rm -f "$STDINFILE"
+  [[ -e ${JSONPath[PASSFILE]} ]] && rm -f "${PASSFILE}"
+  [[ -e ${JSONPath[STDINFILE2]} ]] && rm -f "${JSONPath[STDINFILE2]}"
+  [[ -z ${JSONPath[FILE]} && -e ${JSONPath[STDINFILE]} ]] &&
+    rm -f "${JSONPath[STDINFILE]}"
 }
 
-# ---------------------------------------------------------------------------
-usage() {
-  # ---------------------------------------------------------------------------
+JSONPath_usage() {
 
   echo
   echo "Usage: JSONPath.sh [-b] [j] [-h] [-f FILE] [pattern]"
@@ -131,59 +127,55 @@ usage() {
   echo
 }
 
-# ---------------------------------------------------------------------------
-parse_options() {
-  # ---------------------------------------------------------------------------
+JSONPath_parse_options() {
 
   set -- "$@"
   local ARGN=$#
-  while [ "$ARGN" -ne 0 ]; do
+  while [[ ${ARGN} -ne 0 ]]; do
     case $1 in
     -h)
-      usage
+      JSONPath_usage
       exit 0
       ;;
     -f)
       shift
-      FILE=$1
+      JSONPath[FILE]=$1
       ;;
     -i)
-      NOCASE=1
+      JSONPath[NOCASE]=1
       ;;
     -j)
-      JSON=1
+      JSONPath[JSON]=1
       ;;
     -n)
-      NO_HEAD=1
+      JSONPath[NO_HEAD]=1
       ;;
     -b)
-      BRIEF=1
+      JSONPath[BRIEF]=1
       ;;
     -u)
-      FLATTEN=1
+      JSONPath[FLATTEN]=1
       ;;
     -p)
-      PASSTHROUGH=1
+      JSONPath[PASSTHROUGH]=1
       ;;
     -w)
-      WHOLEWORD=1
+      JSONPath[WHOLEWORD]=1
       ;;
     -s)
-      NORMALIZE_SOLIDUS=1
+      JSONPath[NORMALIZE_SOLIDUS]=1
       ;;
-    ?*)
+    *)
       QUERY=$1
       ;;
     esac
     shift 1
     ARGN=$((ARGN - 1))
   done
-  [[ -z $QUERY ]] && QUERY='$.*'
+  [[ -z ${QUERY} ]] && QUERY='$.*'
 }
 
-# ---------------------------------------------------------------------------
-awk_egrep() {
-  # ---------------------------------------------------------------------------
+JSONPath_awk_egrep() {
   local pattern_string=$1
 
   gawk '{
@@ -193,210 +185,208 @@ awk_egrep() {
       print token;
       $0=substr($0, start+RLENGTH);
     }
-  }' pattern="$pattern_string"
+  }' pattern="${pattern_string}"
 }
 
-# ---------------------------------------------------------------------------
-tokenize() {
-  # ---------------------------------------------------------------------------
-  # json parsing
+JSONPath_tokenize() {
 
   local GREP
   local ESCAPE
   local CHAR
 
-  if echo "test string" | egrep -ao --color=never "test" >/dev/null 2>&1; then
-    GREP='egrep -ao --color=never'
+  if echo "test string" | grep -Eao --color=never "test" >/dev/null 2>&1; then
+    GREP='grep -Eao --color=never'
   else
-    GREP='egrep -ao'
+    GREP='grep -Eao'
   fi
 
-  if echo "test string" | egrep -o "test" >/dev/null 2>&1; then
+  if echo "test string" | grep -Eo "test" >/dev/null 2>&1; then
     ESCAPE='(\\[^u[:cntrl:]]|\\u[0-9a-fA-F]{4})'
     CHAR='[^[:cntrl:]"\\]'
   else
-    GREP=awk_egrep
+    GREP=JSONPath_awk_egrep
     ESCAPE='(\\\\[^u[:cntrl:]]|\\u[0-9a-fA-F]{4})'
     CHAR='[^[:cntrl:]"\\\\]'
   fi
 
-  local STRING="\"$CHAR*($ESCAPE$CHAR*)*\""
+  local STRING="\"${CHAR}*(${ESCAPE}${CHAR}*)*\""
   local NUMBER='-?(0|[1-9][0-9]*)([.][0-9]*)?([eE][+-]?[0-9]*)?'
   local KEYWORD='null|false|true'
   local SPACE='[[:space:]]+'
 
   # Force zsh to expand $A into multiple words
-  local is_wordsplit_disabled=$(unsetopt 2>/dev/null | grep -c '^shwordsplit$')
-  if [ $is_wordsplit_disabled != 0 ]; then setopt shwordsplit; fi
-  $GREP "$STRING|$NUMBER|$KEYWORD|$SPACE|." | egrep -v "^$SPACE$"
-  if [ $is_wordsplit_disabled != 0 ]; then unsetopt shwordsplit; fi
+  local is_wordsplit_disabled
+  is_wordsplit_disabled=$(unsetopt 2>/dev/null | grep -c '^shwordsplit$')
+  if [[ ${is_wordsplit_disabled} != 0 ]]; then setopt shwordsplit; fi
+  ${GREP} "${STRING}|${NUMBER}|${KEYWORD}|${SPACE}|." | grep -Ev "^${SPACE}$"
+  if [[ ${is_wordsplit_disabled} != 0 ]]; then unsetopt shwordsplit; fi
 }
 
-# ---------------------------------------------------------------------------
-tokenize_path() {
-  # ---------------------------------------------------------------------------
+JSONPath_tokenize_path() {
+
   local GREP
   local ESCAPE
   local CHAR
 
-  if echo "test string" | egrep -ao --color=never "test" >/dev/null 2>&1; then
-    GREP='egrep -ao --color=never'
+  if echo "test string" | grep -Eao --color=never "test" >/dev/null 2>&1; then
+    GREP='grep -Eao --color=never'
   else
-    GREP='egrep -ao'
+    GREP='grep -Eao'
   fi
 
-  if echo "test string" | egrep -o "test" >/dev/null 2>&1; then
+  if echo "test string" | grep -Eo "test" >/dev/null 2>&1; then
     CHAR='[^[:cntrl:]"\\]'
   else
-    GREP=awk_egrep
+    GREP=JSONPath_awk_egrep
   fi
 
   local WILDCARD='\*'
   local WORD='[ A-Za-z0-9_-]*'
-  local INDEX="\\[$WORD(:$WORD){0,2}\\]"
+  local INDEX="\\[${WORD}(:${WORD}){0,2}\\]"
   local INDEXALL='\[\*\]'
   local STRING="[\\\"'][^[:cntrl:]\\\"']*[\\\"']"
-  local SET="\\[($WORD|$STRING)(,($WORD|$STRING))*\\]"
+  local SET="\\[(${WORD}|${STRING})(,(${WORD}|${STRING}))*\\]"
   local FILTER='\?\(@[^)]+'
   local DEEPSCAN='\.\.'
   local SPACE='[[:space:]]+'
 
   # Force zsh to expand $A into multiple words
-  local is_wordsplit_disabled=$(unsetopt 2>/dev/null | grep -c '^shwordsplit$')
-  if [ $is_wordsplit_disabled != 0 ]; then setopt shwordsplit; fi
-  readarray -t PATHTOKENS < <(echo "$QUERY" |
-    $GREP "$INDEX|$STRING|$WORD|$WILDCARD|$FILTER|$DEEPSCAN|$SET|$INDEXALL|." |
-    egrep -v "^$SPACE$|^\\.$|^\[$|^\]$|^'$|^\\\$$|^\)$")
-  [[ $DEBUG -eq 1 ]] && {
-    echo "egrep -o '$INDEX|$STRING|$WORD|$WILDCARD|$FILTER|$DEEPSCAN|$SET|$INDEXALL|.'" >/dev/stderr
+  local is_wordsplit_disabled
+  is_wordsplit_disabled=$(unsetopt 2>/dev/null | grep -c '^shwordsplit$')
+  if [[ ${is_wordsplit_disabled} != 0 ]]; then setopt shwordsplit; fi
+  readarray -t PATHTOKENS < <(echo "${QUERY}" |
+    ${GREP} "${INDEX}|${STRING}|${WORD}|${WILDCARD}|${FILTER}|${DEEPSCAN}|${SET}|${INDEXALL}|." |
+    grep -Ev "^${SPACE}$|^\\.$|^\[$|^\]$|^'$|^\\\$$|^\)$")
+  [[ ${JSONPath[DEBUG]} -eq 1 ]] && {
+    echo "grep -Eo '${INDEX}|${STRING}|${WORD}|${WILDCARD}|${FILTER}|${DEEPSCAN}|${SET}|${INDEXALL}|.'" >/dev/stderr
     echo -n "TOKENISED QUERY="
-    echo "$QUERY" |
-      $GREP "$INDEX|$STRING|$WORD|$WILDCARD|$FILTER|$DEEPSCAN|$SET|$INDEXALL|." |
-      egrep -v "^$SPACE$|^\\.$|^\[$|^\]$|^'$|^\\\$$|^\)$" >/dev/stderr
+    echo "${QUERY}" |
+      ${GREP} "${INDEX}|${STRING}|${WORD}|${WILDCARD}|${FILTER}|${DEEPSCAN}|${SET}|${INDEXALL}|." |
+      grep -Ev "^${SPACE}$|^\\.$|^\[$|^\]$|^'$|^\\\$$|^\)$" >/dev/stderr
   }
-  if [ $is_wordsplit_disabled != 0 ]; then unsetopt shwordsplit; fi
+  if [[ ${is_wordsplit_disabled} != 0 ]]; then unsetopt shwordsplit; fi
 }
 
-# ---------------------------------------------------------------------------
-create_filter() {
-  # ---------------------------------------------------------------------------
-  # Creates the filter from the user's query.
-  # Filter works in a single pass through the data, unless a filter (script)
-  #  expression is used, in which case two passes are required (MULTIPASS=1).
+# JSONPath_create_filter creates the filter from the user's query.
+# Filter works in a single pass through the data, unless a filter (script)
+#  expression is used, in which case two passes are required (MULTIPASS=1).
+JSONPath_create_filter() {
 
   local len=${#PATHTOKENS[*]}
 
   local -i i=0
-  local query="^\[" comma=
+  local a query="^\[" comma=
   while [[ i -lt len ]]; do
     case "${PATHTOKENS[i]}" in
     '"')
       :
       ;;
     '..')
-      query+="$comma[^]]*"
+      query+="${comma}[^]]*"
       comma=
       ;;
     '[*]')
-      query+="$comma[^,]*"
+      query+="${comma}[^,]*"
       comma=","
       ;;
     '*')
-      query+="$comma(\"[^\"]*\"|[0-9]+[^],]*)"
+      query+="${comma}(\"[^\"]*\"|[0-9]+[^],]*)"
       comma=","
       ;;
     '?(@'*)
       a=${PATHTOKENS[i]#?(@.}
       elem="${a%%[<>=!]*}"
       rhs="${a##*[<>=!]}"
-      a="${a#$elem}"
+      a="${a#${elem}}"
       elem="${elem//./[\",.]+}" # Allows child node matching
-      operator="${a%$rhs}"
-      [[ -z $operator ]] && {
+      operator="${a%${rhs}}"
+      [[ -z ${operator} ]] && {
         operator="=="
         rhs=
       }
-      if [[ $rhs == *'"'* || $rhs == *"'"* ]]; then
-        case $operator in
+      if [[ ${rhs} == *'"'* || ${rhs} == *"'"* ]]; then
+        case ${operator} in
         '==' | '=')
           OPERATOR=
-          if [[ $elem == '?(@' ]]; then
+          if [[ ${elem} == '?(@' ]]; then
             # To allow search on @.property such as:
             #   $..book[?(@.title==".*Book 1.*")]
-            query+="$comma[0-9]+[],][[:space:]\"]*${rhs//\"/}"
+            query+="${comma}[0-9]+[],][[:space:]\"]*${rhs//\"/}"
           else
             # To allow search on @ (this node) such as:
             #   $..reviews[?(@==".*Fant.*")]
-            query+="$comma[0-9]+,\"$elem\"[],][[:space:]\"]*${rhs//\"/}"
+            query+="${comma}[0-9]+,\"${elem}\"[],][[:space:]\"]*${rhs//\"/}"
           fi
-          FILTER="$query"
+          FILTER="${query}"
           ;;
         '>=' | '>')
           OPERATOR=">"
-          RHS="$rhs"
-          query+="$comma[0-9]+,\"$elem\"[],][[:space:]\"]*"
-          FILTER="$query"
+          RHS="${rhs}"
+          query+="${comma}[0-9]+,\"${elem}\"[],][[:space:]\"]*"
+          FILTER="${query}"
           ;;
         '<=' | '<')
           OPERATOR="<"
-          RHS="$rhs"
-          query+="$comma[0-9]+,\"$elem\"[],][[:space:]\"]*"
-          FILTER="$query"
+          RHS="${rhs}"
+          query+="${comma}[0-9]+,\"${elem}\"[],][[:space:]\"]*"
+          FILTER="${query}"
           ;;
+        *) return 1 ;;
         esac
       else
-        case $operator in
+        case ${operator} in
         '==' | '=')
           OPERATOR=
-          query+="$comma[0-9]+,\"$elem\"[],][[:space:]\"]*$rhs"
-          FILTER="$query"
+          query+="${comma}[0-9]+,\"${elem}\"[],][[:space:]\"]*${rhs}"
+          FILTER="${query}"
           ;;
         '>=')
           OPERATOR="-ge"
-          RHS="$rhs"
-          query+="$comma[0-9]+,\"$elem\"[],][[:space:]\"]*"
-          FILTER="$query"
+          RHS="${rhs}"
+          query+="${comma}[0-9]+,\"${elem}\"[],][[:space:]\"]*"
+          FILTER="${query}"
           ;;
         '>')
           OPERATOR="-gt"
-          RHS="$rhs"
-          query+="$comma[0-9]+,\"$elem\"[],][[:space:]\"]*"
-          FILTER="$query"
+          RHS="${rhs}"
+          query+="${comma}[0-9]+,\"${elem}\"[],][[:space:]\"]*"
+          FILTER="${query}"
           ;;
         '<=')
           OPERATOR="-le"
-          RHS="$rhs"
-          query+="$comma[0-9]+,\"$elem\"[],][[:space:]\"]*"
-          FILTER="$query"
+          RHS="${rhs}"
+          query+="${comma}[0-9]+,\"${elem}\"[],][[:space:]\"]*"
+          FILTER="${query}"
           ;;
         '<')
           OPERATOR="-lt"
-          RHS="$rhs"
-          query+="$comma[0-9]+,\"$elem\"[],][[:space:]\"]*"
-          FILTER="$query"
+          RHS="${rhs}"
+          query+="${comma}[0-9]+,\"${elem}\"[],][[:space:]\"]*"
+          FILTER="${query}"
           ;;
+        *) return 1 ;;
         esac
       fi
-      MULTIPASS=1
+      JSONPath[MULTIPASS]=1
       ;;
     "["*)
       if [[ ${PATHTOKENS[i]} =~ , ]]; then
         a=${PATHTOKENS[i]#[}
         a=${a%]}
-        if [[ $a =~ [[:alpha:]] ]]; then
+        if [[ ${a} =~ [[:alpha:]] ]]; then
           # converts only one comma: s/("[^"]+),([^"]+")/\1`\2/g;s/"//g
           #a=$(echo $a | sed 's/\([[:alpha:]]*\)/"\1"/g')
-          a=$(echo $a | sed -r "s/[\"']//g;s/([^,]*)/\"\1\"/g")
+          a=$(echo "${a}" | sed -r "s/[\"']//g;s/([^,]*)/\"\1\"/g")
         fi
-        query+="$comma(${a//,/|})"
+        query+="${comma}(${a//,/|})"
       elif [[ ${PATHTOKENS[i]} =~ : ]]; then
         if ! [[ ${PATHTOKENS[i]} =~ [0-9][0-9] || ${PATHTOKENS[i]} =~ :] ]]; then
           if [[ ${PATHTOKENS[i]#*:} =~ : ]]; then
             INDEXMATCH_QUERY+=("${PATHTOKENS[i]}")
-            query+="$comma[^,]*"
+            query+="${comma}[^,]*"
           else
             # Index in the range of 0-9 can be handled by regex
-            query+="${comma}$(echo ${PATHTOKENS[i]} |
+            query+="${comma}$(echo "${PATHTOKENS[i]}" |
               gawk '/:/ { a=substr($0,0,index($0,":")-1);
                          b=substr($0,index($0,":")+1,index($0,"]")-index($0,":")-1);
                          if(b>0) { print a ":" b-1 "]" };
@@ -407,54 +397,51 @@ create_filter() {
           fi
         else
           INDEXMATCH_QUERY+=("${PATHTOKENS[i]}")
-          query+="$comma[^,]*"
+          query+="${comma}[^,]*"
         fi
       else
         a=${PATHTOKENS[i]#[}
         a=${a%]}
-        if [[ $a =~ [[:alpha:]] ]]; then
-          a=$(echo $a | sed -r "s/[\"']//g;s/([^,]*)/\"\1\"/g")
+        if [[ ${a} =~ [[:alpha:]] ]]; then
+          a=$(echo "${a}" | sed -r "s/[\"']//g;s/([^,]*)/\"\1\"/g")
         else
-          [[ $i -gt 0 ]] && comma=","
+          [[ ${i} -gt 0 ]] && comma=","
         fi
-        query+="$comma$a"
+        query+="${comma}${a}"
       fi
       comma=","
       ;;
     *)
       PATHTOKENS[i]=${PATHTOKENS[i]//\'/\"}
-      query+="$comma\"${PATHTOKENS[i]//\"/}\""
+      query+="${comma}\"${PATHTOKENS[i]//\"/}\""
       comma=","
       ;;
     esac
-    i=i+1
+    i=$((i + 1))
   done
 
-  [[ -z $FILTER ]] && FILTER="$query[],]"
-  [[ $DEBUG -eq 1 ]] && echo "FILTER=$FILTER" >/dev/stderr
+  [[ -z ${FILTER} ]] && FILTER="${query}[],]"
+  [[ ${JSONPath[DEBUG]} -eq 1 ]] && echo "FILTER=${FILTER}" >/dev/stderr
 }
 
-# ---------------------------------------------------------------------------
-parse_array() {
-  # ---------------------------------------------------------------------------
-  # json parsing
+JSONPath_parse_array() {
 
   local index=0
   local ary=''
   read -r token
-  case "$token" in
+  case "${token}" in
   ']') ;;
 
   *)
     while :; do
-      parse_value "$1" "$index"
+      JSONPath_parse_value "$1" "${index}"
       index=$((index + 1))
-      ary="$ary""$value"
+      ary="${ary}""${value}"
       read -r token
-      case "$token" in
+      case "${token}" in
       ']') break ;;
-      ',') ary="$ary," ;;
-      *) throw "EXPECTED , or ] GOT ${token:-EOF}" ;;
+      ',') ary="${ary}," ;;
+      *) JSONPath_throw "EXPECTED , or ] GOT ${token:-EOF}" ;;
       esac
       read -r token
     done
@@ -464,36 +451,33 @@ parse_array() {
   :
 }
 
-# ---------------------------------------------------------------------------
-parse_object() {
-  # ---------------------------------------------------------------------------
-  # json parsing
+JSONPath_parse_object() {
 
   local key
   local obj=''
   read -r token
-  case "$token" in
+  case "${token}" in
   '}') ;;
 
   *)
     while :; do
-      case "$token" in
-      '"'*'"') key=$token ;;
-      *) throw "EXPECTED string GOT ${token:-EOF}" ;;
+      case "${token}" in
+      '"'*'"') key=${token} ;;
+      *) JSONPath_throw "EXPECTED string GOT ${token:-EOF}" ;;
       esac
       read -r token
-      case "$token" in
+      case "${token}" in
       ':') ;;
-      *) throw "EXPECTED : GOT ${token:-EOF}" ;;
+      *) JSONPath_throw "EXPECTED : GOT ${token:-EOF}" ;;
       esac
       read -r token
-      parse_value "$1" "$key"
-      obj="$obj$key:$value"
+      JSONPath_parse_value "$1" "${key}"
+      obj="${obj}${key}:${value}"
       read -r token
-      case "$token" in
+      case "${token}" in
       '}') break ;;
-      ',') obj="$obj," ;;
-      *) throw "EXPECTED , or } GOT ${token:-EOF}" ;;
+      ',') obj="${obj}," ;;
+      *) JSONPath_throw "EXPECTED , or } GOT ${token:-EOF}" ;;
       esac
       read -r token
     done
@@ -503,50 +487,46 @@ parse_object() {
   :
 }
 
-# ---------------------------------------------------------------------------
-parse_value() {
-  # ---------------------------------------------------------------------------
-  # json parsing
+JSONPath_parse_value() {
 
   local jpath="${1:+$1,}$2" isleaf=0 isempty=0 print=0
-  case "$token" in
-  '{') parse_object "$jpath" ;;
-  '[') parse_array "$jpath" ;;
+  case "${token}" in
+  '{') JSONPath_parse_object "${jpath}" ;;
+  '[') JSONPath_parse_array "${jpath}" ;;
     # At this point, the only valid single-character tokens are digits.
-  '' | [!0-9]) throw "EXPECTED value GOT ${token:-EOF}" ;;
+  '' | [!0-9]) JSONPath_throw "EXPECTED value GOT ${token:-EOF}" ;;
   *)
-    value=$token
+    value=${token}
     # if asked, replace solidus ("\/") in json strings with normalized value: "/"
-    [ "$NORMALIZE_SOLIDUS" -eq 1 ] && value=$(echo "$value" | sed 's#\\/#/#g')
+    # Testing:
+    #[ "${JSONPath[NORMALIZE_SOLIDUS]}" -eq 1 ] && value=$(echo "${value}" | sed 's#\\/#/#g')
+    [[ ${JSONPath[NORMALIZE_SOLIDUS]} -eq 1 ]] && value=$(${value//\\\///})
     isleaf=1
-    [ "$value" = '""' ] && isempty=1
+    [[ ${value} == '""' ]] && isempty=1
     ;;
   esac
-  [[ -z INCLEMPTY ]] && [ "$value" = '' ] && return
-  [ "$NO_HEAD" -eq 1 ] && [ -z "$jpath" ] && return
+  [[ -z ${JSONPath[INCLEMPTY]} ]] && [[ ${value} == '' ]] && return
+  [[ ${JSONPath[NO_HEAD]} -eq 1 ]] && [[ -z ${jpath} ]] && return
 
-  [ "$isleaf" -eq 1 ] && [ $isempty -eq 0 ] && print=1
-  [ "$print" -eq 1 ] && printf "[%s]\t%s\n" "$jpath" "$value"
+  [[ ${isleaf} -eq 1 ]] && [[ ${isempty} -eq 0 ]] && print=1
+  [[ ${print} -eq 1 ]] && printf "[%s]\t%s\n" "${jpath}" "${value}"
   :
 }
 
-# ---------------------------------------------------------------------------
-flatten() {
-  # ---------------------------------------------------------------------------
-  # Take out
+JSONPath_flatten() {
 
   local path a prevpath pathlen
 
-  if [[ $FLATTEN -eq 1 ]]; then
-    cat >"$STDINFILE2"
+  if [[ ${JSONPath[FLATTEN]} -eq 1 ]]; then
+    cat >"${JSONPath[STDINFILE2]}"
 
     highest=9999
 
-    while read line; do
+    while read -r line; do
       a=${line#[}
       a=${a%%]*}
-      readarray -t path < <(grep -o "[^,]*" <<<"$a")
-      [[ -z $prevpath ]] && {
+      readarray -t path < <(grep -o "[^,]*" <<<"${a}")
+      [[ -z ${prevpath} ]] && {
         prevpath=("${path[@]}")
         highest=$((${#path[*]} - 1))
         continue
@@ -554,40 +534,38 @@ flatten() {
 
       pathlen=$((${#path[*]} - 1))
 
-      for i in $(seq 0 $pathlen); do
-        [[ ${path[i]} != ${prevpath[i]} ]] && {
-          high=$i
+      for i in $(seq 0 "${pathlen}"); do
+        [[ ${path[i]} != "${prevpath[i]}" ]] && {
+          high=${i}
           break
         }
       done
 
-      [[ $high -lt $highest ]] && highest=$high
+      [[ ${high} -lt ${highest} ]] && highest=${high}
 
       prevpath=("${path[@]}")
-    done <"$STDINFILE2"
+    done <"${JSONPath[STDINFILE2]}"
 
-    if [[ $highest -gt 0 ]]; then
+    if [[ ${highest} -gt 0 ]]; then
       sed -r 's/\[(([0-9]+|"[^"]+")[],]){'$((highest))'}(.*)/[\3/' \
-        "$STDINFILE2"
+        "${JSONPath[STDINFILE2]}"
     else
-      cat "$STDINFILE2"
+      cat "${JSONPath[STDINFILE2]}"
     fi
   else
     cat
   fi
 }
 
-# ---------------------------------------------------------------------------
-indexmatcher() {
-  # ---------------------------------------------------------------------------
-  # For double digit or greater indexes match each line individually
-  # Single digit indexes are handled more efficiently by regex
+# JSONPath_indexmatcher is for double digit or greater indexes match each line
+# individually Single digit indexes are handled more efficiently by regex
+JSONPath_indexmatcher() {
 
   local a b
 
-  [[ $DEBUG -eq 1 ]] && {
+  [[ ${JSONPath[DEBUG]} -eq 1 ]] && {
     for i in $(seq 0 $((${#INDEXMATCH_QUERY[*]} - 1))); do
-      echo "INDEXMATCH_QUERY[$i]=${INDEXMATCH_QUERY[i]}" >/dev/stderr
+      echo "INDEXMATCH_QUERY[${i}]=${INDEXMATCH_QUERY[i]}" >/dev/stderr
     done
   }
 
@@ -605,19 +583,19 @@ indexmatcher() {
         q=${INDEXMATCH_QUERY[i]:1:-1} # <- strip '[' and ']'
         a=${q%:*}                     # <- number before ':'
         b=${q#*:}                     # <- number after ':'
-        [[ -z $b ]] && b=99999999999
-        readarray -t num < <((grep -Eo '[0-9]+[],]' | tr -d ,]) <<<$line)
-        if [[ ${num[i]} -ge $a && ${num[i]} -lt $b && matched -eq 1 ]]; then
+        [[ -z ${b} ]] && b=99999999999
+        readarray -t num < <((grep -Eo '[0-9]+[],]' | tr -d ,]) <<<"${line}")
+        if [[ ${num[i]} -ge ${a} && ${num[i]} -lt ${b} && matched -eq 1 ]]; then
           matched=1
-          [[ $i -eq $((${#INDEXMATCH_QUERY[*]} - 1)) ]] && {
-            if [[ $step -gt 1 ]]; then
+          [[ ${i} -eq $((${#INDEXMATCH_QUERY[*]} - 1)) ]] && {
+            if [[ ${step} -gt 1 ]]; then
               [[ $(((num[i] - a) % step)) -eq 0 ]] && {
-                [[ $DEBUG -eq 1 ]] && echo -n "($a,$b,${num[i]}) " >/dev/stderr
-                echo "$line"
+                [[ ${JSONPath[DEBUG]} -eq 1 ]] && echo -n "(${a},${b},${num[i]}) " >/dev/stderr
+                echo "${line}"
               }
             else
-              [[ $DEBUG -eq 1 ]] && echo -n "($a,$b,${num[i]}) " >/dev/stderr
-              echo "$line"
+              [[ ${JSONPath[DEBUG]} -eq 1 ]] && echo -n "(${a},${b},${num[i]}) " >/dev/stderr
+              echo "${line}"
             fi
           }
         else
@@ -632,89 +610,86 @@ indexmatcher() {
   fi
 }
 
-# ---------------------------------------------------------------------------
-brief() {
-  # ---------------------------------------------------------------------------
+JSONPath_brief() {
   # Only show the value
 
-  if [[ $BRIEF -eq 1 ]]; then
+  if [[ ${JSONPath[BRIEF]} -eq 1 ]]; then
     sed 's/^[^\t]*\t//;s/^"//;s/"$//;'
   else
     cat
   fi
 }
 
-# ---------------------------------------------------------------------------
-json() {
-  # ---------------------------------------------------------------------------
+JSONPath_json() {
   # Turn output into JSON
 
-  local a tab=$(echo -e "\t")
+  local a tab="$'\t'"
   local UP=1 DOWN=2 SAME=3
   local prevpathlen=-1 prevpath=() path a
   declare -a closers
 
-  if [[ $JSON -eq 0 ]]; then
+  if [[ ${JSONPath[JSON]} -eq 0 ]]; then
     cat -
   else
     while read -r line; do
       a=${line#[}
       a=${a%%]*}
-      readarray -t path < <(grep -o "[^,]*" <<<"$a")
-      value=${line#*$tab}
+      readarray -t path < <(grep -o "[^,]*" <<<"${a}")
+      value=${line#*${tab}}
 
       # Not including the object itself (last item)
       pathlen=$((${#path[*]} - 1))
 
       # General direction
 
-      direction=$SAME
-      [[ $pathlen -gt $prevpathlen ]] && direction=$DOWN
-      [[ $pathlen -lt $prevpathlen ]] && direction=$UP
+      direction=${SAME}
+      [[ ${pathlen} -gt ${prevpathlen} ]] && direction=${DOWN}
+      [[ ${pathlen} -lt ${prevpathlen} ]] && direction=${UP}
 
       # Handle jumps UP the tree (close previous paths)
 
-      [[ $prevpathlen != -1 ]] && {
+      [[ ${prevpathlen} != -1 ]] && {
         for i in $(seq 0 $((pathlen - 1))); do
-          [[ ${prevpath[i]} == ${path[i]} ]] && continue
+          [[ ${prevpath[i]} == "${path[i]}" ]] && continue
           [[ ${path[i]} != '"'* ]] && {
-            a=(${!arrays[*]})
-            [[ -n $a ]] && {
-              for k in $(seq $((i + 1)) ${a[-1]}); do
+            # Testing double quotes:
+            a="(${!arrays[*]})"
+            [[ -n ${a} ]] && {
+              for k in $(seq $((i + 1)) "${a[-1]}"); do
                 arrays[k]=
               done
             }
-            a=(${!comma[*]})
-            [[ -n $a ]] && {
-              for k in $(seq $((i + 1)) ${a[-1]}); do
+            a="(${!comma[*]})"
+            [[ -n ${a} ]] && {
+              for k in $(seq $((i + 1)) "${a[-1]}"); do
                 comma[k]=
               done
             }
             for j in $(seq $((prevpathlen)) -1 $((i + 2))); do
               arrays[j]=
               [[ -n ${closers[j]} ]] && {
-                let indent=j*4
+                indent=$((j * 4))
                 printf "\n%${indent}s${closers[j]}" ""
-                unset closers[j]
+                unset "closers[j]"
                 comma[j]=
               }
             done
-            direction=$DOWN
+            direction=${DOWN}
             break
           }
-          direction=$DOWN
+          direction=${DOWN}
           for j in $(seq $((prevpathlen)) -1 $((i + 1))); do
             arrays[j]=
             [[ -n ${closers[j]} ]] && {
-              let indent=j*4
+              indent=$((j * 4))
               printf "\n%${indent}s${closers[j]}" ""
-              unset closers[j]
+              unset "closers[j]"
               comma[j]=
             }
           done
-          a=(${!arrays[*]})
-          [[ -n $a ]] && {
-            for k in $(seq $i ${a[-1]}); do
+          a="(${!arrays[*]})"
+          [[ -n ${a} ]] && {
+            for k in $(seq "${i}" "${a[-1]}"); do
               arrays[k]=
             done
           }
@@ -722,20 +697,20 @@ json() {
         done
       }
 
-      [[ $direction -eq $UP ]] && {
-        [[ $prevpathlen != -1 ]] && comma[prevpathlen]=
+      [[ ${direction} -eq ${UP} ]] && {
+        [[ ${prevpathlen} != -1 ]] && comma[prevpathlen]=
         for i in $(seq $((prevpathlen + 1)) -1 $((pathlen + 1))); do
           arrays[i]=
           [[ -n ${closers[i]} ]] && {
-            let indent=i*4
+            indent=$((i * 4))
             printf "\n%${indent}s${closers[i]}" ""
-            unset closers[i]
+            unset "closers[i]"
             comma[i]=
           }
         done
-        a=(${!arrays[*]})
-        [[ -n $a ]] && {
-          for k in $(seq $i ${a[-1]}); do
+        a="(${!arrays[*]})"
+        [[ -n ${a} ]] && {
+          for k in $(seq "${i}" "${a[-1]}"); do
             arrays[k]=
           done
         }
@@ -745,35 +720,35 @@ json() {
 
       broken=
       for i in $(seq 0 $((pathlen - 1))); do
-        [[ -z $broken && ${prevpath[i]} == ${path[i]} ]] && continue
-        [[ -z $broken ]] && {
-          broken=$i
-          [[ $prevpathlen -ne -1 ]] && broken=$((i + 1))
+        [[ -z ${broken} && ${prevpath[i]} == "${path[i]}" ]] && continue
+        [[ -z ${broken} ]] && {
+          broken=${i}
+          [[ ${prevpathlen} -ne -1 ]] && broken=$((i + 1))
         }
         if [[ ${path[i]} == '"'* ]]; then
           # Object
-          [[ $i -ge $broken ]] && {
-            let indent=i*4
+          [[ ${i} -ge ${broken} ]] && {
+            indent=$((i * 4))
             printf "${comma[i]}%${indent}s{\n" ""
             closers[i]='}'
             comma[i]=
           }
-          let indent=(i + 1)*4
+          indent=$(((i + 1) * 4))
           printf "${comma[i]}%${indent}s${path[i]}:\n" ""
           comma[i]=",\n"
         else
           # Array
           if [[ ${arrays[i]} != 1 ]]; then
-            let indent=i*4
+            indent=$((i * 4))
             printf "%${indent}s" ""
             echo "["
             closers[i]=']'
             arrays[i]=1
             comma[i]=
           else
-            let indent=(i + 1)*4
+            indent=$(((i + 1) * 4))
             printf "\n%${indent}s${closers[i - 1]}" ""
-            direction=$DOWN
+            direction=${DOWN}
             comma[i + 1]=",\n"
           fi
         fi
@@ -783,116 +758,113 @@ json() {
 
       if [[ ${path[-1]} == '"'* ]]; then
         # Object
-        [[ $direction -eq $DOWN ]] && {
-          let indent=pathlen*4
+        [[ ${direction} -eq ${DOWN} ]] && {
+          indent=$((pathlen * 4))
           printf "${comma[pathlen]}%${indent}s{\n" ""
           closers[pathlen]='}'
           comma[pathlen]=
         }
-        let indent=(pathlen + 1)*4
+        indent=$(((pathlen + 1) * 4))
         printf "${comma[pathlen]}%${indent}s" ""
-        echo -n "${path[-1]}:$value"
+        echo -n "${path[-1]}:${value}"
         comma[pathlen]=",\n"
       else
         # Array
         [[ ${arrays[i]} != 1 ]] && {
-          let indent=(pathlen - 0)*4
+          indent=$(((pathlen - 0) * 4))
           printf "%${indent}s[\n" ""
           closers[pathlen]=']'
           comma[pathlen]=
           arrays[i]=1
         }
-        let indent=(pathlen + 1)*4
+        indent=$(((pathlen + 1) * 4))
         printf "${comma[pathlen]}%${indent}s" ""
-        echo -n "$value"
+        echo -n "${value}"
         comma[pathlen]=",\n"
       fi
 
       prevpath=("${path[@]}")
-      prevpathlen=$pathlen
+      prevpathlen=${pathlen}
     done
 
     # closing braces
 
     for i in $(seq $((pathlen)) -1 0); do
-      let indent=i*4
+      indent=$((i * 4))
       printf "\n%${indent}s${closers[i]}" ""
     done
     echo
   fi
 }
 
-# ---------------------------------------------------------------------------
-filter() {
-  # ---------------------------------------------------------------------------
+JSONPath_filter() {
   # Apply the query filter
 
-  local a tab=$(echo -e "\t") v
+  local a tab=$'\t' v
 
-  [[ $NOCASE -eq 1 ]] && opts+="-i"
-  [[ $WHOLEWORD -eq 1 ]] && opts+=" -w"
-  if [[ -z $OPERATOR ]]; then
-    [[ $MULTIPASS -eq 1 ]] && FILTER="$FILTER[\"]?$"
-    egrep $opts "$FILTER"
-    [[ $DEBUG -eq 1 ]] && echo "FILTER=$FILTER" >/dev/stderr
+  [[ ${JSONPath[NOCASE]} -eq 1 ]] && opts+="i"
+  [[ ${JSONPath[WHOLEWORD]} -eq 1 ]] && opts+="w"
+  if [[ -z ${OPERATOR} ]]; then
+    [[ ${JSONPath[MULTIPASS]} -eq 1 ]] && FILTER="${FILTER}[\"]?$"
+    grep "-E${opts}" "${FILTER}"
+    [[ ${JSONPath[DEBUG]} -eq 1 ]] && echo "FILTER=${FILTER}" >/dev/stderr
   else
-    egrep $opts "$FILTER" |
-      while read line; do
-        v=${line#*$tab}
-        case $OPERATOR in
+    grep "-E${opts}" "${FILTER}" |
+      while read -r line; do
+        v=${line#*${tab}}
+        case ${OPERATOR} in
         '-ge')
-          if gawk '{exit !($1>=$2)}' <<<"$v $RHS"; then echo "$line"; fi
+          if gawk '{exit !($1>=$2)}' <<<"${v} ${RHS}"; then echo "${line}"; fi
           ;;
         '-gt')
-          if gawk '{exit !($1>$2) }' <<<"$v $RHS"; then echo "$line"; fi
+          if gawk '{exit !($1>$2) }' <<<"${v} ${RHS}"; then echo "${line}"; fi
           ;;
         '-le')
-          if gawk '{exit !($1<=$2) }' <<<"$v $RHS"; then echo "$line"; fi
+          if gawk '{exit !($1<=$2) }' <<<"${v} ${RHS}"; then echo "${line}"; fi
           ;;
         '-lt')
-          if gawk '{exit !($1<$2) }' <<<"$v $RHS"; then echo "$line"; fi
+          if gawk '{exit !($1<$2) }' <<<"${v} ${RHS}"; then echo "${line}"; fi
           ;;
         '>')
           v=${v#\"}
           v=${v%\"}
           RHS=${RHS#\"}
           RHS=${RHS%\"}
-          [[ ${v,,} > ${RHS,,} ]] && echo "$line"
+          [[ ${v,,} > ${RHS,,} ]] && echo "${line}"
           ;;
         '<')
           v=${v#\"}
           v=${v%\"}
           RHS=${RHS#\"}
           RHS=${RHS%\"}
-          [[ ${v,,} < ${RHS,,} ]] && echo "$line"
+          [[ ${v,,} < ${RHS,,} ]] && echo "${line}"
           ;;
+        *) return 1 ;;
         esac
       done
   fi
 }
 
-# ---------------------------------------------------------------------------
-parse() {
-  # ---------------------------------------------------------------------------
+JSONPath_parse() {
   # Parses json
 
   read -r token
-  parse_value
+  JSONPath_parse_value
   read -r token
-  case "$token" in
+  case "${token}" in
   '') ;;
   *)
-    throw "EXPECTED EOF GOT $token"
+    JSONPath_throw "EXPECTED EOF GOT ${token}"
     exit 1
     ;;
   esac
 }
 
-# ---------------------------------------------------------------------------
-throw() {
-  # ---------------------------------------------------------------------------
+JSONPath_throw() {
   echo "$*" >&2
   exit 1
 }
+
+JSONPath_new || exit 1
 
 # vi: expandtab sw=2 ts=2

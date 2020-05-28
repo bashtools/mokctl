@@ -4,10 +4,9 @@ lsb_release -d
 screencast paste
 git clone https://github.com/mclarkson/my-own-kind.git
 cd my-own-kind
-sudo make test # <- yes, sudo is required to test :(
 sudo make install
 # The base image used for 'nodes' needs to be built first:
-mokctl build
+mokctl build -h
 # Use 'sudo mokctl' to run podman as root (required) or set an alias as shown above:
 alias mokctl="sudo mokctl"
 mokctl build -h

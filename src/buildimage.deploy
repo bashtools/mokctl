@@ -1,0 +1,387 @@
+# BI - Build Image
+
+# _BI is an associative array that holds data specific to building an image.
+declare -A _BI
+
+# Declare externally defined variables ----------------------------------------
+
+# Defined in GL (globals.sh)
+declare OK ERROR STDERR STOP TRUE FALSE
+
+# Getters/Setters -------------------------------------------------------------
+
+# BI_setflag_useprebuiltimage setter sets the useprebuiltimage array item.
+# This is called by the parser.
+BI_setflag_useprebuiltimage() {
+  _BI[useprebuiltimage]="$1"
+}
+
+# BI_k8sver outputs the value of the _BI[k8sver], the kubernetes version to be
+# installed.
+# Args: None expected.
+BI_k8sver() {
+  printf '%s' "${_BI[baseimagename]}"
+}
+
+# BI_baseimagename outputs the value of the _BI[baseimagename].
+# Args: None expected.
+BI_baseimagename() {
+  printf '%s' "${_BI[baseimagename]}"
+}
+
+# Public Functions ------------------------------------------------------------
+
+# BI_usage outputs help text for the build image component.
+# It is called by PA_usage().
+# Args: None expected.
+BI_usage() {
+
+  cat <<'EnD'
+BUILD subcommands are:
+ 
+  image - Creates the docker 'mok-centos-7' container image.
+ 
+build image options:
+ 
+ Format:
+  build image
+
+ Flags:
+  --tailf - Show the build output whilst building.
+  --get-prebuilt-image - Instead of building a 'node' image
+         locally, download it from a container registry instead.
+
+EnD
+}
+
+# BI_cleanup removes temporary files created during the build.
+# This function is called by the 'cleanup' trap only.
+# Args: None expected.
+BI_cleanup() {
+  [[ -e ${_BI[dockerbuildtmpdir]} ]] &&
+    [[ ${_BI[dockerbuildtmpdir]} == "/var/tmp/"* ]] && {
+    rm -rf "${_BI[dockerbuildtmpdir]}" || {
+      printf 'ERROR: "rm -rf %s" failed.\n' "${_BI[dockerbuildtmpdir]}" \
+        >"${STDERR}"
+      err || return
+    }
+  }
+}
+
+# BI_check_valid_options checks if arg1 is in a list of valid build image
+# options. This function is called by the parser.
+# Args: arg1 - the option to check.
+#       arg2 - value of the item to be set, optional
+BI_process_options() {
+
+  case "$1" in
+  -h | --help)
+    BI_usage
+    return "${STOP}"
+    ;;
+  --tailf)
+    _BI[tailf]="${TRUE}"
+    return "${OK}"
+    ;;
+  --get-prebuilt-image)
+    _BI[useprebuiltimage]="${TRUE}"
+    return "${OK}"
+    ;;
+  *)
+    BI_usage
+    printf 'ERROR: "%s" is not a valid "build" option.\n' "${1}" \
+      >"${STDERR}"
+    return "${ERROR}"
+    ;;
+  esac
+}
+
+# BI_run builds the base image used for masters and workers.
+# This function is called in main.sh.
+# Args: None expected.
+BI_run() {
+
+  _BI_sanity_checks || return
+
+  [[ ${_BI[tailf]} == "${TRUE}" ]] && {
+    UT_set_tailf "${TRUE}" || err || return
+  }
+
+  local retval=0
+  _BI_build_container_image
+  retval=$?
+
+  if [[ ${retval} -eq ${OK} ]]; then
+    : # We only need the tick - no text
+  else
+    printf 'Image build failed\n' >"${STDERR}"
+    err
+  fi
+
+  return "${retval}"
+}
+
+# Private Functions -----------------------------------------------------------
+
+# _BI_new resets the initial values for the _BI associative array.
+# Args: None expected.
+_BI_new() {
+  _BI[tailf]="${FALSE}"
+  _BI[k8sver]="1.18.3"
+  _BI[baseimagename]="mok-centos-7"
+  _BI[useprebuiltimage]=
+  _BI[dockerbuildtmpdir]=
+  _BI[runwithprogress_output]=
+
+  # Program the parser's state machine
+  PA_add_state "COMMAND" "build" "SUBCOMMAND" ""
+  PA_add_state "SUBCOMMAND" "buildimage" "END" ""
+
+  # Set up the parser's option callbacks
+  PA_add_option_callback "build" "BI_process_options" || return
+  PA_add_option_callback "buildimage" "BI_process_options" || return
+
+  # Set up the parser's usage callbacks
+  PA_add_usage_callback "build" "BI_usage" || return
+  PA_add_usage_callback "buildimage" "BI_usage" || return
+}
+
+# BI_sanity_checks is expected to run some quick and simple checks to
+# see if it has all it's key components. For build image this does nothing.
+# This function should not be deleted as it is called in main.sh.
+# Args: None expected.
+_BI_sanity_checks() { :; }
+
+# _BI_build_container_image creates the docker build directory in
+# dockerbuildtmpdir then calls docker build to build the image.
+# Args: No args expected.
+_BI_build_container_image() {
+
+  local cmd retval tagname buildargs text buildtype
+
+  _BI_create_docker_build_dir || return
+
+  buildargs=$(_BI_get_build_args_for_k8s_ver "${_BI[k8sver]}") || return
+  tagname="${_BI[baseimagename]}-v${_BI[k8sver]}"
+
+  local imgprefix
+  imgprefix=$(CU_imgprefix) || err || return
+  if [[ -z ${_BI[useprebuiltimage]} ]]; then
+    buildtype="create"
+    cmd="docker build \
+      -t "${imgprefix}local/${tagname}" \
+      --force-rm \
+      ${buildargs} \
+      ${_BI[dockerbuildtmpdir]}/${_BI[baseimagename]}"
+    text="Creating"
+  else
+    buildtype="download"
+    cmd="docker pull mclarkson/${tagname}"
+    text="Downloading"
+  fi
+
+  UT_run_with_progress \
+    "    ${text} base image, '${tagname}'" "${cmd}"
+
+  retval=$?
+  [[ ${retval} -ne ${OK} ]] && {
+    local runlogfile
+    runlogfile=$(UT_runlogfile) || err || return
+    printf 'ERROR: Docker returned an error, shown below\n\n' >"${STDERR}"
+    cat "${runlogfile}" >"${STDERR}"
+    printf '\n' >"${STDERR}"
+    return "${ERROR}"
+  }
+
+  [[ ${buildtype} == "create" ]] && {
+    cmd="_BI_modify_container_image"
+
+    UT_run_with_progress \
+      "    Modifying base image (pulling kubernetes images)" "${cmd}"
+
+    retval=$?
+    [[ ${retval} -ne ${OK} ]] && {
+      local runlogfile
+      runlogfile=$(UT_runlogfile) || err || return
+      printf 'ERROR: Docker returned an error, shown below\n\n' >"${STDERR}"
+      cat "${runlogfile}" >"${STDERR}"
+      printf '\n' >"${STDERR}"
+      return "${ERROR}"
+    }
+  }
+
+  return "${OK}"
+}
+
+# _BI_modify_container_image starts a container suitable for running kubernetes
+# components (since the build environment isn't suitable), makes some
+# modifications and then 'commits' the image. The modifications allow `mokctl
+# create ...` to complete more quickly.
+# Args: No args expected.
+_BI_modify_container_image() {
+
+  # Delete container, just in case it was left behind
+  docker stop -t 5 mok-build-modify &>/dev/null
+  docker rm mok-build-modify &>/dev/null
+
+  # Start container
+  CU_create_container "mok-build-modify" "mok-build-modify" "${_BI[k8sver]}" ||
+    return
+
+  # Wait for crio to become ready
+  printf '\n\n ** WAITING FOR CRIO TO BECOME READY **\n\n'
+  while ! docker exec mok-build-modify systemctl status crio; do
+    sleep 1
+    [[ ${counter} -gt 10 ]] && {
+      printf '\nERROR: CRI-O did not start after %d tries.\n' "${counter}"
+      err || return
+    }
+    ((counter++))
+  done
+
+  # Modify container
+  docker exec mok-build-modify kubeadm config images pull || return
+
+  # Stop container
+  docker stop -t 5 "mok-build-modify"
+
+  # Write image
+  local imgprefix tagname
+  imgprefix=$(CU_imgprefix) || err || return
+  tagname="${_BI[baseimagename]}-v${_BI[k8sver]}"
+  docker commit mok-build-modify "${imgprefix}local/${tagname}" || return
+
+  # Delete container, just in case it was left behind
+  docker stop -t 5 mok-build-modify
+  docker rm mok-build-modify || err || return
+
+  return "${OK}"
+}
+
+# _BI_get_build_args_for_k8s_ver sets the buildargs variable that is added
+# to the 'podman build ...' command line.
+# Args: None expected
+_BI_get_build_args_for_k8s_ver() {
+
+  local buildargs
+
+  case "${_BI[k8sver]}" in
+  "1.18.3")
+    buildargs="--build-arg"
+    buildargs="${buildargs} CRIO_VERSION=1.18"
+    buildargs="${buildargs} --build-arg"
+    buildargs="${buildargs} CRICTL_VERSION=v1.18.0"
+    buildargs="${buildargs} --build-arg"
+    buildargs="${buildargs} K8SBINVER=-1.18.3"
+    ;;
+  *)
+    printf 'INTERNAL ERROR: This should not happen.\n' >"${STDERR}"
+    err || return
+    ;;
+  esac
+
+  printf '%s' "${buildargs}"
+}
+
+# _BI_create_docker_build_dir creates a docker build directory in
+# /var/tmp/tmp.XXXXXXXX
+# Args: None expected
+_BI_create_docker_build_dir() {
+
+  _BI[dockerbuildtmpdir]="$(mktemp -d -p /var/tmp)" || {
+    printf 'ERROR: mktmp failed.\n' >"${STDERR}"
+    err || return
+  }
+
+  # The following comments should not be removed or changed.
+  # embed-dockerfile.sh adds a base64 encoded tarball and
+  # unpacking code between them.
+
+  #mok-centos-7-tarball-start 
+  cat <<EnD | base64 -d | tar xz -C "${_BI[dockerbuildtmpdir]}" 
+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
+jFVZlVVZlVVZlVX5kvJvEyDbWgBQAAA=
+EnD
+  #mok-centos-7-tarball-end
+}
+
+# Initialise _BI
+_BI_new || exit 1
+
+# vim helpers -----------------------------------------------------------------
+#include globals.sh
+# vim:ft=sh:sw=2:et:ts=2:

@@ -78,7 +78,7 @@ That's it for importing the parser library, next let's program the parser.
 
 ### Designing the UI
 
-Using the command line format shown in Overview above the following commands would allow the use of all of cmdline-players features:
+Using the command line format shown in Overview above the following commands would allow the use of all of the cmdline-player's features:
 
 ```none
 cmdline-player start playback using "FILENAME.scr"
@@ -93,7 +93,7 @@ cmdline-player start e2e-test using "FILENAME.scr"
 
 ```
 
-That's a very wordy, although very descriptive, user interface! It uses the COMMAND/SUBCOMMAND features of the parser.
+That's a very wordy, although very descriptive, user interface! It uses the COMMAND/SUBCOMMAND features of the parser, but not in the way it was designed for!
 
 We could also program a terse, more "unixy" version and have both versions supported at the same if required. Let's not do that, as it will be confusing for the user, but we'll start with the unix-like version then do the verbose one after:
 
@@ -160,16 +160,16 @@ Since we have no COMMAND or SUBCOMMAND states for the Unix-like version, everyth
   3. The next state to transition to, in this case END since everything is in the global state.
 
 . PA_add_option_callback takes two arguments:
-  
-  1. The COMMAND/SUBCOMMAND token to process options for.
-  
-  2. The function to call that will process those options
+
+1. The COMMAND/SUBCOMMAND token to process options for.
+
+2. The function to call that will process those options
 
 . PA_add_usage_callback takes two arguments:
-  
-  1. The COMMAND/SUBCOMMAND token for which this usage will apply.
-  
-  2. The function to call when usage needs to be shown.
+
+1. The COMMAND/SUBCOMMAND token for which this usage will apply.
+
+2. The function to call when usage needs to be shown.
 
 `PA_run` is the entrypoint for the parser. This will parse the command line calling callbacks as required to process options, show usage, and set other variables from the arguments.
 
@@ -284,3 +284,5 @@ I'm going to start at the top of the table, work through the states, do the syno
 ```bash
 
 ```
+
+There are many different ways to use the Parser and I haven't discovered them all yet. I hope you have fun playing with it!

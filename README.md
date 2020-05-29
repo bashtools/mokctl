@@ -22,7 +22,7 @@ If your distribution enables cgroups v2 then it must be disabled. Only Fedora do
 grubby --update-kernel=ALL --args="systemd.unified_cgroup_hierarchy=0"
 ```
 
-To install from source:
+To install from npm:
 
 ```bash
 sudo npm install -g my-own-kind

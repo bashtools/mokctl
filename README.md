@@ -22,18 +22,10 @@ If your distribution enables cgroups v2 then it must be disabled. Only Fedora do
 grubby --update-kernel=ALL --args="systemd.unified_cgroup_hierarchy=0"
 ```
 
-To build and install from source:
+To install from source:
 
 ```bash
-git clone https://github.com/mclarkson/my-own-kind.git
-cd my-own-kind
-```
-
-Install into `/usr/local/bin` (don't use mokctl if any tests fail):
-
-```none
-sudo make test
-sudo make install
+sudo npm install -g my-own-kind
 ```
 
 Then use `mokctl`:
@@ -41,17 +33,13 @@ Then use `mokctl`:
 ```bash
 alias mokctl="sudo mokctl"
 mokctl build image
-mokctl create cluster myk8s 1 0
+mokctl create cluster myk8s --masters 1
 ```
 
 Removal
 
 ```bash
-# To remove mokctl
-sudo make uninstall
-
-# OR, to remove mokctl and the `~/.mok/` configuration directory
-sudo make purge
+sudo npm uninstall -g my-own-kind
 ```
 
 #### For Non-Linux Operating Systems

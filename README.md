@@ -32,7 +32,7 @@ Then use `mokctl`:
 
 ```bash
 alias mokctl="sudo mokctl"
-mokctl build image
+mokctl build image --get-prebuilt-image
 mokctl create cluster myk8s --masters 1
 ```
 

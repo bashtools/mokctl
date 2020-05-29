@@ -16,20 +16,20 @@ CC_set_clustername() {
 }
 
 # CC_set_nummasters setter sets the nummasters array item.
-# This function is called by the parser.
+# This function is called by the parser, via a callback in _CC_new.
 CC_set_nummasters() {
   _CC[nummasters]="$1"
 }
 
 # CC_set_numworkers setter sets the numworkers array item.
-# This function is called by the parser.
+# This function is called by the parser, via a callback in _CC_new.
 CC_set_numworkers() {
   _CC[numworkers]="$1"
 }
 
 # Public Functions ------------------------------------------------------------
 
-# CC_process_options checks if arg1 is in a list of valid build image
+# CC_process_options checks if arg1 is in a list of valid create cluser
 # options. This function is called by the parser.
 # Args: arg1 - the option to check.
 #       arg2 - value of the option to be set, optional. This depends on the
@@ -83,8 +83,8 @@ CC_process_options() {
   esac
 }
 
-# CC_usage outputs help text for the create cluster component.
-# It is called in this file and by _PA_usage().
+# CC_usage outputs help text for the create cluster component.  It is called in
+# this file and by _PA_usage(), via a callback set in _CC_new.
 # Args: None expected.
 CC_usage() {
 
@@ -216,7 +216,7 @@ _CC_new() {
 }
 
 # CC_sanity_checks is expected to run some quick and simple checks to see if it
-# has all it's key components.
+# has it's main requirements before CC_run is called.
 # Args: None expected.
 _CC_sanity_checks() {
 
@@ -240,7 +240,7 @@ _CC_sanity_checks() {
   fi
 }
 
-# _CC_create_master_nodes creates the master node(s).
+# _CC_create_master_nodes creates the master node containers.
 # Args: arg1 - number of master nodes to create
 _CC_create_master_nodes() {
 
@@ -270,7 +270,7 @@ _CC_create_master_nodes() {
   return "${OK}"
 }
 
-# _CC_setup_master_nodes sets up the master node(s).
+# _CC_setup_master_nodes sets up the master node containers.
 # Args: arg1 - number of master nodes to create
 _CC_setup_master_nodes() {
 
@@ -321,7 +321,7 @@ _CC_setup_master_nodes() {
 _CC_set_up_master_node() {
 
   case "${_CC[k8sver]}" in
-  "1.18.3")
+  "1.18.2" | "1.18.3")
     _CC_set_up_master_node_v1_18_3 "$@"
     ;;
   *)
@@ -331,9 +331,11 @@ _CC_set_up_master_node() {
   esac
 }
 
-# _CC_get_master_join_details uses 'docker exec' to run a script on the master
-# to get CA hash, a token, and the master IP.  The caller can eval the output
-# of this function to set the variables: cahash, token, and masterip.
+# _CC_get_master_join_details uses 'docker exec' or 'podman exec' to run a
+# script on the master to get CA hash, a token, and the master IP.  The caller
+# can eval the output of this function to set the variables: cahash, token, and
+# masterip. See also:
+# https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-join/#token-based-discovery-with-ca-pinning
 # Args: arg1 - id/name of master container
 _CC_get_master_join_details() {
 
@@ -371,7 +373,7 @@ EnD
   docker exec "$1" bash /root/joinvars.sh 2>"${STDERR}" || err
 }
 
-# _CC_create_lb_node creates the load balancer node.
+# _CC_create_lb_node creates the load balancer node container.
 # Args: None expected.
 _CC_create_lb_node() {
 
@@ -398,7 +400,7 @@ _CC_create_lb_node() {
   return "${OK}"
 }
 
-# _CC_setup_lb_node sets up the load balancer node.
+# _CC_setup_lb_node sets up the load balancer node container.
 # Args: None expected.
 _CC_setup_lb_node() {
 

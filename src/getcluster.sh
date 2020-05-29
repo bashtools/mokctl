@@ -9,20 +9,27 @@ declare OK ERROR STDERR TRUE STOP
 
 # Getters/Setters -------------------------------------------------------------
 
+# GC_showheader getter outputs the value of the showheader array member.
 GC_showheader() {
   printf '%s' "${_GC[showheader]}"
 }
 
+# GC_set_showheader setter sets the value of the showheader array member.
+# If $TRUE the header will be shown, or $FALSE, then it won't be shown.
 GC_set_showheader() {
   _GC[showheader]="$1"
 }
 
+# GC_set_clustername setter sets the cluster name to show information about.
 GC_set_clustername() {
   _GC[clustername]="$1"
 }
 
 # Public Functions ------------------------------------------------------------
 
+# GC_cleanup removes artifacts that were created during execution. Currently
+# this does nothing and this function could be deleted. It is called by
+# MA_cleanup.
 GC_cleanup() {
   :
 }
@@ -122,7 +129,6 @@ GC_run() {
 }
 
 # _GC_new sets the initial values for the _GC associative array.
-# This function is called by main().
 # Args: None expected.
 _GC_new() {
   _GC[showheader]="${TRUE}"

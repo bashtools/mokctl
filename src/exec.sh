@@ -9,6 +9,7 @@ declare OK ERROR STDERR TRUE
 
 # Getters/Setters -------------------------------------------------------------
 
+# EX_set_containername setter sets the containername to be used to 'log in' to.
 EX_set_containername() {
   _EX[containername]="$1"
 }
@@ -16,7 +17,7 @@ EX_set_containername() {
 # Public Functions ------------------------------------------------------------
 
 # EX_process_options checks if arg1 is in a list of valid exec options. This
-# function is called by the parser.
+# function is called by the parser, via a callback in _EX_new.
 # Args: arg1 - the option to check.
 #       arg2 - value of the item to be set, optional
 EX_process_options() {
@@ -39,8 +40,8 @@ EX_process_options() {
   return "${ERROR}"
 }
 
-# EX_usage outputs help text for the create exec component.
-# It is called by PA_usage().
+# EX_usage outputs help text for the create exec component.  It is called in
+# this file and by PA_usage(), via a callback in _EX_new.
 # Args: None expected.
 EX_usage() {
 
@@ -51,18 +52,18 @@ exec options:
  
  Format:
   exec [NAME]
-  NAME        - (optional) The name of the container to log into.
-                If this option is empty then the user will be offered
+  NAME        - (optional) The name of the container to 'log in' to.
+                If NAME is not given then the user will be offered
                 a choice of containers to log in to. If there is only
-                one cluster and one node then NAME can be left empty
-                and it will log into the only available container.
+                one cluster and one node then it will 'log in' to the
+                only available container.
 
 EnD
 }
 
-# Execs into the container referenced by _EX[containername]. If just 'mokctl
-# exec' is called without options then the user is offered a selection of
-# existing clusters to exec into.
+# Execs 'bash' in the container referenced by _EX[containername]. If just
+# 'mokctl exec' is called without options then the user is offered a selection
+# of existing clusters to exec into.
 # Args: None expected.
 # ---------------------------------------------------------------------------
 EX_run() {
@@ -124,6 +125,8 @@ EX_run() {
 
 # Private Functions -----------------------------------------------------------
 
+# _EX_new sets the initial values for the _EX associative array and sets up the
+# parser ready for processing the command line arguments, options and usage.
 _EX_new() {
   _EX[containername]=
 
@@ -141,13 +144,11 @@ _EX_new() {
 # Args: None expected.
 _EX_sanity_checks() { :; }
 
-# ---------------------------------------------------------------------------
+# _EX_exec runs a command in a docker container using bash as the command by
+# default.
+# Args: arg1 - docker container name
+#       arg2 - command to run
 _EX_exec() {
-
-  # Exec into the docker container
-  # Args:
-  #   arg1 - docker container name
-  #   arg2 - command to run
 
   local cmd=${2:-bash}
 

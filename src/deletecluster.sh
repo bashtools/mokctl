@@ -9,6 +9,8 @@ declare OK ERROR STDERR STOP TRUE
 
 # Getters/Setters -------------------------------------------------------------
 
+# DC_set_clustername setter sets the cluster name to be deleted. This is
+# called by the parser, via a callback in _DC_new.
 DC_set_clustername() {
   _DC[clustername]="$1"
 }
@@ -16,7 +18,7 @@ DC_set_clustername() {
 # Public Functions ------------------------------------------------------------
 
 # DC_process_options checks if arg1 is in a list of valid delete cluster
-# options. This function is called by the parser.
+# options. This function is called by the parser, via a callback in _DC_new.
 # Args: arg1 - the option to check.
 #       arg2 - value of the item to be set, optional
 DC_process_options() {
@@ -36,7 +38,7 @@ DC_process_options() {
 }
 
 # DC_usage outputs help text for the create cluster component.
-# It is called by PA_usage().
+# It is called by PA_usage(), via a callback in _DC_new.
 # Args: None expected.
 DC_usage() {
 
@@ -54,6 +56,8 @@ delete cluster options:
 EnD
 }
 
+# DC_run starts the delete cluster process.
+# Args: None expected.
 DC_run() {
 
   _DC_sanity_checks || return
@@ -108,6 +112,9 @@ DC_run() {
 
 # Private Functions -----------------------------------------------------------
 
+# _DC_new sets the initial values for the _DC associative array and sets up the
+# parser ready for processing the command line arguments, options and usage.
+# Args: None expected.
 _DC_new() {
   _DC[clustername]=
 
@@ -125,6 +132,9 @@ _DC_new() {
   PA_add_usage_callback "deletecluster" "DC_usage" || return
 }
 
+# DC_sanity_checks is expected to run some quick and simple checks to see if it
+# has it's main requirements before DC_run is called.
+# Args: None expected.
 _DC_sanity_checks() {
 
   if [[ -z ${_DC[clustername]} ]]; then
@@ -134,11 +144,9 @@ _DC_sanity_checks() {
   fi
 }
 
+# _DC_delete stops and removes a docker container.
+# Args: arg1 - docker id to delete.
 _DC_delete() {
-
-  # Stops and removes docker container.
-  # Args:
-  #   arg1 - docker id to delete
 
   docker stop -t 5 "${id}"
   docker rm "${id}" || err

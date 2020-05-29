@@ -4,7 +4,7 @@
 declare OK ERROR STOP STDERR
 
 # main is the start point for this application.
-# Args: arg1-N - the command line arguments sent by the user.
+# Args: arg1-N - the command line arguments entered by the user.
 MA_main() {
 
   trap MA_cleanup EXIT
@@ -35,6 +35,8 @@ MA_main() {
   esac
 }
 
+# MA_register_parser_global_options adds the options callback and usage
+# callback to the Parser.
 MA_register_parser_global_options() {
   PA_add_option_callback "" "MA_process_global_options"
   PA_add_usage_callback "" "MA_usage"
@@ -57,7 +59,7 @@ MA_process_global_options() {
 }
 
 # MA_cleanup is called from an EXIT trap only, when the program exits, and
-# calls every other function ending in '_cleanup'.
+# calls every other function matching the pattern '^.._cleanup'.
 # Args: No args expected.
 MA_cleanup() {
   local retval="${OK}" funcs func
@@ -70,7 +72,7 @@ MA_cleanup() {
 }
 
 # MA_sanity_checks is expected to run some quick and simple checks to
-# see if key components are available.
+# see if key components are available before MA_main is called.
 # Args: No args expected.
 MA_sanity_checks() {
 
@@ -88,7 +90,9 @@ MA_sanity_checks() {
   [ -t 1 ] || UT_disable_colours
 }
 
-# MA_usage outputs help text for all components then quits with no error.
+# MA_usage outputs help text for all components then quits with no error.  This
+# is registered as a callback in the Parser in
+# MA_register_parser_global_options.
 # Args: None expected.
 MA_usage() {
 

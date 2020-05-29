@@ -11,19 +11,19 @@ declare OK ERROR STDERR STOP TRUE FALSE
 # Getters/Setters -------------------------------------------------------------
 
 # BI_setflag_useprebuiltimage setter sets the useprebuiltimage array item.
-# This is called by the parser.
+# This is called by the parser, via a callback in _BI_new.
 BI_setflag_useprebuiltimage() {
   _BI[useprebuiltimage]="$1"
 }
 
-# BI_k8sver outputs the value of the _BI[k8sver], the kubernetes version to be
-# installed.
+# BI_k8sver getter outputs the value of the _BI[k8sver], the kubernetes version
+# to be installed.
 # Args: None expected.
 BI_k8sver() {
   printf '%s' "${_BI[baseimagename]}"
 }
 
-# BI_baseimagename outputs the value of the _BI[baseimagename].
+# BI_baseimagename getter outputs the value of the _BI[baseimagename].
 # Args: None expected.
 BI_baseimagename() {
   printf '%s' "${_BI[baseimagename]}"
@@ -32,7 +32,7 @@ BI_baseimagename() {
 # Public Functions ------------------------------------------------------------
 
 # BI_usage outputs help text for the build image component.
-# It is called by PA_usage().
+# It is called by PA_usage(), via a callback in _BI_new.
 # Args: None expected.
 BI_usage() {
 
@@ -55,7 +55,7 @@ EnD
 }
 
 # BI_cleanup removes temporary files created during the build.
-# This function is called by the 'cleanup' trap only.
+# This function is called by the 'MA_cleanup' trap only.
 # Args: None expected.
 BI_cleanup() {
   [[ -e ${_BI[dockerbuildtmpdir]} ]] &&
@@ -69,7 +69,7 @@ BI_cleanup() {
 }
 
 # BI_check_valid_options checks if arg1 is in a list of valid build image
-# options. This function is called by the parser.
+# options. This function is called by the parser, via a callback in _BI_new.
 # Args: arg1 - the option to check.
 #       arg2 - value of the item to be set, optional
 BI_process_options() {
@@ -214,9 +214,9 @@ _BI_build_container_image() {
 }
 
 # _BI_modify_container_image starts a container suitable for running kubernetes
-# components (since the build environment isn't suitable), makes some
-# modifications and then 'commits' the image. The modifications allow `mokctl
-# create ...` to complete more quickly.
+# components (since the docker/podman build environment isn't suitable), makes
+# some modifications and then 'commits' the image. The modifications allow
+# `mokctl create ...` to complete more quickly.
 # Args: No args expected.
 _BI_modify_container_image() {
 
@@ -266,7 +266,7 @@ _BI_get_build_args_for_k8s_ver() {
   local buildargs
 
   case "${_BI[k8sver]}" in
-  "1.18.3")
+  "1.18.2" | "1.18.3")
     buildargs="--build-arg"
     buildargs="${buildargs} CRIO_VERSION=1.18"
     buildargs="${buildargs} --build-arg"

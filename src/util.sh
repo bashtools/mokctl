@@ -9,20 +9,20 @@ declare OK STDERR FALSE
 
 # Getters/Setters -------------------------------------------------------------
 
-# UT_runlogfile outputs the value of _UT[runlogfile], which contains the name of
-# the file written to when running UT_run_with_progress.
+# UT_runlogfile getter outputs the value of _UT[runlogfile], which contains the
+# name of the file written to when running UT_run_with_progress.
 UT_runlogfile() {
   printf '%s' "${_UT[runlogfile]}"
 }
 
-# UT_tailf getter indicates whether a log will be shown during the 'run',
-# TRUE, or not, FALSE.
+# UT_tailf getter indicates whether a log will be shown in real-time during the
+# 'run', TRUE, or not, FALSE.
 # Args
 UT_tailf() {
   printf '%s' "${_UT[tailf]}"
 }
 
-# UT_tailf getter indicates whether a log should be shown during the 'run',
+# UT_tailf setter indicates whether a log should be shown during the 'run',
 # TRUE, or not, FALSE.
 # Args: arg1 - Whether to tail, TRUE or FALSE.
 UT_set_tailf() {
@@ -43,8 +43,8 @@ UT_disable_colours() {
   _UT[failure]="✕"
 }
 
-# UT_run_with_progress displays a progress spinner, display item text, display
-# a tick or cross based on the exit code.
+# UT_run_with_progress displays a progress spinner, item text, and a tick or
+# cross based on the exit code.
 # Args: arg1   - the text to display.
 #       arg2-N - remaining args are the program to run and its arguments.
 UT_run_with_progress() {
@@ -130,7 +130,8 @@ UT_run_with_progress() {
   return "${retval}"
 }
 
-# UT_cleanup removes artifacts that were created during execution.
+# UT_cleanup removes any artifacts that were created during execution.
+# This is called by 'MA_cleanup' trap only.
 UT_cleanup() {
 
   # Called when the script exits.
@@ -154,8 +155,6 @@ UT_cleanup() {
 # Private Functions -----------------------------------------------------------
 
 # _UT_new sets the initial values for the _UT associative array.
-# This function is called by parse_options once it knows which component is
-# being requested but before it sets any array members.
 # Args: None expected.
 _UT_new() {
   _UT[tailf]="${FALSE}"

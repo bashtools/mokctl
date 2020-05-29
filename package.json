@@ -1,5 +1,5 @@
 {
-  "name": "mokctl",
+  "name": "my-own-kind",
   "version": "0.8.0-alpha1",
   "description": "Build verifiably conformant kubernetes clusters on your laptop.",
   "homepage": "http://github.com/mclarkson/my-own-kind",
@@ -12,5 +12,6 @@
   },
   "dependencies": {},
   "devDependencies": {},
-  "author": "Mark Clarkson <mark.clarkson@smorg.co.uk>"
+  "author": "Mark Clarkson <mark.clarkson@smorg.co.uk>",
+  "license": "Apache2"
 }

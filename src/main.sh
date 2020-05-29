@@ -12,7 +12,7 @@ MA_main() {
   MA_register_parser_global_options || return
 
   local retval="${OK}"
-  PA_parse_args "$@" || retval=$?
+  PA_run "$@" || retval=$?
   if [[ ${retval} -eq ${ERROR} ]]; then
     return "${ERROR}"
   elif [[ ${retval} -eq ${STOP} ]]; then

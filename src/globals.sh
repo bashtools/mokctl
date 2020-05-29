@@ -4,7 +4,8 @@
 
 # GL_new sets the only global variables that should be in use anywhere.  The
 # only other globals are the associative arrays. All the globals are constant
-# (readonly) variables. Declare these globals, where needed, in other files.
+# (readonly) variables. Declare these globals, where needed, in other files
+# so that shellcheck passes.
 # Args: None expected.
 _GL_new() {
 
@@ -45,7 +46,7 @@ _GL_new || exit 1
 
 # The following lines allow the use of '[C-i' and '[I' (do ':help [I') in vim.
 #include buildimage.sh
-#include container.sh
+#include containerutils.sh
 #include createcluster.sh
 #include deletecluster.sh
 #include embed-dockerfile.sh
@@ -53,7 +54,8 @@ _GL_new || exit 1
 #include exec.sh
 #include getcluster.sh
 #include main.sh
-#include parser.sh
+#include lib/parser.sh
 #include util.sh
+#include versions.sh
 
 # vim:ft=sh:sw=2:et:ts=2:

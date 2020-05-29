@@ -9,18 +9,20 @@ declare OK ERROR STDERR
 
 # Getters/Setters -------------------------------------------------------------
 
+# CU_containerrt getter outputs the container runtime (podman or docker)
+# that has been chosen.
 CU_containerrt() {
   printf '%s' "${_CU[containerrt]}"
 }
 
-# CU_imgprefix gets the prefix to be used with docker build. For podman
-# it is 'localhost/'. For docker it is empty.
+# CU_imgprefix getter outputs the prefix to be used with docker build. For
+# podman it is 'localhost/'. For docker it is empty.
 CU_imgprefix() {
   printf '%s' "${_CU[imgprefix]}"
 }
 
-# CU_labelkey gets the key value of the label that is applied to all
-# cluster members for podman or docker.
+# CU_labelkey getter outputs the key value of the label that is applied to all
+# cluster member's container labels for podman or docker.
 CU_labelkey() {
   printf '%s' "${_CU[labelkey]}"
 }
@@ -28,7 +30,7 @@ CU_labelkey() {
 # Public Functions ------------------------------------------------------------
 
 # CU_cleanup removes artifacts that were created during execution. Currently
-# this does nothing.
+# this does nothing and this function could be deleted.
 CU_cleanup() { :; }
 
 # CU_get_cluster_container_ids outputs just the container IDs, one per line
@@ -99,7 +101,7 @@ CU_get_container_ip() {
   }
 }
 
-# CU_get_container_info uses 'docker inspect $id' to output
+# CU_get_container_info uses 'docker/podman inspect $id' to output
 # container details.
 # Args: arg1 - docker container id
 CU_get_container_info() {

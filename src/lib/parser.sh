@@ -10,20 +10,38 @@ declare OK ERROR STDERR
 
 # Getters/Setters -------------------------------------------------------------
 
-# PA_command outputs the _PA[command] array member. This contains the command
-# the user requested.
+# PA_command getter outputs the _PA[command] array member. This contains the
+# command the user requested.
 PA_command() {
   printf '%s' "${_PA[command]}"
 }
 
-# PA_subcommand outputs the _PA[subcommand] array member. This contains the
-# subcommand the user requested.
+# PA_subcommand getter outputs the _PA[subcommand] array member. This contains
+# the subcommand the user requested.
 PA_subcommand() {
   printf '%s' "${_PA[subcommand]}"
 }
 
-# PA_shift outputs the _PA[shift] array member, used when the caller
-# asks for an extra shift when consuming option values.
+# PA_shift outputs the _PA[shift] array member, returned by the caller
+# when an extra shift is required whilst consuming option values.
+#
+# Example code:
+# ```
+#XX_process_options_callback() {
+#
+#  case "$1" in
+#  -h | --help)
+#    CC_usage
+#    return "${STOP}"
+#    ;;
+#    ... omitted ...
+#  --k8sver)
+#    _CC[k8sver]="$2"
+#    return "$(PA_shift)"
+#    ;;
+#  --with-lb)
+#    ... omitted ..
+# ```
 PA_shift() {
   printf '%s' "${_PA[shift]}"
 }
@@ -64,10 +82,10 @@ PA_add_state() {
 # by setting the next state at each transition.
 #
 # --global-options COMMAND --command-options SUBCOMMAND --subcommand-options \
-#  ARG1 ARG2 ARG3 ...
+#  ARG1 --subcommand-options ARG2 --subcommand-options ...
 #
 # --global-options are those before COMMAND.
-# --command-options can be anywhere after the SUBCOMMAND.
+# --command-options can be after the COMMAND but before SUBCOMMAND.
 # --subcommand-options can be anywhere after the SUBCOMMAND.
 #
 # Args: arg1-N - The arguments given to mokctl by the user on the command line
@@ -151,7 +169,10 @@ _PA_new() {
   _PA[shift]=3
 }
 
-# _PA_check_token checks for a valid token in arg2 state.
+# _PA_check_token checks for a valid token in arg2 state. The logic is
+# most easily understood by reading the full original version at:
+# https://github.com/mclarkson/my-own-kind/blob/master/docs/package.md#scripted-cluster-creation-and-deletion
+# This function is a reduction of all the check_xxx_token functions.
 # Args: arg1 - the token to check.
 #       arg2 - the current state.
 #       arg3 - the state value to set, optional. This should only be sent
@@ -185,8 +206,8 @@ _PA_check_token() {
   done
 }
 
-# _PA_process_option checks that the sent option is valid for the
-# command-subcommand or global options.
+# _PA_process_option checks that the user-provided option is valid for the
+# command-subcommand or global states.
 # Args: arg1 - The option to check.
 #       arg2 - TODO The value of the option if present, optional.
 _PA_process_option() {

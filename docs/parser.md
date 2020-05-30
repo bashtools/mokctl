@@ -128,7 +128,7 @@ I will present the changes and explain them as we go.
   # Set up the parser
   setup_parser
   PA_run "$@" || exit 1
-  
+
   local retval="${OK}"
   PA_run "$@" || retval=$?
   if [[ ${retval} -eq ${ERROR} ]]; then
@@ -136,7 +136,7 @@ I will present the changes and explain them as we go.
   elif [[ ${retval} -eq ${STOP} ]]; then
     return "${OK}"
   fi
-  
+
   sanity_checks
 ```
 

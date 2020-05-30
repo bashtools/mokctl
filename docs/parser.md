@@ -1,19 +1,5 @@
 # How to use the My Own Kind Parser in your own Code
 
-Before starting, a question that keeps being asked is 'Why Bash?'.
-
-Bash is a great tool for automating commands. In `mokctl`, Bash is a wrapper around podman or docker - that's it. Bash is perfect for this.
-
-Bash can be a great tool for Rapid Application Development and for Proof of Concepts. Kubernetes started [more or less] this way - small Go applications and lots of Bash glue code. The `mokctl` code, working out how to do it, and all the documentation was written in 9 days. That's from zero to fully working application in 9 days - and 19 GitHub stars - in 9 days. That would be difficult to do in Python, Go, Java, Haskell, or whatever.
-
-Why was it so fast to write? Well, whilst investigating how to create a kubernetes cluster in containers I copied and pasted all the commands in a Markdown document. Then the list of commands were pasted, as-is, into functions so I knew they would work. Doing this in another language would actually be alot more work.
-
-Bash code from 10 years ago still works now. There aren't many languages that can do that, so I can be sure that code I have written will not be deprecated any time soon. Indeed Bash can still run the original Bourne shell (sh) code. If you didn't know, Bash is an acronym for Bourne Again SHell.
-
-Bash is something every sysadmin knows. So for sysadmin tools it makes sense.
-
-Later, in another document, I will show how a Bash program can be wrapped in a pretty GUI, using Go (golang) and a Javascript Framework to create a solid and maintainable user application.
-
 ## Overview
 
 The command `mokctl` uses a command-line parser that follows the format used by most tools found in the kubernetes ecosystem. The parser has been made into a library so anyone can use it in their own Bash project and this page is intended to help with that.
@@ -32,7 +18,7 @@ A '-h' in the subcommand options positions will show help for the SUBCOMMAND.
 
 There is no limit to the number of ARGs a command line can have.
 
-There are three functions for programming the parser:
+There are four functions for programming the parser:
 
 * PA_add_option_callback()
   
@@ -45,6 +31,10 @@ There are three functions for programming the parser:
 * PA_add_state()
   
   Add states using this command, along with optional callbacks for what to call if the state matches. The parser will add the COMMAND and SUBCOMMAND for the program to retrieve via the getters, PA_command() and PA_subcommand().
+
+* PA_set_state()
+  
+  This defaults to COMMAND, but can be set to SUBCOMMAND, or ARG1 for a more traditional Unix style of option processing, shown later.
 
 ## Mokctl
 
@@ -132,23 +122,6 @@ That's it for importing the parser library, next let's program the parser.
 Using the command line format shown in Overview above the following commands would allow the use of all of the cmdline-player's features:
 
 ```none
-cmdline-player start playback using "FILENAME.scr"
-
-cmdline-player start playback using "FILENAME.scr" and record clicked window
-
-cmdline-player start playback using "FILENAME.scr" and record window "Gnome Terminal"
-
-cmdline-player get window name by clicking on it
-
-cmdline-player start e2e-test using "FILENAME.scr"
-
-```
-
-That's a very wordy, although very descriptive, user interface! It uses the COMMAND/SUBCOMMAND features of the parser, but not in the way it was designed for!
-
-We could also program a terse, more "unixy" version and have both versions supported at the same if required. Let's not do that, as it will be confusing for the user, but we'll start with the unix-like version then do the verbose one after:
-
-```none
 # Play and record choosing the window with a click
 cmdline-player FILENAME.scr
 
@@ -169,29 +142,24 @@ The command line interface in the previous code block uses global options only. 
 
 ### Programming the UI
 
-Here we will code both versions starting with...
-
-#### The Unix-like Version
-
 I will present the changes and explain them as we go.
 
 ```bash
   # Set up the parser
-  setup_parser
-  PA_run "$@" || exit 1
+  setup_parser                             # <- 1
 
   local retval="${OK}"
-  PA_run "$@" || retval=$?
+  PA_run "$@" || retval=$?                 # <- 2
   if [[ ${retval} -eq ${ERROR} ]]; then
     return "${ERROR}"
   elif [[ ${retval} -eq ${STOP} ]]; then
     return "${OK}"
   fi
 
-  sanity_checks
+  sanity_checks                            # <- 3
 ```
 
-Those lines were added to the top of the `main()` function. The first function that cmdline player calls. The three lines call three functions shown next.
+Those lines were added to the top of the `main()` function - the first function that cmdline-player calls. The three lines call three functions shown next.
 
 ```bash
 setup_parser() {
@@ -207,9 +175,9 @@ setup_parser() {
 }
 ```
 
-Since we have no COMMAND or SUBCOMMAND states for the Unix-like version, everything is set up in the global scope.
+Since we have no COMMAND or SUBCOMMAND states for the Unix-like version, everything is set up in the global scope ("").
 
-* PA_set state "ARG1" sets the initial state to ARG1, completely bypassing the COMMAND and SUBCOMMAND states.
+* 'PA_set state "ARG1"' sets the initial state to ARG1, completely bypassing the COMMAND and SUBCOMMAND states.
 
 * PA_add_state takes four arguments:
   
@@ -218,18 +186,20 @@ Since we have no COMMAND or SUBCOMMAND states for the Unix-like version, everyth
   2. The token for the current state, in this case "" as it's the global state.
   
   3. The next state to transition to, in this case END since everything is in the global state.
+  
+  4. An optional callback used to set variables, or more.
 
-. PA_add_option_callback takes two arguments:
+* PA_add_option_callback takes two arguments:
+  
+  1. The COMMAND/SUBCOMMAND token to process options for.
+  
+  2. The function to call that will process those options.
 
-1. The COMMAND/SUBCOMMAND token to process options for.
-
-2. The function to call that will process those options
-
-. PA_add_usage_callback takes two arguments:
-
-1. The COMMAND/SUBCOMMAND token for which this usage will apply.
-
-2. The function to call when usage needs to be shown.
+* PA_add_usage_callback takes two arguments:
+  
+  1. The COMMAND/SUBCOMMAND token for which this usage will apply.
+  
+  2. The function to call when usage needs to be shown.
 
 `PA_run` is the entrypoint for the parser. This will parse the command line calling callbacks as required to process options, show usage, and set other variables from the arguments.
 
@@ -263,7 +233,7 @@ usage() {
 }
 ```
 
-The `usage` function outputs the usage to the screen. It should be longer than that!
+The `usage` function outputs the usage to the screen. You can see the full help text in [cmdline-player](/cmdline-player/cmdline-player).
 
 ```bash
 process_options() {
@@ -298,65 +268,10 @@ The `process_options()` function is called by the parser each time a global opti
 
 * `-h` or `--help` will output usage then return STOP. When the parser sees STOP it will stop parsing and return without error. In this program 'exit 0' could have been called instead of `return "${STOP}"`. In `mokctl` the `exit` command is never used.
 
-* `-w` or `--window` sets the WINDOWNAME global variable to the second argument. If the second argument is used then an extra shift is required. You signal an extra shift by returning PA_shift (a getter).
+* `-w` or `--window` sets the WINDOWNAME global variable to the second argument. If the second argument is used then an extra shift is required. You signal an extra shift by returning PA_shift (a getter - a function call).
 
 That's all that is required to get the parser working. A parser that can grow without worry or needing to change lots of code later on.
 
-If you want to take a look I saved it as [cmdline-player-unixlike.sh](cmdline-player-unixlike.sh)
+If you want to take a look it's here: [cmdline-player](/cmdline-player/cmdline-player).
 
-#### The Very Wordy Version
-
-The same functions will be called for the wordy version so only the `setup_parser()` function will be changed. I'm going to use this parser set up in My Own Kind because it makes me chuckle :)
-
-Looking at the following table you can easily see the states, and which tokens are expected in each state.
-
-```bash
-CMD   SUBCMD   ARG1  ARG2       ARG3     ARG4   ARG5    ARG6
-start playback using "FILENAME"
-start playback using "FILENAME" and      record clicked window
-start playback using "FILENAME" and      record window  "WINNAME"
-get   window   name  by         clicking on     it
-start e2e-test using "FILENAME"
-```
-
-With such a wordy user interface lets give the user synonyms:
-
-* using = with, from
-
-* start = begin
-
-* get = display, output, choose (I much prefer display to get!)
-
-* clicking = tapping, choosing, pointing, pressing
-
-* on = at, it
-
-* 'on it' - can be completely omitted, so optional
-
-It's also possible to allow the full 'cmdline-player get window name ...` and the shorter 'cmdline-player get' (or it's synonyms).
-
-Now it should actually be pretty hard to get the command line wrong!
-
-This should show how versatile the parser is, and how professional the results can be.
-
-I'm going to start at the top of the table, work through the states, do the synonyms, then do the next line. The following code shows the result.
-
-```bash
-setup_parser() {
-  # Program the parser's state machine
-  PA_add_state "COMMAND" "start" "SUBCOMMAND" ""
-  PA_add_state "COMMAND" "begin" "SUBCOMMAND" ""
-  PA_add_state "SUBCOMMAND" "startplayback" "ARG1" ""
-  PA_add_state "SUBCOMMAND" "beginplayback" "ARG1" ""
-  PA_add_state "ARG1" "startplayback" "ARG2" "arg1using" #using
-  PA_add_state "ARG1" "beginplayback" "ARG2" "arg1using" #using
-
-  # Set up the parser's option callbacks
-  PA_add_option_callback "" "process_options" || return
-
-  # Set up the parser's usage callbacks
-  PA_add_usage_callback "" "usage" || return
-}
-```
-
-There are many different ways to use the Parser and I haven't discovered them all yet. I hope you have fun playing with it!
+That's it!

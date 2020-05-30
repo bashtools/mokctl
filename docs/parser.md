@@ -4,7 +4,7 @@ Before starting, a question that keeps being asked is 'Why Bash?'.
 
 Bash is a great tool for automating commands. In `mokctl`, Bash is a wrapper around podman or docker - that's it. Bash is perfect for this.
 
-Bash can be a great tool for Rapid Application Development and for Proof of Concepts. Kubernetes started [more or less] this way - small Go applications and lots of Bash glue code. The `mokctl` code, working out how to do it, and all the documentation was written in about 2 weeks. That's from zero to fully working application in 2 weeks - and 19 GitHub stars - in 2 weeks. That would be difficult to do in Python, Go, Java, Haskell, or whatever.
+Bash can be a great tool for Rapid Application Development and for Proof of Concepts. Kubernetes started [more or less] this way - small Go applications and lots of Bash glue code. The `mokctl` code, working out how to do it, and all the documentation was written in 9 days. That's from zero to fully working application in 9 days - and 19 GitHub stars - in 9 days. That would be difficult to do in Python, Go, Java, Haskell, or whatever.
 
 Why was it so fast to write? Well, whilst investigating how to create a kubernetes cluster in containers I copied and pasted all the commands in a Markdown document. Then the list of commands were pasted, as-is, into functions so I knew they would work. Doing this in another language would actually be alot more work.
 
@@ -45,6 +45,16 @@ There are three functions for programming the parser:
 * PA_add_state()
   
   Add states using this command, along with optional callbacks for what to call if the state matches. The parser will add the COMMAND and SUBCOMMAND for the program to retrieve via the getters, PA_command() and PA_subcommand().
+
+## Mokctl
+
+I gathered all the parser programming commands in the next code block so it's easy to see the full user interface definition. Try using `mokctl` by following the parser programming code.
+
+```bash
+
+```
+
+
 
 ## Example
 

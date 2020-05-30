@@ -84,7 +84,7 @@ CC_process_options() {
 }
 
 # CC_usage outputs help text for the create cluster component.  It is called in
-# this file and by _PA_usage(), via a callback set in _CC_new.
+# this file and by PA_usage(), via a callback set in _CC_new.
 # Args: None expected.
 CC_usage() {
 

@@ -29,8 +29,7 @@ MA_main() {
   get | getcluster) GC_run ;;
   exec) EX_run ;;
   *)
-    printf 'INTERNAL ERROR: This should not happen.' >"${STDERR}"
-    err || return "${ERROR}"
+    PA_usage
     ;;
   esac
 }
@@ -48,7 +47,7 @@ MA_register_parser_global_options() {
 MA_process_global_options() {
   case "$1" in
   -h | --help)
-    _PA_usage
+    PA_usage
     return "${STOP}"
     ;;
   *)

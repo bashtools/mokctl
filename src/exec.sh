@@ -34,7 +34,7 @@ EX_process_options() {
     [[ $1 == "${opt}" ]] && return
   done
 
-  _PA_usage
+  EX_usage
   printf 'ERROR: "%s" is not a valid "get cluster" option.\n' "$1" \
     >"${STDERR}"
   return "${ERROR}"

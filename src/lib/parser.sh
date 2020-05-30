@@ -118,7 +118,7 @@ PA_run() {
       COMMAND)
         _PA_check_token "${1}" "COMMAND" "command"
         [[ $? -eq ${ERROR} ]] && {
-          _PA_usage
+          PA_usage
           printf 'Invalid COMMAND, "%s".\n\n' "$1" >"${STDERR}"
           return "${ERROR}"
         }
@@ -126,7 +126,7 @@ PA_run() {
       SUBCOMMAND)
         _PA_check_token "$1" "SUBCOMMAND" "subcommand"
         [[ $? -eq ${ERROR} ]] && {
-          _PA_usage
+          PA_usage
           printf 'Invalid SUBCOMMAND for %s, "%s".\n\n' "${_PA[command]}" "${1}" \
             >"${STDERR}"
           return "${ERROR}"
@@ -136,14 +136,14 @@ PA_run() {
         ((ARGNUM++))
         _PA_check_token "${1}" "ARG${ARGNUM}"
         [[ $? -eq ${ERROR} ]] && {
-          _PA_usage
+          PA_usage
           printf 'Invalid ARG1 for %s %s, "%s".\n\n' "${_PA[command]}" \
             "${_PA[subcommand]}" "${1}" >"${STDERR}"
           return "${ERROR}"
         }
         ;;
       END)
-        _PA_usage
+        PA_usage
         printf 'ERROR No more args expected, "%s" is unexpected for "%s %s"\n' \
           "${1}" "${_PA[command]}" "${_PA[subcommand]}" >"${STDERR}"
         return "${ERROR}"
@@ -160,6 +160,24 @@ PA_run() {
   done
 
   return "${OK}"
+}
+
+# PA_usage outputs help text for a single component if help was asked for when
+# a command was specified, or for all components otherwise.
+# Args: None expected.
+PA_usage() {
+
+  curcmdsubcmd="${_PA[command]}${_PA[subcommand]}"
+
+  for item in ${_PA[usagecallbacks]}; do
+    IFS=, read -r cmdsubcmd func <<<"${item}"
+    [[ ${curcmdsubcmd} == "${cmdsubcmd}" ]] && {
+      eval "${func}"
+      return
+    }
+  done
+
+  eval "${_PA[usage]}"
 }
 
 # Private Functions -----------------------------------------------------------
@@ -234,24 +252,6 @@ _PA_process_option() {
   done
 
   return "${ERROR}"
-}
-
-# _PA_usage outputs help text for a single component if help was asked for when
-# a command was specified, or for all components otherwise.
-# Args: None expected.
-_PA_usage() {
-
-  curcmdsubcmd="${_PA[command]}${_PA[subcommand]}"
-
-  for item in ${_PA[usagecallbacks]}; do
-    IFS=, read -r cmdsubcmd func <<<"${item}"
-    [[ ${curcmdsubcmd} == "${cmdsubcmd}" ]] && {
-      eval "${func}"
-      return
-    }
-  done
-
-  eval "${_PA[usage]}"
 }
 
 # Initialise _PA

@@ -17,9 +17,16 @@ main() {
 
   # Set up the parser
   setup_parser
-  PA_run "$@" || exit 1
-  sanity_checks
 
+  local retval="${OK}"
+  PA_run "$@" || retval=$?
+  if [[ ${retval} -eq ${ERROR} ]]; then
+    return "${ERROR}"
+  elif [[ ${retval} -eq ${STOP} ]]; then
+    return "${OK}"
+  fi
+
+  sanity_checks
   kill_old_gnu_screencasts
   [[ -z ${E2E} ]] && choose_recording_window # <- using xwininfo
   start_gnu_screen
@@ -148,7 +155,35 @@ setup_parser() {
 }
 
 usage() {
-  printf 'cmdline-player - play commands from a .scr file.'
+  cat <<EnD
+cmdline-player - play commands from a .scr file.\n'
+
+Usage: cmdline-player [ [-wn] FILE ] [ -hq ]
+
+  FILE - The name of the file containing screencast and shell commands.
+  -h
+  --help - This help text.
+  -w
+  --window "NAME" - Specify the NAME of the window to record.
+  -n
+  --norecord - Don't record the playback.
+  -q
+  --query - Retrieve the name of a window by clicking on it.
+
+Examples:
+
+Choose a window to record and start playing back all of KTHW:
+
+  $ # In the terminal to be recorded:
+  $ while true; do screen -r -e ^Oo screencast; sleep .5; done
+  $ # In the controller terminal:
+  $ cd my-own-kind/cmdline-player
+  $ wname="$(basename "$0") -q"; for i in {2..13}; do $(basename "$0") -w "\$wname" kthw-\$i.scr <<<"\n"; sleep 2; mv -f screencast.gif docs/images/kthw-\$i.gif; sleep 2; done
+
+Create a single screencast recording:
+
+  $ $(basename "$0") 
+EnD
 }
 
 sanity_checks() {
@@ -174,7 +209,7 @@ process_options() {
     return "$(PA_shift)"
     ;;
   -q | --query)
-    xwininfo | awk '/xwininfo: Window id:/ { print $NF; }'
+    xwininfo | sed -n '/Window id:/ {s/^[^"]*"\(.*\)"/\1/p}'
     exit 0
     ;;
   *)
@@ -478,7 +513,7 @@ _PA_new() {
   _PA[optscallbacks]=
   _PA[usagecallbacks]=
   # The return value if the caller asked for an extra shift:
-  _PA[shift]=3
+  _PA[shift]=126
 }
 
 # _PA_check_token checks for a valid token in arg2 state. The logic is

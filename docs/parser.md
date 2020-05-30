@@ -128,6 +128,15 @@ I will present the changes and explain them as we go.
   # Set up the parser
   setup_parser
   PA_run "$@" || exit 1
+  
+  local retval="${OK}"
+  PA_run "$@" || retval=$?
+  if [[ ${retval} -eq ${ERROR} ]]; then
+    return "${ERROR}"
+  elif [[ ${retval} -eq ${STOP} ]]; then
+    return "${OK}"
+  fi
+  
   sanity_checks
 ```
 
@@ -282,7 +291,21 @@ This should show how versatile the parser is, and how professional the results c
 I'm going to start at the top of the table, work through the states, do the synonyms, then do the next line. The following code shows the result.
 
 ```bash
+setup_parser() {
+  # Program the parser's state machine
+  PA_add_state "COMMAND" "start" "SUBCOMMAND" ""
+  PA_add_state "COMMAND" "begin" "SUBCOMMAND" ""
+  PA_add_state "SUBCOMMAND" "startplayback" "ARG1" ""
+  PA_add_state "SUBCOMMAND" "beginplayback" "ARG1" ""
+  PA_add_state "ARG1" "startplayback" "ARG2" "arg1using" #using
+  PA_add_state "ARG1" "beginplayback" "ARG2" "arg1using" #using
 
+  # Set up the parser's option callbacks
+  PA_add_option_callback "" "process_options" || return
+
+  # Set up the parser's usage callbacks
+  PA_add_usage_callback "" "usage" || return
+}
 ```
 
 There are many different ways to use the Parser and I haven't discovered them all yet. I hope you have fun playing with it!

@@ -173,7 +173,7 @@ _PA_new() {
   _PA[optscallbacks]=
   _PA[usagecallbacks]=
   # The return value if the caller asked for an extra shift:
-  _PA[shift]=3
+  _PA[shift]=126
 }
 
 # _PA_check_token checks for a valid token in arg2 state. The logic is

@@ -46,6 +46,13 @@ PA_shift() {
   printf '%s' "${_PA[shift]}"
 }
 
+# PA_set_state setter sets the initial state of the parser, which should be one
+# of COMMAND, SUBCOMMAND, or ARG1.
+# Args: arg1 - the initial state to set.
+PA_set_state() {
+  _PA[state]="$1"
+}
+
 # Public Functions ------------------------------------------------------------
 
 # PA_add_option_callback adds a callback to the list of callbacks used for
@@ -74,7 +81,7 @@ PA_add_state() {
   _PA[statecallbacks]+="$1,$2,$3,$4 "
 }
 
-# PA_parse_args implements an interleaved state machine to process the
+# PA_run implements an interleaved state machine to process the
 # user request. It allows for strict checking of arguments and args. All
 # command line arguments are processed in order from left to right.
 #
@@ -89,7 +96,7 @@ PA_add_state() {
 # --subcommand-options can be anywhere after the SUBCOMMAND.
 #
 # Args: arg1-N - The arguments given to mokctl by the user on the command line
-PA_parse_args() {
+PA_run() {
 
   set -- "$@"
   local ARGN=$# ARGNUM=0 retval=0
@@ -166,7 +173,7 @@ _PA_new() {
   _PA[optscallbacks]=
   _PA[usagecallbacks]=
   # The return value if the caller asked for an extra shift:
-  _PA[shift]=3
+  _PA[shift]=126
 }
 
 # _PA_check_token checks for a valid token in arg2 state. The logic is
@@ -187,6 +194,8 @@ _PA_check_token() {
     cmdsubcommand="${_PA[command]}$1"
   elif [[ -n ${_PA[command]} && ${_PA[state]} == "ARG"* ]]; then
     cmdsubcommand="${_PA[command]}"
+  elif [[ -z ${_PA[command]} && ${_PA[state]} == "ARG"* ]]; then
+    cmdsubcommand=
   else
     cmdsubcommand="$1"
   fi

@@ -54,8 +54,6 @@ I gathered all the parser programming commands in the next code block so it's ea
 
 ```
 
-
-
 ## Example
 
 I have a small Bash script called cmdline-player that has grown complex enough to need a few command line options. Cmdline-player is used to create the screencasts in My Own Kind.

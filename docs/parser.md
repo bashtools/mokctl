@@ -48,10 +48,53 @@ There are three functions for programming the parser:
 
 ## Mokctl
 
-I gathered all the parser programming commands in the next code block so it's easy to see the full user interface definition. Try using `mokctl` by following the parser programming code.
+I gathered all the parser programming commands in the next code block so it's easy to see the full user interface definition. The callback functions can be viewed by doing `make tags` and then, for example, `vim -t BI_process_options` - will take you directly to that function.
 
 ```bash
+  # Program the parser's state machine
+  PA_add_state "COMMAND" "build" "SUBCOMMAND" ""
+  PA_add_state "SUBCOMMAND" "buildimage" "END" ""
+  PA_add_state "COMMAND" "create" "SUBCOMMAND" ""
+  PA_add_state "SUBCOMMAND" "createcluster" "ARG2" ""
+  PA_add_state "ARG1" "createcluster" "ARG2" "CC_set_clustername"
+  PA_add_state "ARG2" "createcluster" "ARG3" "CC_set_nummasters"
+  PA_add_state "ARG3" "createcluster" "END" "CC_set_numworkers"
+  PA_add_state "COMMAND" "exec" "ARG1" ""
+  PA_add_state "ARG1" "exec" "END" "EX_set_containername"
+  PA_add_state "COMMAND" "get" "SUBCOMMAND" ""
+  PA_add_state "SUBCOMMAND" "getcluster" "ARG1" ""
+  PA_add_state "ARG1" "getcluster" "END" "GC_set_clustername"
+  PA_add_state "COMMAND" "delete" "SUBCOMMAND" ""
+  PA_add_state "SUBCOMMAND" "deletecluster" "ARG1" ""
+  PA_add_state "ARG1" "deletecluster" "END" "DC_set_clustername"
+  PA_add_state "COMMAND" "build" "SUBCOMMAND" ""
+  PA_add_state "SUBCOMMAND" "buildimage" "END" ""
 
+  # Set up the parser's option callbacks
+  PA_add_option_callback "build" "BI_process_options" || return
+  PA_add_option_callback "buildimage" "BI_process_options" || return
+  PA_add_option_callback "create" "CC_process_options" || return
+  PA_add_option_callback "createcluster" "CC_process_options" || return
+  PA_add_option_callback "exec" "EX_process_options" || return
+  PA_add_usage_callback "exec" "EX_usage" || return
+  PA_add_option_callback "get" "GC_process_options" || return
+  PA_add_option_callback "getcluster" "GC_process_options" || return
+  PA_add_option_callback "delete" "DC_process_options" || return
+  PA_add_option_callback "deletecluster" "DC_process_options" || return
+  PA_add_option_callback "build" "BI_process_options" || return
+  PA_add_option_callback "buildimage" "BI_process_options" || return
+
+  # Set up the parser's usage callbacks
+  PA_add_usage_callback "build" "BI_usage" || return
+  PA_add_usage_callback "buildimage" "BI_usage" || return
+  PA_add_usage_callback "create" "CC_usage" || return
+  PA_add_usage_callback "createcluster" "CC_usage" || return
+  PA_add_usage_callback "get" "GC_usage" || return
+  PA_add_usage_callback "getcluster" "GC_usage" || return
+  PA_add_usage_callback "delete" "DC_usage" || return
+  PA_add_usage_callback "deletecluster" "DC_usage" || return
+  PA_add_usage_callback "build" "BI_usage" || return
+  PA_add_usage_callback "buildimage" "BI_usage" || return
 ```
 
 ## Example

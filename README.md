@@ -55,7 +55,7 @@ alias mokctl='docker run --rm --privileged -ti -v /var/run/docker.sock:/var/run/
 Then use mokctl:
 
 ```bash
-mokctl build image
+mokctl build image --get-prebuilt-image
 
 mokctl create cluster myk8s 1 0
 

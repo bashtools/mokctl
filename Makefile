@@ -37,7 +37,7 @@ purge: uninstall
 
 .PHONY: clean
 clean:
-	rm -f mokctl.deploy
+	rm -f mokctl.deploy src/buildimage.deploy
 
 .PHONY: test
 test: clean mokctl.deploy

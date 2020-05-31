@@ -8,6 +8,10 @@ View a [Transcript of the screenscast](/cmdline-player/install-mokctl-linux.md).
 
 Build a verifiably conformant kubernetes cluster in containers.
 
+## Documentation
+
+The FAQ, Kubernetes the Hard Way using `mokctl`, integrating the Parser in your own project, and how `mokctl` was created is in the [docs section](/docs/README.md).
+
 ### Try mokctl
 
 Take note of the [Status](#status) below and the [Releases](https://github.com/mclarkson/my-own-kind/releases) page.
@@ -84,10 +88,6 @@ See: [Mokctl on Docker Hub](https://hub.docker.com/r/mclarkson/mokctl).
 | Fedora 32 | Gnome Terminal   | Works - must disable cgroup2 |
 | Mac OS    | Default terminal | ?                            |
 | Windows   | Cygwin           | ?                            |
-
-## Documentation
-
-The FAQ, Kubernetes the Hard Way using `mokctl`, integrating the Parser in your own project, and how `mokctl` was created is in the [docs section](/docs/README.md).
 
 ## Contributing
 

@@ -10,7 +10,7 @@ Build a verifiably conformant kubernetes cluster in containers.
 
 ## Documentation
 
-The FAQ, Kubernetes the Hard Way using `mokctl`, integrating the Parser in your own project, and how `mokctl` was created is in the [docs section](/docs/README.md).
+The FAQ, Kubernetes the Hard Way using `mokctl`, integrating the Parser in your own project, and how `mokctl` was created are all in the [docs section](/docs/README.md).
 
 ### Try mokctl
 

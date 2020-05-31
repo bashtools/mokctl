@@ -30,6 +30,7 @@ MA_main() {
   exec) EX_run ;;
   *)
     PA_usage
+    printf '\nERROR: No COMMAND specified.\n'
     ;;
   esac
 }

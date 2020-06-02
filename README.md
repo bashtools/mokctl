@@ -12,11 +12,11 @@ Build a verifiably conformant kubernetes cluster in containers.
 
 The FAQ, Kubernetes the Hard Way using `mokctl`, integrating the Parser in your own project, and how `mokctl` was created are all in the [docs section](/docs/README.md).
 
-### Try mokctl
+## Try mokctl
 
 Take note of the [Status](#status) below and the [Releases](https://github.com/mclarkson/my-own-kind/releases) page.
 
-#### For Linux Operating Systems
+### For Linux Operating Systems
 
 Either [Podman](https://podman.io/) or [Docker](https://www.docker.com/get-started) must be installed frst. If both are installed `mokctl` will choose to use Podman.
 
@@ -46,7 +46,7 @@ Removal
 sudo npm uninstall -g my-own-kind
 ```
 
-#### For Non-Linux Operating Systems
+### For Non-Linux Operating Systems
 
 Install [Docker](https://docs.docker.com/get-docker/) if you don't have it already.
 
@@ -91,6 +91,4 @@ See: [Mokctl on Docker Hub](https://hub.docker.com/r/mclarkson/mokctl).
 
 ## Contributing
 
-Please check the 'Help Wanted' issues if you fancy helping.
-
-All types of contributions are welcome, from bug reports, success stories, feature requests, fixing typppos, to coding. Also check the [CONTRIBUTING.md](/CONTRIBUTING.md) document.
+All types of contributions are welcome, from bug reports, giving this project a STAR, success stories, feature requests, fixing typppos, to coding. Also check the [CONTRIBUTING.md](/CONTRIBUTING.md) document.

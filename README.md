@@ -81,12 +81,12 @@ See also:
 
 **Mokctl Utility**
 
-| OS        | Termnal          | Status                       |
-| --------- | ---------------- | ---------------------------- |
-| Fedora 31 | Gnome Terminal   | Works - must disable cgroup2 |
-| Fedora 32 | Gnome Terminal   | Works - must disable cgroup2 |
-| Mac OS    | Default terminal | ?                            |
-| Windows   | Cygwin           | ?                            |
+| OS      | Version | Terminal       | Status | Notes                                 |
+| ------- | ------- | -------------- | ------ | ------------------------------------- |
+| Fedora  | 31      | gnome terminal | works  | disable cgroups2<br/>install as above |
+| Fedora  | 32      | gnome terminal | works  | disable cgroups2<br/>install as above |
+| Mac OS  |         |                | ?      |                                       |
+| Windows |         |                | ?      |                                       |
 
 ## Contributing
 

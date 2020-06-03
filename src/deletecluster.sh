@@ -25,7 +25,7 @@ DC_process_options() {
 
   case "$1" in
   -h | --help)
-    BI_usage
+    DC_usage
     return "${STOP}"
     ;;
   *)

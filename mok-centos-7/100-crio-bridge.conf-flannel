@@ -1,4 +1,4 @@
 {
     "name": "crio",
-    "type": "flannel",
+    "type": "flannel"
 }

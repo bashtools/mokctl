@@ -147,7 +147,7 @@ CC_run() {
     return "${ERROR}"
   }
 
-  [[ ${_CC[withlb]} -gt 0 ]] && {
+  [[ ${_CC[withlb]} -eq ${TRUE} ]] && {
     _CC_create_lb_node "${_CC[nummasters]}" || return
   }
 
@@ -155,14 +155,12 @@ CC_run() {
     _CC_create_master_nodes "${_CC[nummasters]}" || return
   }
 
-  [[ ${_CC[withlb]} -gt 0 ]] && {
+  [[ ${_CC[withlb]} -eq ${TRUE} ]] && {
     _CC_setup_lb_node "${_CC[nummasters]}" || return
   }
 
-  [[ -z ${_CC[skipmastersetup]} ]] && {
-    [[ ${_CC[nummasters]} -gt 0 ]] && {
-      _CC_setup_master_nodes "${_CC[nummasters]}" || return
-    }
+  [[ ${_CC[nummasters]} -gt 0 ]] && {
+    _CC_setup_master_nodes "${_CC[nummasters]}" || return
   }
 
   [[ -z ${_CC[skipworkersetup]} ]] && {
@@ -175,7 +173,7 @@ CC_run() {
 
   [[ -z ${_CC[skipmastersetup]} ]] && {
     printf 'Cluster, "%s", can be accessed using:\n\n' "${_CC[clustername]}"
-    printf 'export KUBECONFIG=/var/tmp/admin.conf\n\n'
+    printf 'export KUBECONFIG=/var/tmp/admin-%s.conf\n\n' "${_CC[clustername]}"
   }
 
   return "${OK}"
@@ -295,21 +293,21 @@ _CC_setup_master_nodes() {
     }
   done
 
-  # For now, copy admin.conf from master to ~/.mok/admin.conf
+  # For now, copy admin.conf from master to /var/tmp/admin-CLUSTERNAME.conf
 
-  mkdir -p ~/.mok/
   if [[ ${_CC[withlb]} -eq ${TRUE} ]]; then
     lbaddr=$(CU_get_container_ip "${_CC[clustername]}-lb") || err || return
-    docker cp "${_CC[clustername]}-master-1":/etc/kubernetes/admin.conf \
-      /var/tmp/admin.conf || err || return
-    sed -i 's#\(server: https://\)[0-9.]*\(:.*\)#\1'"${lbaddr}"'\2#' /var/tmp/admin.conf
+    docker cp "${_CC[clustername]}-master-1:/etc/kubernetes/admin.conf" \
+      "/var/tmp/admin-${_CC[clustername]}.conf" || err || return
+    sed -i 's#\(server: https://\)[0-9.]*\(:.*\)#\1'"${lbaddr}"'\2#' \
+      "/var/tmp/admin-${_CC[clustername]}.conf"
   else
-    docker cp "${_CC[clustername]}-master-1":/etc/kubernetes/admin.conf \
-      /var/tmp/admin.conf || err || return
+    docker cp "${_CC[clustername]}-master-1:/etc/kubernetes/admin.conf" \
+      "/var/tmp/admin-${_CC[clustername]}.conf" || err || return
   fi
 
-  chmod 666 /var/tmp/admin.conf || {
-    printf 'ERROR: Could not "chown 666 /var/tmp/admin.conf"'
+  chmod 666 "/var/tmp/admin-${_CC[clustername]}.conf" || {
+    printf 'ERROR: Could not "chown 666 /var/tmp/admin-%s.conf"' "${_CC[clustername]}"
     err || return
   }
 

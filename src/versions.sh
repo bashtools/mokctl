@@ -163,7 +163,9 @@ EnD
   }
 
   # Run the file
-  docker exec "$1" bash /root/setup.sh || err || return
+  [[ -z ${_CC[skipmastersetup]} ]] && {
+    docker exec "$1" bash /root/setup.sh || err || return
+  }
 
   # Remove the taint if we're setting up a single node cluster
 

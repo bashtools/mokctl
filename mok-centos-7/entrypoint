@@ -47,7 +47,7 @@ centos7_fix_cgroup() {
   echo 'INFO: fix cgroup mounts for centos7'
   local id=$(awk -F/ '{ print $NF; exit }' /proc/1/cgroup)
   echo "docker/podman id = $id"
-  find /sys/fs/cgroup -name "$id" | while read a ; do mount --bind $a ${a%/*/*}; done
+  find /sys/fs/cgroup -name "$id" | while read a; do mount --bind $a ${a%/*/*}; done
 }
 
 fix_cgroup() {
@@ -64,17 +64,17 @@ fix_cgroup() {
   # The following is a workaround to recreate the original cgroup
   # environment by doing another bind mount for each subsystem.
   local docker_cgroup_mounts
-  for cri in docker libpod;do
+  for cri in docker libpod; do
     docker_cgroup_mounts=$(grep /sys/fs/cgroup /proc/self/mountinfo | grep "$cri" || true)
-    if [[ -n "${docker_cgroup_mounts}" ]]; then
+    if [[ -n ${docker_cgroup_mounts} ]]; then
       local docker_cgroup cgroup_subsystems subsystem
       docker_cgroup=$(echo "${docker_cgroup_mounts}" | head -n 1 | cut -d' ' -f 4)
       cgroup_subsystems=$(echo "${docker_cgroup_mounts}" | cut -d' ' -f 5)
       echo "${cgroup_subsystems}" |
-      while IFS= read -r subsystem; do
-        mkdir -p "${subsystem}${docker_cgroup}"
-        mount --bind "${subsystem}" "${subsystem}${docker_cgroup}"
-      done
+        while IFS= read -r subsystem; do
+          mkdir -p "${subsystem}${docker_cgroup}"
+          mount --bind "${subsystem}" "${subsystem}${docker_cgroup}"
+        done
     fi
   done
 }
@@ -94,7 +94,7 @@ fix_product_name() {
   if [[ -f /sys/class/dmi/id/product_name ]]; then
     echo 'INFO: faking /sys/class/dmi/id/product_name to be "kind"'
     mkdir -p /kind
-    echo 'kind' > /kind/product_name
+    echo 'kind' >/kind/product_name
     mount -o ro,bind /kind/product_name /sys/class/dmi/id/product_name
   fi
 }
@@ -107,7 +107,7 @@ fix_product_uuid() {
   # which should fix the attached issue, but this workaround does not address
   # the issue if a tool is reading directly from DMI.
   # https://github.com/kubernetes-sigs/kind/issues/1027
-  [[ ! -f /kind/product_uuid ]] && cat /proc/sys/kernel/random/uuid > /kind/product_uuid
+  [[ ! -f /kind/product_uuid ]] && cat /proc/sys/kernel/random/uuid >/kind/product_uuid
   if [[ -f /sys/class/dmi/id/product_uuid ]]; then
     echo 'INFO: faking /sys/class/dmi/id/product_uuid to be random'
     mount -o ro,bind /kind/product_uuid /sys/class/dmi/id/product_uuid
@@ -147,7 +147,7 @@ EOF
 # run pre-init fixups
 fix_kmsg
 fix_mount
-centos7_fix_cgroup
+#centos7_fix_cgroup
 fix_cgroup
 fix_machine_id
 fix_product_name

@@ -1,17 +1,46 @@
+VERSION = 0.8.1-alpha
+
 .PHONY: all
 all: mokctl.deploy tags
 
-mokctl-docker: all
-	cp mokctl.deploy package/
-	sudo podman build --force-rm -t local/mokctl package
+.PHONY: docker-builds
+docker-builds: docker-mokctl docker-workbox docker-baseimage
 
-.PHONY: docker-hub-upload
-docker-hub-upload: mokctl-docker
-	sudo podman tag local/mokctl docker.io/mclarkson/mokctl
-	sudo podman push docker.io/mclarkson/mokctl
-	# Build with 'mokctl build image'
-	sudo podman tag localhost/local/mok-centos-7-v1.18.3 docker.io/mclarkson/mok-centos-7-v1.18.3
-	sudo podman push docker.io/mclarkson/mok-centos-7-v1.18.3
+docker-uploads: docker-builds docker-upload-mokctl docker-upload-workbox docker-upload-baseimage
+
+.PHONY: mokctl-docker-mokctl
+docker-mokctl: all
+	docker build -f package/Dockerfile.mokctl -t local/mokctl package
+
+.PHONY: mokctl-docker-workbox
+docker-workbox: all
+	docker build -f package/Dockerfile.workbox -t local/workbox package
+
+.PHONY: mokctl-docker-baseimage
+docker-baseimage: all
+	bash mokctl.deploy build image
+
+.PHONY: docker-upload-workbox
+docker-upload-workbox: docker-workbox
+	docker tag local/workbox docker.io/myownkind/workbox
+	docker push myownkind/workbox
+	docker tag docker.io/myownkind/workbox:latest docker.io/myownkind/workbox:${VERSION}
+	docker push myownkind/workbox:${VERSION}
+
+.PHONY: docker-upload-mokctl
+docker-upload-mokctl: docker-mokctl
+	docker tag local/mokctl myownkind/mokctl
+	docker push myownkind/mokctl
+	docker tag myownkind/mokctl myownkind/mokctl:${VERSION}
+	docker push myownkind/mokctl:${VERSION}
+
+.PHONY: docker-upload-baseimage
+docker-upload-baseimage: docker-baseimage
+	# mok-centos-7-v1.18.3 - Build with 'mokctl build image' first!
+	docker tag local/mok-centos-7-v1.18.3 myownkind/mok-centos-7-v1.18.3
+	docker push myownkind/mok-centos-7-v1.18.3
+	docker tag myownkind/mok-centos-7-v1.18.3 myownkind/mok-centos-7-v1.18.3:${VERSION}
+	docker push myownkind/mok-centos-7-v1.18.3:${VERSION}
 
 mokctl.deploy: src/*.sh src/lib/*.sh mok-centos-7
 	bash src/embed-dockerfile.sh
@@ -22,6 +51,7 @@ mokctl.deploy: src/*.sh src/lib/*.sh mok-centos-7
 		printf 'if [ "$$0" = "$${BASH_SOURCE[0]}" ] || [ -z "$${BASH_SOURCE[0]}" ]; then\n  MA_main "$$@"\nfi\n' \
 		) >../mokctl.deploy
 	chmod +x mokctl.deploy
+	cp mokctl.deploy package/
 
 .PHONY: install
 install: all

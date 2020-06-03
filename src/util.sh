@@ -105,16 +105,10 @@ UT_run_with_progress() {
       eval "$*" &>/dev/stdout
     ) &
     sleep 1
-    (
-      tail -f "${_UT[runlogfile]}"
-    ) &
 
     # Wait for the command to finish
     wait %1 2>/dev/null
     retval=$?
-
-    # Kill the tail
-    kill %2 2>/dev/null
 
     # Mark success/fail
     if [[ ${retval} -eq 127 ]]; then

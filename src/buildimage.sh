@@ -176,7 +176,7 @@ _BI_build_container_image() {
     text="Creating"
   else
     buildtype="download"
-    cmd="docker pull mclarkson/${tagname}"
+    cmd="docker pull myownkind/${tagname}"
     text="Downloading"
   fi
 
@@ -240,7 +240,7 @@ _BI_modify_container_image() {
   done
 
   # Modify container
-  docker exec mok-build-modify kubeadm config images pull || return
+  docker exec mok-build-modify kubeadm config images pull || err || return
 
   # Stop container
   docker stop -t 5 "mok-build-modify"
@@ -249,7 +249,7 @@ _BI_modify_container_image() {
   local imgprefix tagname
   imgprefix=$(CU_imgprefix) || err || return
   tagname="${_BI[baseimagename]}-v${_BI[k8sver]}"
-  docker commit mok-build-modify "${imgprefix}local/${tagname}" || return
+  docker commit mok-build-modify "${imgprefix}local/${tagname}" || err || return
 
   # Delete container, just in case it was left behind
   docker stop -t 5 mok-build-modify

@@ -10,67 +10,66 @@ Build a verifiably conformant kubernetes cluster in containers.
 
 ## Documentation
 
-The FAQ, Kubernetes the Hard Way using `mokctl`, integrating the Parser in your own project, and how `mokctl` was created are all in the [docs section](/docs/README.md).
+The FAQ, Kubernetes the Hard Way using `mokctl`, integrating the Parser in your own project, and how `mokctl` was created are all in [Documentation](/docs/README.md).
 
 ## Try mokctl
 
 Take note of the [Status](#status) below and the [Releases](https://github.com/mclarkson/my-own-kind/releases) page.
 
-### For Linux Operating Systems
+### For All Operating Systems
 
-Either [Podman](https://podman.io/) or [Docker](https://www.docker.com/get-started) must be installed frst. If both are installed `mokctl` will choose to use Podman.
+> Note for **Linux** users: Cgroups 2 must be disabled. See [Install Linux](/docs/install-linux.md).
 
-If your distribution enables cgroups v2 then it must be disabled. Only Fedora do this right now, so for Fedora 31 or 32 do:
+Ensure [Docker](https://www.docker.com/get-started) or [Moby](https://github.com/moby/moby) are installed first.
+
+Add the following to your shell startup file, for example `~/.bashrc` or `~/.zshrc`:
 
 ```bash
-grubby --update-kernel=ALL --args="systemd.unified_cgroup_hierarchy=0"
+alias workbox='docker run --rm -ti --hostname workbox --name workbox -v /var/run/docker.sock:/var/run/docker.sock -v /var/tmp:/var/tmp myownkind/workbox'
 ```
 
-To install from npm:
+Close the terminal and start it again so the alias is created.
+
+Then 'log in' to the work container:
 
 ```bash
-sudo npm install -g my-own-kind
+workbox
 ```
 
-Then use `mokctl`:
+Use `mokctl` and `kubectl`, which are already installed in the 'workbox' container:
 
 ```bash
-alias mokctl="sudo mokctl"
 mokctl build image --get-prebuilt-image
+
 mokctl create cluster myk8s --masters 1
-```
 
-Removal
-
-```bash
-sudo npm uninstall -g my-own-kind
-```
-
-### For Non-Linux Operating Systems
-
-Install [Docker](https://docs.docker.com/get-docker/) if you don't have it already.
-
-Paste the following alias into your teminal:
-
-```bash
-alias mokctl='docker run --rm --privileged -ti -v /var/run/docker.sock:/var/run/docker.sock -v ~/.mok/:/root/.mok/ -e TERM=xterm-256color mclarkson/mokctl'
-```
-
-Then use mokctl:
-
-```bash
-mokctl build image --get-prebuilt-image
-
-mokctl create cluster myk8s 1 0
-
-export KUBECONFIG=~/.mok/admin.conf
+export KUBECONFIG=/var/tmp/admin-myk8s.conf
 
 kubectl get pods -A
-
-kubectl run -ti --image busybox busybox sh
 ```
 
-See: [Mokctl on Docker Hub](https://hub.docker.com/r/mclarkson/mokctl).
+Type `exit` or `Ctrl-d` to 'log out' of the workbox. The workbox container will be deleted but the kubernetes cluster will remain, as will the `kubectl` file,`/var/tmp/admin-myk8s.conf`.
+
+To remove the `mokctl` created kubernetes cluster:
+
+```bash
+workbox
+
+export KUBECONFIG=/var/tmp/admin-myk8s.conf
+
+mokctl delete cluster myk8s
+
+exit
+
+```
+
+Two docker images will remain, 'myownkind/workbox' and 'myownkind/mok-centos-7-v1.18.3'. Remove them to reclaim disk space, or keep them around to be able to quickly build kubernetes clusters.
+
+See also:
+
+* [Mokctl on Docker Hub](https://hub.docker.com/repository/docker/myownkind/mokctl) - to alias the `mokctl` command only, no workbox.
+
+* [Linux installation options](/docs/install-linux.md)
 
 ## Status
 
@@ -78,7 +77,7 @@ See: [Mokctl on Docker Hub](https://hub.docker.com/r/mclarkson/mokctl).
 
 * stable version - not yet.
 
-* development version - 0.8.0-alpha2
+* development version - 0.8.1-alpha
 
 **Mokctl Utility**
 

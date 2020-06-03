@@ -157,7 +157,7 @@ _EX_exec() {
   read -rt 0.1
   if [[ ${containerrt} == "podman" ]]; then
     exec podman exec -ti "$1" "${cmd}"
-  elif [[ ${containerrt} == "podman" ]]; then
+  elif [[ ${containerrt} == "docker" ]]; then
     exec docker exec -ti "$1" "${cmd}"
   fi
 }

@@ -135,11 +135,11 @@ CU_create_container() {
   img=$(BI_baseimagename) || err || return
 
   local imglocal="${_CU[imgprefix]}local/${img}-v${3}"
-  local imgremote="docker.io/mclarkson/${img}-v${3}"
+  local imgremote="myownkind/${img}-v${3}"
 
   # Prefer a locally built container over one downloaded from a registry
-  allimgs=$(podman images -n) || {
-    printf 'ERROR: %s returned an error' "${_CU[containerrt]}\n" >"${STDERR}"
+  allimgs=$(docker images | tail -n +2) || {
+    printf 'ERROR: %s returned an error\n' "${_CU[containerrt]}" >"${STDERR}"
     err || return
   }
 
@@ -161,7 +161,7 @@ EnD
   fi
 
   docker run --privileged \
-    -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+    -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
     -v /lib/modules:/lib/modules:ro \
     --tmpfs /run --tmpfs /tmp \
     --detach \
@@ -195,7 +195,10 @@ _CU_podman_or_docker() {
 
   local id
 
-  if type podman &>/dev/null; then
+  if type docker &>/dev/null; then
+    _CU[imgprefix]=""
+    _CU[containerrt]="docker"
+  elif type podman &>/dev/null; then
     _CU[imgprefix]="localhost/"
     _CU[containerrt]="podman"
     local id
@@ -212,12 +215,6 @@ EnD
     }
     docker() {
       podman "$@"
-    }
-  elif type docker &>/dev/null; then
-    _CU[imgprefix]=""
-    _CU[containerrt]="docker"
-    docker() {
-      docker "$@"
     }
   else
     printf 'ERROR: Neither "podman" nor "docker" were found.\n' \

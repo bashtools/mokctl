@@ -15,8 +15,9 @@ RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do \
     rm -f /lib/systemd/system/basic.target.wants/*; \
     rm -f /lib/systemd/system/anaconda.target.wants/*; \
     yum -y update \
-    && curl -L -o /etc/yum.repos.d/devel:kubic:libcontainers:stable.repo https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/CentOS_7/devel:kubic:libcontainers:stable.repo \
-    && curl -L -o /etc/yum.repos.d/devel:kubic:libcontainers:stable:cri-o:$CRIO_VERSION.repo https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:$CRIO_VERSION/CentOS_7/devel:kubic:libcontainers:stable:cri-o:$CRIO_VERSION.repo \
+    # Fix for opensuse during an https outage - PUT THIS BACK HOW IT WAS
+    && curl -L http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/CentOS_7/devel:kubic:libcontainers:stable.repo | sed 's/https/http/g' >/etc/yum.repos.d/devel:kubic:libcontainers:stable.repo \
+    && curl -L http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/$CRIO_VERSION/CentOS_7/devel:kubic:libcontainers:stable:cri-o:$CRIO_VERSION.repo | sed 's/https/http/g' >/etc/yum.repos.d/devel:kubic:libcontainers:stable:cri-o:$CRIO_VERSION.repo \
     && yum install -y \
       cri-o \
       iptables \

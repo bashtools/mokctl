@@ -4,28 +4,28 @@ VERSION = 0.8.1-alpha
 all: mokctl.deploy tags
 
 .PHONY: docker-builds
-docker-builds: docker-mokctl docker-workbox docker-baseimage
+docker-builds: docker-mokctl docker-mokbox docker-baseimage
 
-docker-uploads: docker-builds docker-upload-mokctl docker-upload-workbox docker-upload-baseimage
+docker-uploads: docker-builds docker-upload-mokctl docker-upload-mokbox docker-upload-baseimage
 
 .PHONY: mokctl-docker-mokctl
 docker-mokctl: all
 	docker build -f package/Dockerfile.mokctl -t local/mokctl package
 
-.PHONY: mokctl-docker-workbox
-docker-workbox: all
-	docker build -f package/Dockerfile.workbox -t local/workbox package
+.PHONY: mokctl-docker-mokbox
+docker-mokbox: all
+	docker build -f package/Dockerfile.mokbox -t local/mokbox package
 
 .PHONY: mokctl-docker-baseimage
 docker-baseimage: all
 	bash mokctl.deploy build image
 
-.PHONY: docker-upload-workbox
-docker-upload-workbox: docker-workbox
-	docker tag local/workbox docker.io/myownkind/workbox
-	docker push myownkind/workbox
-	docker tag docker.io/myownkind/workbox:latest docker.io/myownkind/workbox:${VERSION}
-	docker push myownkind/workbox:${VERSION}
+.PHONY: docker-upload-mokbox
+docker-upload-mokbox: docker-mokbox
+	docker tag local/mokbox docker.io/myownkind/mokbox
+	docker push myownkind/mokbox
+	docker tag docker.io/myownkind/mokbox:latest docker.io/myownkind/mokbox:${VERSION}
+	docker push myownkind/mokbox:${VERSION}
 
 .PHONY: docker-upload-mokctl
 docker-upload-mokctl: docker-mokctl

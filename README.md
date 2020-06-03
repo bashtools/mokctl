@@ -25,7 +25,7 @@ Ensure [Docker](https://www.docker.com/get-started) or [Moby](https://github.com
 Add the following to your shell startup file, for example `~/.bashrc` or `~/.zshrc`:
 
 ```bash
-alias workbox='docker run --rm -ti --hostname workbox --name workbox -v /var/run/docker.sock:/var/run/docker.sock -v /var/tmp:/var/tmp myownkind/workbox'
+alias mokbox='docker run --rm -ti --hostname mokbox --name mokbox -v /var/run/docker.sock:/var/run/docker.sock -v /var/tmp:/var/tmp myownkind/mokbox'
 ```
 
 Close the terminal and start it again so the alias is created.
@@ -33,10 +33,10 @@ Close the terminal and start it again so the alias is created.
 Then 'log in' to the work container:
 
 ```bash
-workbox
+mokbox
 ```
 
-Use `mokctl` and `kubectl`, which are already installed in the 'workbox' container:
+Use `mokctl` and `kubectl`, which are already installed in the 'mokbox' container:
 
 ```bash
 mokctl build image --get-prebuilt-image
@@ -48,12 +48,12 @@ export KUBECONFIG=/var/tmp/admin-myk8s.conf
 kubectl get pods -A
 ```
 
-Type `exit` or `Ctrl-d` to 'log out' of the workbox. The workbox container will be deleted but the kubernetes cluster will remain, as will the `kubectl` file,`/var/tmp/admin-myk8s.conf`.
+Type `exit` or `Ctrl-d` to 'log out' of the mokbox. The mokbox container will be deleted but the kubernetes cluster will remain, as will the `kubectl` file,`/var/tmp/admin-myk8s.conf`.
 
 To remove the `mokctl` created kubernetes cluster:
 
 ```bash
-workbox
+mokbox
 
 export KUBECONFIG=/var/tmp/admin-myk8s.conf
 
@@ -63,11 +63,11 @@ exit
 
 ```
 
-Two docker images will remain, 'myownkind/workbox' and 'myownkind/mok-centos-7-v1.18.3'. Remove them to reclaim disk space, or keep them around to be able to quickly build kubernetes clusters.
+Two docker images will remain, 'myownkind/mokbox' and 'myownkind/mok-centos-7-v1.18.3'. Remove them to reclaim disk space, or keep them around to be able to quickly build kubernetes clusters.
 
 See also:
 
-* [Mokctl on Docker Hub](https://hub.docker.com/repository/docker/myownkind/mokctl) - to alias the `mokctl` command only, no workbox.
+* [Mokctl on Docker Hub](https://hub.docker.com/repository/docker/myownkind/mokctl) - to alias the `mokctl` command only, no mokbox.
 
 * [Linux installation options](/docs/install-linux.md)
 

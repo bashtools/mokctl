@@ -147,7 +147,7 @@ EOF
 # run pre-init fixups
 fix_kmsg
 fix_mount
-#centos7_fix_cgroup
+centos7_fix_cgroup
 fix_cgroup
 fix_machine_id
 fix_product_name

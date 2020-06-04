@@ -5,7 +5,7 @@ declare -A _UT
 
 # Declare externally defined global variables ---------------------------------
 
-declare OK STDERR FALSE
+declare OK STDERR FALSE TRUE
 
 # Getters/Setters -------------------------------------------------------------
 
@@ -29,6 +29,14 @@ UT_set_tailf() {
   _UT[tailf]="$1"
 }
 
+# UT_set_plain setter sets plain output, with no colour, animations, or UTF
+# high byte characters.
+# Args: arg1 - Whether to show plain output, TRUE or FALSE.
+UT_set_plain() {
+  _UT[plain]="$1"
+  UT_disable_colours
+}
+
 # Public Functions ------------------------------------------------------------
 
 # UT_disable_colours resets variables used for colourised output so that they
@@ -38,9 +46,9 @@ UT_disable_colours() {
   _UT[green]=
   _UT[red]=
   _UT[normal]=
-  _UT[probablysuccess]="✓"
-  _UT[success]="✓"
-  _UT[failure]="✕"
+  _UT[probablysuccess]="PROBABLY SUCCESS (!)"
+  _UT[success]="SUCCESS"
+  _UT[failure]="FAIL"
 }
 
 # UT_run_with_progress displays a progress spinner, item text, and a tick or
@@ -57,7 +65,21 @@ UT_run_with_progress() {
   }
   shift
 
-  if [[ ${_UT[tailf]} == "${FALSE}" ]]; then
+  if [[ ${_UT[tailf]} == "${FALSE}" && ${_UT[plain]} == "${TRUE}" ]]; then
+
+    printf '%s' "${displaytext}"
+
+    eval "$*" &>"${_UT[runlogfile]}"
+    retval=$?
+
+    # Mark success/fail
+    if [[ ${retval} -eq 0 ]]; then
+      printf ' .. %s\n' "${_UT[success]}"
+    else
+      printf ' .. %s\n' "${_UT[failure]}"
+    fi
+
+  elif [[ ${_UT[tailf]} == "${FALSE}" ]]; then
 
     while read -r char; do
       spinner+=("${char}")
@@ -71,7 +93,7 @@ UT_run_with_progress() {
     tput civis
 
     # Start the spin animation
-    printf "%s" "${displaytext}"
+    printf '%s' "${displaytext}"
     (while true; do
       for int in {0..3}; do
         printf '\r  %s ' "${spinner[int]}"

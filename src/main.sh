@@ -1,7 +1,7 @@
 # MA - execution starts here
 
 # Defined in GL (globals.sh)
-declare OK ERROR STOP STDERR
+declare OK ERROR STOP STDERR TRUE
 
 # main is the start point for this application.
 # Args: arg1-N - the command line arguments entered by the user.
@@ -50,6 +50,9 @@ MA_process_global_options() {
   -h | --help)
     PA_usage
     return "${STOP}"
+    ;;
+  -p | --plain)
+    UT_set_plain "${TRUE}"
     ;;
   *)
     printf 'INTERNAL ERROR: Invalid global option, "%s".' "$1"
@@ -104,6 +107,8 @@ Global options:
  
   --help
   -h     - This help text
+  --plain
+  -p     - Plain output. No colours or animations.
  
 Where command can be one of:
  

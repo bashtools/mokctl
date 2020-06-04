@@ -11,35 +11,35 @@ docker-uploads: docker-builds docker-upload-mokctl docker-upload-mokbox docker-u
 .PHONY: mokctl-docker-mokctl
 docker-mokctl: all
 	docker build -f package/Dockerfile.mokctl -t local/mokctl package
+	docker tag local/mokctl myownkind/mokctl
 
 .PHONY: mokctl-docker-mokbox
 docker-mokbox: all
 	docker build -f package/Dockerfile.mokbox -t local/mokbox package
+	docker tag local/mokbox docker.io/myownkind/mokbox
+	docker tag docker.io/myownkind/mokbox:latest docker.io/myownkind/mokbox:${VERSION}
 
 .PHONY: mokctl-docker-baseimage
 docker-baseimage: all
 	bash mokctl.deploy build image
-
-.PHONY: docker-upload-mokbox
-docker-upload-mokbox: docker-mokbox
-	docker tag local/mokbox docker.io/myownkind/mokbox
-	docker push myownkind/mokbox
-	docker tag docker.io/myownkind/mokbox:latest docker.io/myownkind/mokbox:${VERSION}
-	docker push myownkind/mokbox:${VERSION}
+	docker tag local/mok-centos-7-v1.18.3 myownkind/mok-centos-7-v1.18.3
+	docker tag myownkind/mok-centos-7-v1.18.3 myownkind/mok-centos-7-v1.18.3:${VERSION}
 
 .PHONY: docker-upload-mokctl
 docker-upload-mokctl: docker-mokctl
-	docker tag local/mokctl myownkind/mokctl
 	docker push myownkind/mokctl
 	docker tag myownkind/mokctl myownkind/mokctl:${VERSION}
 	docker push myownkind/mokctl:${VERSION}
 
+.PHONY: docker-upload-mokbox
+docker-upload-mokbox: docker-mokbox
+	docker push myownkind/mokbox
+	docker push myownkind/mokbox:${VERSION}
+
 .PHONY: docker-upload-baseimage
 docker-upload-baseimage: docker-baseimage
 	# mok-centos-7-v1.18.3 - Build with 'mokctl build image' first!
-	docker tag local/mok-centos-7-v1.18.3 myownkind/mok-centos-7-v1.18.3
 	docker push myownkind/mok-centos-7-v1.18.3
-	docker tag myownkind/mok-centos-7-v1.18.3 myownkind/mok-centos-7-v1.18.3:${VERSION}
 	docker push myownkind/mok-centos-7-v1.18.3:${VERSION}
 
 mokctl.deploy: src/*.sh src/lib/*.sh mok-centos-7

@@ -1,4 +1,4 @@
-VERSION = 0.8.1-alpha
+VERSION = 0.8.2-alpha
 
 .PHONY: all
 all: mokctl.deploy tags

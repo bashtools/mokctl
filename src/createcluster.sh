@@ -302,8 +302,11 @@ _CC_setup_master_nodes() {
     sed -i 's#\(server: https://\)[0-9.]*\(:.*\)#\1'"${lbaddr}"'\2#' \
       "/var/tmp/admin-${_CC[clustername]}.conf"
   else
-    docker cp "${_CC[clustername]}-master-1:/etc/kubernetes/admin.conf" \
-      "/var/tmp/admin-${_CC[clustername]}.conf" || err || return
+    [[ -n ${_CC[skipworkersetup]} || -n \
+    ${_CC[skipmastersetup]} ]] || {
+      docker cp "${_CC[clustername]}-master-1:/etc/kubernetes/admin.conf" \
+        "/var/tmp/admin-${_CC[clustername]}.conf" || err || return
+    }
   fi
 
   chmod 666 "/var/tmp/admin-${_CC[clustername]}.conf" || {

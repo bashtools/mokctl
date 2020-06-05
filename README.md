@@ -28,8 +28,8 @@ Take note of the [Status](#status) below and the [Releases](https://github.com/m
   
   | OS      | Version | Terminal       | Status                            | Notes                                 |
   | ------- | ------- | -------------- | --------------------------------- | ------------------------------------- |
-  | Fedora  | 31      | gnome terminal | works                             | disable cgroups2<br/>install as above |
-  | Fedora  | 32      | gnome terminal | works                             | disable cgroups2<br/>install as above |
+  | Fedora  | 31      | gnome terminal | works                             | disable cgroups2<br/>install as below |
+  | Fedora  | 32      | gnome terminal | works                             | disable cgroups2<br/>install as below |
   | Mac OS  |         |                | not tried<br/>no reports received |                                       |
   | Windows |         |                | not tried<br/>no reports received |                                       |
 

@@ -12,11 +12,28 @@ Build a verifiably conformant kubernetes cluster in containers.
 
 The FAQ, Kubernetes the Hard Way using `mokctl`, integrating the Parser in your own project, and how `mokctl` was created are all in [Documentation](/docs/README.md).
 
+## Contributing
+
+All types of contributions are welcome, from giving this project a STAR, bug reports, success stories, feature requests, fixing typppos, correcting documentation, to coding. Also check the [CONTRIBUTING.md](/CONTRIBUTING.md) document.
+
 ## Try mokctl
 
 Take note of the [Status](#status) below and the [Releases](https://github.com/mclarkson/my-own-kind/releases) page.
 
-### For All Operating Systems
+### Status
+
+- stable version - not yet.
+
+- development version - 0.8.1-alpha
+  
+  | OS      | Version | Terminal       | Status                            | Notes                                 |
+  | ------- | ------- | -------------- | --------------------------------- | ------------------------------------- |
+  | Fedora  | 31      | gnome terminal | works                             | disable cgroups2<br/>install as above |
+  | Fedora  | 32      | gnome terminal | works                             | disable cgroups2<br/>install as above |
+  | Mac OS  |         |                | not tried<br/>no reports received |                                       |
+  | Windows |         |                | not tried<br/>no reports received |                                       |
+
+### Install on Linux, Mac and Windows
 
 > Note for **Linux** users: Cgroups 2 must be disabled. See [Install Linux](/docs/install-linux.md).
 
@@ -70,24 +87,3 @@ See also:
 * [Mokctl on Docker Hub](https://hub.docker.com/repository/docker/myownkind/mokctl) - to alias the `mokctl` command only, no mokbox.
 
 * [Linux installation options](/docs/install-linux.md)
-
-## Status
-
-`mokctl`
-
-* stable version - not yet.
-
-* development version - 0.8.1-alpha
-
-**Mokctl Utility**
-
-| OS      | Version | Terminal       | Status | Notes                                 |
-| ------- | ------- | -------------- | ------ | ------------------------------------- |
-| Fedora  | 31      | gnome terminal | works  | disable cgroups2<br/>install as above |
-| Fedora  | 32      | gnome terminal | works  | disable cgroups2<br/>install as above |
-| Mac OS  |         |                | ?      |                                       |
-| Windows |         |                | ?      |                                       |
-
-## Contributing
-
-All types of contributions are welcome, from bug reports, giving this project a STAR, success stories, feature requests, fixing typppos, to coding. Also check the [CONTRIBUTING.md](/CONTRIBUTING.md) document.

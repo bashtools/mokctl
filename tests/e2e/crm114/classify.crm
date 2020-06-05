@@ -1,0 +1,5 @@
+{
+  isolate (:stats:)
+  classify <osb unique microgroom>  (GOOD BAD)  (:stats:)
+  output /:*:stats:/
+}

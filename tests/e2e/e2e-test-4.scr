@@ -1,0 +1,28 @@
+screencast delay 1
+screencast prompt #$%>
+PS1="$ " bash
+set -e
+date
+screencast paste
+alias mokbox='docker run --rm -ti --hostname mokbox --name mokbox -v /var/run/docker.sock:/var/run/docker.sock -v /var/tmp:/var/tmp myownkind/mokbox'
+mokbox bash -c 'PS1="$ " bash'
+set -e
+
+# Test 4
+time mokctl -p create cluster bob --masters 1 --tailf
+export KUBECONFIG=/var/tmp/admin-bob.conf
+for i in `seq 1 20`; do if kubectl get pods &>/dev/null; then break; fi; echo -n "."; sleep 1; done
+while kubectl get pods -A | tail -n +2 | awk '{ print $3; }' | grep -qs 0; do echo -n "."; sleep 2; done; echo
+kubectl get pods -A
+kubectl run --rm -ti --restart=Never --image=alpine shell2 sh
+ip address
+apk add fortune
+exit 0
+mokctl -p get cluster
+mokctl -p delete cluster myk8s
+mokctl -p delete cluster bob
+y
+mokctl -p get cluster
+
+# Test complete
+date

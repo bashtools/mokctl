@@ -55,25 +55,26 @@ mokctl.deploy: src/*.sh src/lib/*.sh mok-centos-7
 
 .PHONY: install
 install: all
+	install cmdline-player/cmdline-player /usr/local/bin/cmdline-player
 	install mokctl.deploy /usr/local/bin/mokctl
 
 .PHONY: uninstall
 uninstall:
-	rm -f /usr/local/bin/mokctl
-
-.PHONY: purge
-purge: uninstall
-	rm -rf ~/.mok
+	rm -f /usr/local/bin/mokctl /usr/local/bin/cmdline-player
 
 .PHONY: clean
 clean:
-	rm -f mokctl.deploy src/buildimage.deploy
+	rm -f mokctl.deploy src/buildimage.deploy package/mokctl.deploy
 
 .PHONY: test
 test: clean mokctl.deploy
 	./tests/unit-tests.sh
 	shellcheck src/*.sh mokctl.deploy
 	shfmt -s -i 2 -d src/*.sh
+
+.PHONY: e2etest
+e2etest: clean mokctl.deploy
+	./tests/e2e-tests.sh
 
 .PHONY: buildtest
 buildtest: clean mokctl.deploy

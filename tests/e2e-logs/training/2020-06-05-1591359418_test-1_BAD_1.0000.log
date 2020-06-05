@@ -1,0 +1,14 @@
+
+tests(master*)$ errstop() { [[ $1 -gt 0 ]] && echo "SCREENCAST STOP &"; read; }
+tests(master*)$ date
+Fri  5 Jun 13:16:53 BST 2020
+tests(master*)$ alias mokbox='docker run --rm -ti --hostname mokbox --name mokbox -v /var/run/docker.sock:/var/run/dock
+er.sock -v /var/tmp:/var/tmp myownkind/mokbox'
+tests(master*)$ mokbox
+docker: Error response from daemon: write /run/media/mclarkson/ICYBOX/var-lib-docker/containerd/daemon/io.containerd.me
+tadata.v1.bolt/meta.db: read-only file system: unknown.
+tests(master*)$ retval=$?
+tests(master*)$ errstop() { [[ $1 -gt 0 ]] && { printf 'SCREENCAST STOP &'; read; }; }
+tests(master*)$ errstop $retval
+SCREENCAST STOP &
+

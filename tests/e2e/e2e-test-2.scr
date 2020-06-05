@@ -1,0 +1,34 @@
+screencast delay 1
+screencast prompt #$%>
+errstop() { [[ $1 -gt 0 ]] && echo "SCREENCAST STOP"; read; }
+date
+screencast paste
+alias mokbox='docker run --rm -ti --hostname mokbox --name mokbox -v /var/run/docker.sock:/var/run/docker.sock -v /var/tmp:/var/tmp myownkind/mokbox'
+mokbox
+retval=$?
+errstop() { [[ $1 -gt 0 ]] && { echo "SCREENCAST STOP"; read; }; }
+errstop $retval
+
+# Test 2 - full base image build
+
+time mokctl -p build image --tailf
+errstop $?
+time mokctl -p create cluster myk8s --masters 1 --tailf
+errstop $?
+export KUBECONFIG=/var/tmp/admin-myk8s.conf
+for i in `seq 1 20`; do if kubectl get pods &>/dev/null; then break; fi; echo -n "."; sleep 1; done
+while kubectl get pods -A | tail -n +2 | awk '{ print $3; }' | grep -qs 0; do echo -n "."; sleep 2; done; echo
+kubectl get pods -A
+errstop $?
+kubectl run --rm -ti --restart=Never --image=alpine shell2 sh || errstop $?
+ip address
+apk add fortune
+exit 0
+mokctl -p get cluster
+mokctl -p delete cluster myk8s || errstop $?
+y
+mokctl -p get cluster
+exit
+
+# Test complete
+date

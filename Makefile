@@ -69,7 +69,8 @@ clean:
 
 .PHONY: test
 test: clean mokctl.deploy
-	./tests/unit-tests.sh
+	./tests/usage-checks.sh
+	./tests/e2e-tests.sh
 	shellcheck src/*.sh mokctl.deploy
 	shfmt -s -i 2 -d src/*.sh
 

@@ -4,10 +4,7 @@
 
 When `make test` is run it will:
 
-1. Run all tests.
-   
-   Add new tests where required.
-   Make sure tests are written for new functions.
+1. Run end-to-end and usage tests.
 
 2. Run `shellcheck` on mokctl/mokctl.
    

@@ -29,7 +29,7 @@ EX_process_options() {
     ;;
   *)
     EX_usage
-    printf 'ERROR: "%s" is not a valid "build" option.\n' "${1}" \
+    printf 'ERROR: "%s" is not a valid "exec" option.\n' "${1}" \
       >"${STDERR}"
     return "${ERROR}"
     ;;

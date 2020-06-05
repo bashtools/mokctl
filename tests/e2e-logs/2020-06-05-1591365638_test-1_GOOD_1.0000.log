@@ -1,0 +1,223 @@
+
+^H%
+tests(master*)$ errstop() { [[ $1 -gt 0 ]] && { printf 'SCREENCAST STOP &'; read; }; }
+tests(master*)$ date
+Fri  5 Jun 14:51:35 BST 2020
+tests(master*)$ alias mokbox='docker run --rm -ti --hostname mokbox --name mokbox -v /var
+/run/docker.sock:/var/run/docker.sock -v /var/tmp:/var/tmp myownkind/mokbox'
+tests(master*)$ mokbox
+Unable to find image 'myownkind/mokbox:latest' locally
+latest: Pulling from myownkind/mokbox
+0169c1449c16: Pull complete
+f2f15199e4d8: Pull complete
+e71955f2abe0: Pull complete
+Digest: sha256:81e00379c496d48ee25b710551dd99f7b0a70c06e96b8fd47fdd3b5d00940064
+Status: Downloaded newer image for myownkind/mokbox:latest
+[root@mokbox /]# retval=$?
+[root@mokbox /]# errstop() { [[ $1 -gt 0 ]] && { printf 'SCREENCAST STOP &'; read; }; }
+[root@mokbox /]# errstop $retval
+[root@mokbox /]#
+[root@mokbox /]# # Test 1 - download the prebuilt image and test
+[root@mokbox /]#
+[root@mokbox /]# mokctl -p build image --get-prebuilt-image
+    Downloading base image, 'mok-centos-7-v1.18.3' .. SUCCESS
+[root@mokbox /]# errstop $?
+[root@mokbox /]# time mokctl -p create cluster myk8s --masters 1 --tailf
+6ec1611ec9f97f63f897fd0f977bf458df844e4d5c27d1ea2123a13108ec6721
+
+STATUS: OK
+
+net.ipv6.conf.all.disable_ipv6 = 1
+net.ipv6.conf.default.disable_ipv6 = 1
+W0605 13:58:24.360347     110 configset.go:202] WARNING: kubeadm cannot validate componen
+t configs for API groups [kubelet.config.k8s.io kubeproxy.config.k8s.io]
+[init] Using Kubernetes version: v1.18.3
+[preflight] Running pre-flight checks
+        [WARNING Swap]: running with swap on is not supported. Please disable swap
+        [WARNING Service-Kubelet]: kubelet service is not enabled, please run 'systemctl
+enable kubelet.service'
+[preflight] Pulling images required for setting up a Kubernetes cluster
+[preflight] This might take a minute or two, depending on the speed of your internet conn
+ection
+[preflight] You can also perform this action in beforehand using 'kubeadm config images p
+ull'
+[kubelet-start] Writing kubelet environment file with flags to file "/var/lib/kubelet/kub
+eadm-flags.env"
+[kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/config.yaml"
+[kubelet-start] Starting the kubelet
+[certs] Using certificateDir folder "/etc/kubernetes/pki"
+[certs] Generating "ca" certificate and key
+[certs] Generating "apiserver" certificate and key
+[certs] apiserver serving cert is signed for DNS names [myk8s-master-1 kubernetes kuberne
+tes.default kubernetes.default.svc kubernetes.default.svc.cluster.local] and IPs [10.96.0
+.1 172.17.0.3 172.17.0.3]
+[certs] Generating "apiserver-kubelet-client" certificate and key
+[certs] Generating "front-proxy-ca" certificate and key
+[certs] Generating "front-proxy-client" certificate and key
+[certs] Generating "etcd/ca" certificate and key
+[certs] Generating "etcd/server" certificate and key
+[certs] etcd/server serving cert is signed for DNS names [myk8s-master-1 localhost] and I
+Ps [172.17.0.3 127.0.0.1 ::1]
+[certs] Generating "etcd/peer" certificate and key
+[certs] etcd/peer serving cert is signed for DNS names [myk8s-master-1 localhost] and IPs
+ [172.17.0.3 127.0.0.1 ::1]
+[certs] Generating "etcd/healthcheck-client" certificate and key
+[certs] Generating "apiserver-etcd-client" certificate and key
+[certs] Generating "sa" key and public key
+[kubeconfig] Using kubeconfig folder "/etc/kubernetes"
+[kubeconfig] Writing "admin.conf" kubeconfig file
+[kubeconfig] Writing "kubelet.conf" kubeconfig file
+[kubeconfig] Writing "controller-manager.conf" kubeconfig file
+[kubeconfig] Writing "scheduler.conf" kubeconfig file
+[control-plane] Using manifest folder "/etc/kubernetes/manifests"
+[control-plane] Creating static Pod manifest for "kube-apiserver"
+[control-plane] Creating static Pod manifest for "kube-controller-manager"
+W0605 13:58:30.751986     110 manifests.go:225] the default kube-apiserver authorization-
+mode is "Node,RBAC"; using "Node,RBAC"
+[control-plane] Creating static Pod manifest for "kube-scheduler"
+W0605 13:58:30.756920     110 manifests.go:225] the default kube-apiserver authorization-
+mode is "Node,RBAC"; using "Node,RBAC"
+[etcd] Creating static Pod manifest for local etcd in "/etc/kubernetes/manifests"
+[wait-control-plane] Waiting for the kubelet to boot up the control plane as static Pods
+from directory "/etc/kubernetes/manifests". This can take up to 4m0s
+[apiclient] All control plane components are healthy after 29.505404 seconds
+[upload-config] Storing the configuration used in ConfigMap "kubeadm-config" in the "kube
+-system" Namespace
+[kubelet] Creating a ConfigMap "kubelet-config-1.18" in namespace kube-system with the co
+nfiguration for the kubelets in the cluster
+[upload-certs] Skipping phase. Please see --upload-certs
+[mark-control-plane] Marking the node myk8s-master-1 as control-plane by adding the label
+ "node-role.kubernetes.io/master=''"
+[mark-control-plane] Marking the node myk8s-master-1 as control-plane by adding the taint
+s [node-role.kubernetes.io/master:NoSchedule]
+[bootstrap-token] Using token: abcdef.0123456789abcdef
+[bootstrap-token] Configuring bootstrap tokens, cluster-info ConfigMap, RBAC Roles
+[bootstrap-token] configured RBAC rules to allow Node Bootstrap tokens to get nodes
+[bootstrap-token] configured RBAC rules to allow Node Bootstrap tokens to post CSRs in or
+der for nodes to get long term certificate credentials
+[bootstrap-token] configured RBAC rules to allow the csrapprover controller automatically
+ approve CSRs from a Node Bootstrap Token
+[bootstrap-token] configured RBAC rules to allow certificate rotation for all node client
+ certificates in the cluster
+[bootstrap-token] Creating the "cluster-info" ConfigMap in the "kube-public" namespace
+[kubelet-finalize] Updating "/etc/kubernetes/kubelet.conf" to point to a rotatable kubele
+t client certificate and key
+[addons] Applied essential addon: CoreDNS
+[addons] Applied essential addon: kube-proxy
+
+Your Kubernetes control-plane has initialized successfully!
+
+To start using your cluster, you need to run the following as a regular user:
+
+  mkdir -p $HOME/.kube
+  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+  sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+You should now deploy a pod network to the cluster.
+Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
+  https://kubernetes.io/docs/concepts/cluster-administration/addons/
+
+You can now join any number of control-plane nodes by copying certificate authorities
+and service account keys on each node and then running the following as root:
+
+  kubeadm join 172.17.0.3:6443 --token abcdef.0123456789abcdef \
+    --discovery-token-ca-cert-hash sha256:76aa26e08ff6ffb06a473f6b8101c0aace6d83e65c33016
+e3db7ad36b28ae6fa \
+    --control-plane
+
+Then you can join any number of worker nodes by running the following on each as root:
+
+kubeadm join 172.17.0.3:6443 --token abcdef.0123456789abcdef \
+    --discovery-token-ca-cert-hash sha256:76aa26e08ff6ffb06a473f6b8101c0aace6d83e65c33016
+e3db7ad36b28ae6fa
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100 14366  100 14366    0     0  21311      0 --:--:-- --:--:-- --:--:-- 21346
+podsecuritypolicy.policy/psp.flannel.unprivileged created
+clusterrole.rbac.authorization.k8s.io/flannel created
+clusterrolebinding.rbac.authorization.k8s.io/flannel created
+serviceaccount/flannel created
+configmap/kube-flannel-cfg created
+daemonset.apps/kube-flannel-ds-amd64 created
+daemonset.apps/kube-flannel-ds-arm64 created
+daemonset.apps/kube-flannel-ds-arm created
+daemonset.apps/kube-flannel-ds-ppc64le created
+daemonset.apps/kube-flannel-ds-s390x created
+Created symlink from /etc/systemd/system/multi-user.target.wants/kubelet.service to /usr/
+lib/systemd/system/kubelet.service.
+node/myk8s-master-1 untainted
+
+STATUS: OK
+
+Cluster, "myk8s", can be accessed using:
+
+export KUBECONFIG=/var/tmp/admin-myk8s.conf
+
+real    0m48.129s
+user    0m0.499s
+sys     0m0.368s
+[root@mokbox /]# errstop $?
+[root@mokbox /]# export KUBECONFIG=/var/tmp/admin-myk8s.conf
+[root@mokbox /]# for i in `seq 1 20`; do if kubectl get pods &>/dev/null; then break; fi;
+ echo -n "."; sleep 1; done
+[root@mokbox /]# while kubectl get pods -A | tail -n +2 | awk '{ print $3; }' | grep -qs
+0; do echo -n "."; sleep 2; done; echo
+....................
+[root@mokbox /]# kubectl get pods -A
+NAMESPACE     NAME                                     READY   STATUS    RESTARTS   AGE
+kube-system   coredns-66bff467f8-k9lc4                 1/1     Running   0          39s
+kube-system   coredns-66bff467f8-pdcq2                 1/1     Running   0          39s
+kube-system   etcd-myk8s-master-1                      1/1     Running   0          47s
+kube-system   kube-apiserver-myk8s-master-1            1/1     Running   0          47s
+kube-system   kube-controller-manager-myk8s-master-1   1/1     Running   0          47s
+kube-system   kube-flannel-ds-amd64-qgmpr              1/1     Running   0          39s
+kube-system   kube-proxy-xcztd                         1/1     Running   0          39s
+kube-system   kube-scheduler-myk8s-master-1            1/1     Running   0          47s
+[root@mokbox /]# errstop $?
+[root@mokbox /]# kubectl run --rm -ti --restart=Never --image=alpine shell2 sh || errstop
+ $?
+If you don't see a command prompt, try pressing enter.
+/ # ip address
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+3: eth0@if6: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1450 qdisc noqueue state UP
+    link/ether da:26:2f:16:cd:9c brd ff:ff:ff:ff:ff:ff
+    inet 10.244.0.4/24 brd 10.244.0.255 scope global eth0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::d826:2fff:fe16:cd9c/64 scope link
+       valid_lft forever preferred_lft forever
+/ # apk add fortune
+fetch http://dl-cdn.alpinelinux.org/alpine/v3.12/main/x86_64/APKINDEX.tar.gz
+fetch http://dl-cdn.alpinelinux.org/alpine/v3.12/community/x86_64/APKINDEX.tar.gz
+(1/2) Installing libbsd (0.10.0-r0)
+(2/2) Installing fortune (0.1-r1)
+Executing busybox-1.31.1-r16.trigger
+ERROR: busybox-1.31.1-r16.trigger: script exited with error 127
+OK: 9 MiB in 16 packages
+exit 0/ # exit 0
+pod "shell2" deleted
+[root@mokbox /]# mokctl -p get cluster
+MOK_Cluster  Docker_ID     Container_Name  IP_Address
+myk8s        6ec1611ec9f9  myk8s-master-1  172.17.0.3
+[root@mokbox /]# mokctl -p delete cluster myk8s || errstop $?
+The following containers will be deleted:
+
+MOK_Cluster  Docker_ID     Container_Name  IP_Address
+myk8s        6ec1611ec9f9  myk8s-master-1  172.17.0.3
+
+Are you sure you want to delete the cluster? (y/N) >y
+
+    Deleting id, '6ec1611ec9f9' from cluster 'myk8s'. .. SUCCESS
+
+[root@mokbox /]# mokctl -p get cluster
+[root@mokbox /]# exit
+exit
+tests(master*)$
+tests(master*)$ # Test complete
+tests(master*)$ date
+Fri  5 Jun 15:00:34 BST 2020
+tests(master*)$

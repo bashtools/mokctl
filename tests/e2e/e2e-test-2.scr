@@ -1,17 +1,17 @@
 screencast delay 1
 screencast prompt #$%>
-errstop() { [[ $1 -gt 0 ]] && echo "SCREENCAST STOP"; read; }
+errstop() { [[ $1 -gt 0 ]] && { printf 'SCREENCAST STOP &'; read; }; }
 date
 screencast paste
 alias mokbox='docker run --rm -ti --hostname mokbox --name mokbox -v /var/run/docker.sock:/var/run/docker.sock -v /var/tmp:/var/tmp myownkind/mokbox'
 mokbox
 retval=$?
-errstop() { [[ $1 -gt 0 ]] && { echo "SCREENCAST STOP"; read; }; }
+errstop() { [[ $1 -gt 0 ]] && { printf 'SCREENCAST STOP &'; read; }; }
 errstop $retval
 
-# Test 2 - full base image build
+# Test 2 - create the prebuilt image and test
 
-time mokctl -p build image --tailf
+mokctl -p build image --tailf
 errstop $?
 time mokctl -p create cluster myk8s --masters 1 --tailf
 errstop $?

@@ -45,13 +45,12 @@ main() {
 
   local status probability
 
-  for x in 1; do
+  for x in 1 2; do
     cmdline-player -n "e2e/e2e-test-${x}.scr"
     status=$(classify_status)
     probability=$(classify_probability)
     save_hardcopy "${x}" "${status}" "${probability}"
     printf 'Test %d status: %s (%s)\n' "${x}" "${status}" "${probability}"
-    break
   done
 }
 

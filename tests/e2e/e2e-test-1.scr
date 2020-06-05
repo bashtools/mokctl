@@ -1,6 +1,6 @@
 screencast delay 1
 screencast prompt #$%>
-errstop() { [[ $1 -gt 0 ]] && echo "SCREENCAST STOP &"; read; }
+errstop() { [[ $1 -gt 0 ]] && { printf 'SCREENCAST STOP &'; read; }; }
 date
 screencast paste
 alias mokbox='docker run --rm -ti --hostname mokbox --name mokbox -v /var/run/docker.sock:/var/run/docker.sock -v /var/tmp:/var/tmp myownkind/mokbox'
@@ -9,7 +9,7 @@ retval=$?
 errstop() { [[ $1 -gt 0 ]] && { printf 'SCREENCAST STOP &'; read; }; }
 errstop $retval
 
-# Test 1 - download the prebuilt image
+# Test 1 - download the prebuilt image and test
 
 mokctl -p build image --get-prebuilt-image
 errstop $?

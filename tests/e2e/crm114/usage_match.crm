@@ -1,0 +1,5 @@
+{
+  isolate (:stats:)
+  classify <osb unique microgroom> (UNKNOWN_USAGE CREATE_USAGE DELETE_USAGE BUILD_USAGE GET_USAGE EXEC_USAGE)  (:stats:)
+  output /:*:stats:/
+}

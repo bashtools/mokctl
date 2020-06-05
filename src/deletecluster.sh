@@ -1,6 +1,6 @@
 # DC - Delete Cluster
 
-# DC is an associative array that holds data specific to the get cluster command.
+# _DC is an associative array that holds data specific to the get cluster command.
 declare -A _DC
 
 # Declare externally defined variables ----------------------------------------

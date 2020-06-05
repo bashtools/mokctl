@@ -188,7 +188,7 @@ _CU_new() {
 
 # CU_podman_or_docker checks to see if docker and/or podman are installed and
 # sets the imgprefix and containerrt array members accordingly. It also defines
-# the docker function to run the detected container runtime. Podman is
+# the docker function to run the detected container runtime. Docker is
 # preferred if both are installed.
 # Args: No args expected.
 _CU_podman_or_docker() {

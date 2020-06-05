@@ -33,11 +33,11 @@ About CRM 114 confidence (pR):
 > * pR values above +100 signify “high chance this text is a member of this class”
 > * pR values between +100 and +10 signify “moderate chance this text is a member of
 >   this class”
-> * pR values between +10 and ­10 signify “unsure” (and typically should be retrained if
+> * pR values between +10 and ­-10 signify “unsure” (and typically should be retrained if
 >   using either SSTTT or DSTTT training.
-> * pR values between ­10 and ­100 signify “moderate chance this text is not a member of
+> * pR values between ­-10 and ­-100 signify “moderate chance this text is not a member of
 >   this class”
-> * pR values of below ­100 signify “high chance this text is not a member of this class”
+> * pR values of below ­-100 signify “high chance this text is not a member of this class”
 
 ### Usage texts
 

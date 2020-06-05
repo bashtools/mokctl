@@ -1,6 +1,6 @@
 # DC - Delete Cluster
 
-# GE is an associative array that holds data specific to the get cluster command.
+# DC is an associative array that holds data specific to the get cluster command.
 declare -A _DC
 
 # Declare externally defined variables ----------------------------------------

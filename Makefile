@@ -6,6 +6,7 @@ all: mokctl.deploy tags
 .PHONY: docker-builds
 docker-builds: docker-mokctl docker-mokbox docker-baseimage
 
+.PHONY: docker-uploads
 docker-uploads: docker-builds docker-upload-mokctl docker-upload-mokbox docker-upload-baseimage
 
 .PHONY: mokctl-docker-mokctl

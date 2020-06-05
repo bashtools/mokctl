@@ -5,7 +5,7 @@ declare -A _EX
 
 # Declare externally defined variables ----------------------------------------
 
-declare OK ERROR STDERR TRUE
+declare OK ERROR STDERR TRUE STOP
 
 # Getters/Setters -------------------------------------------------------------
 
@@ -22,22 +22,18 @@ EX_set_containername() {
 #       arg2 - value of the item to be set, optional
 EX_process_options() {
 
-  # Args:
-  #   arg1 - The option to check.
-
-  local opt validopts=(
-    "--help"
-    "-h"
-  )
-
-  for opt in "${validopts[@]}"; do
-    [[ $1 == "${opt}" ]] && return
-  done
-
-  EX_usage
-  printf 'ERROR: "%s" is not a valid "get cluster" option.\n' "$1" \
-    >"${STDERR}"
-  return "${ERROR}"
+  case "$1" in
+  -h | --help)
+    EX_usage
+    return "${STOP}"
+    ;;
+  *)
+    EX_usage
+    printf 'ERROR: "%s" is not a valid "build" option.\n' "${1}" \
+      >"${STDERR}"
+    return "${ERROR}"
+    ;;
+  esac
 }
 
 # EX_usage outputs help text for the create exec component.  It is called in
@@ -95,6 +91,11 @@ EX_run() {
 
     # If there's only one container just log into it without asking
     _EX_exec "${containernames[1]}"
+
+  elif [[ ${#containernames[*]} == 1 ]]; then
+
+    printf 'No containers found.\n'
+    return "${OK}"
 
   else
 

@@ -64,7 +64,8 @@ uninstall:
 
 .PHONY: clean
 clean:
-	rm -f mokctl.deploy src/buildimage.deploy package/mokctl.deploy
+	rm -f mokctl.deploy src/buildimage.deploy package/mokctl.deploy \
+		tests/hardcopy tests/screenlog.0
 
 .PHONY: test
 test: clean mokctl.deploy

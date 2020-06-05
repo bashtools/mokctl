@@ -64,5 +64,4 @@ good - CRM114 thinks output from 'mokctl create -h' is CREATE_USAGE.
 good - CRM114 thinks output from 'mokctl delete -h' is DELETE_USAGE.
 good - CRM114 thinks output from 'mokctl exec -h' is EXEC_USAGE.
 good - CRM114 thinks output from 'mokctl get -h' is GET_USAGE.
-
 ```

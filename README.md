@@ -24,7 +24,7 @@ Take note of the [Status](#status) below and the [Releases](https://github.com/m
 
 - stable version - not yet.
 
-- development version - 0.8.3-alpha
+- development version - 0.8.4-alpha
   
   | OS      | Version | Terminal       | Status                            | Notes                                 |
   | ------- | ------- | -------------- | --------------------------------- | ------------------------------------- |
@@ -77,7 +77,6 @@ export KUBECONFIG=/var/tmp/admin-myk8s.conf
 mokctl delete cluster myk8s
 
 exit
-
 ```
 
 Two docker images will remain, 'myownkind/mokbox' and 'myownkind/mok-centos-7-v1.18.3'. Remove them to reclaim disk space, or keep them around to be able to quickly build kubernetes clusters.

@@ -1,0 +1,28 @@
+
+tests(master*)$ errstop() { [[ $1 -gt 0 ]] && { printf 'SCREENCAST STOP &'; read
+; }; }
+tests(master*)$ date
+Sat  6 Jun 01:38:06 BST 2020
+tests(master*)$ alias mokbox='docker run --rm -ti --hostname mokbox --name mokbo
+x -v /var/run/docker.sock:/var/run/docker.sock -v /var/tmp:/var/tmp myownkind/mo
+kbox'
+tests(master*)$ mokbox
+[root@mokbox /]# retval=$?
+[root@mokbox /]# errstop() { [[ $1 -gt 0 ]] && { printf 'SCREENCAST STOP &'; rea
+d; }; }
+[root@mokbox /]# errstop $retval
+[root@mokbox /]#
+[root@mokbox /]# # Test 1 - download the prebuilt image and test
+[root@mokbox /]#
+[root@mokbox /]# mokctl -p build image --get-prebuilt-image
+    Downloading base image, 'mok-centos-7-v1.18.3' .. SUCCESS
+[root@mokbox /]# errstop $?
+[root@mokbox /]# time mokctl -p create cluster myk8s --masters 1 --tailf
+
+ERROR: Cluster, "myk8s", exists! Aborting.
+
+real    0m0.122s
+user    0m0.086s
+sys     0m0.039s
+[root@mokbox /]# errstop $?
+SCREENCAST STOP &

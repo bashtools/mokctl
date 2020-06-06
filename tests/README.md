@@ -59,9 +59,9 @@ The CSS files are matched to actual `mokctl command -h` usage in `usage-checks.s
 Output from `usage-checks.sh`:
 
 ```none
-good - CRM114 thinks output from 'mokctl build -h' is BUILD_USAGE.
-good - CRM114 thinks output from 'mokctl create -h' is CREATE_USAGE.
-good - CRM114 thinks output from 'mokctl delete -h' is DELETE_USAGE.
-good - CRM114 thinks output from 'mokctl exec -h' is EXEC_USAGE.
-good - CRM114 thinks output from 'mokctl get -h' is GET_USAGE.
+GOOD - CRM114 thinks output from 'mokctl build -h' is BUILD_USAGE.
+GOOD - CRM114 thinks output from 'mokctl create -h' is CREATE_USAGE.
+GOOD - CRM114 thinks output from 'mokctl delete -h' is DELETE_USAGE.
+GOOD - CRM114 thinks output from 'mokctl exec -h' is EXEC_USAGE.
+GOOD - CRM114 thinks output from 'mokctl get -h' is GET_USAGE.
 ```

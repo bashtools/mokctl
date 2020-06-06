@@ -24,10 +24,13 @@ kubectl run --rm -ti --restart=Never --image=alpine shell2 sh || errstop $?
 ip address
 apk add fortune
 exit 0
+errstop $?
 mokctl -p get cluster
+errstop $?
 mokctl -p delete cluster myk8s || errstop $?
 y
 mokctl -p get cluster
+errstop $?
 exit
 
 # Test complete

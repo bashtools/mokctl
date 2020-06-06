@@ -67,7 +67,7 @@ kubectl get pods -A
 
 Type `exit` or `Ctrl-d` to 'log out' of the mokbox. The mokbox container will be deleted but the kubernetes cluster will remain, as will the `kubectl` file,`/var/tmp/admin-myk8s.conf`.
 
-To remove the `mokctl` created kubernetes cluster:
+To remove the kubernetes cluster:
 
 ```bash
 mokbox

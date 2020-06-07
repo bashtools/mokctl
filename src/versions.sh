@@ -91,7 +91,7 @@ localAPIEndpoint:
   bindPort: 6443
 nodeRegistration:
   criSocket: /var/run/crio/crio.sock
-  name: myk8s-master-1
+  name: $1
   kubeletExtraArgs: {}
   taints:
   - effect: NoSchedule

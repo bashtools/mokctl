@@ -1,4 +1,4 @@
-VERSION = 0.8.4-alpha
+VERSION = 0.8.5-alpha
 
 .PHONY: all
 all: mokctl.deploy tags
@@ -13,6 +13,7 @@ docker-uploads: docker-builds docker-upload-mokctl docker-upload-mokbox docker-u
 docker-mokctl: all
 	docker build -f package/Dockerfile.mokctl -t local/mokctl package
 	docker tag local/mokctl myownkind/mokctl
+	docker tag myownkind/mokctl myownkind/mokctl:${VERSION}
 
 .PHONY: mokctl-docker-mokbox
 docker-mokbox: all
@@ -29,7 +30,6 @@ docker-baseimage: all
 .PHONY: docker-upload-mokctl
 docker-upload-mokctl: docker-mokctl
 	docker push myownkind/mokctl
-	docker tag myownkind/mokctl myownkind/mokctl:${VERSION}
 	docker push myownkind/mokctl:${VERSION}
 
 .PHONY: docker-upload-mokbox

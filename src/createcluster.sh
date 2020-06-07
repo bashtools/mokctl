@@ -521,7 +521,6 @@ _CC_create_worker_nodes() {
       "${labelkey}=${_CC[clustername]}" \
       "${_CC[k8sver]}"
     r=$?
-
     [[ ${r} -ne 0 ]] && {
       runlogfile=$(UT_runlogfile) || err || return
       printf '\n'
@@ -537,7 +536,6 @@ _CC_create_worker_nodes() {
         _CC_set_up_worker_node "${_CC[clustername]}-worker-${int}" \
         "${cahash}" "${token}" "${masterip}"
       r=$?
-
       [[ ${r} -ne 0 ]] && {
         runlogfile=$(UT_runlogfile) || err || return
         printf '\n' >"${STDERR}"
@@ -546,10 +544,88 @@ _CC_create_worker_nodes() {
         printf '%s\n' "${runlogfile}" >"${STDERR}"
         return "${ERROR}"
       }
+
+      UT_run_with_progress \
+        "    Waiting for system to become ready" \
+        _CC_wait_for_cluster \
+        "${_CC[clustername]}-master-1" \
+        "${_CC[clustername]}-worker-${int}"
+      r=$?
+      [[ ${r} -ne 0 ]] && {
+        runlogfile=$(UT_runlogfile) || err || return
+        printf '\n'
+        cat "${runlogfile}" >"${STDERR}"
+        printf '\nERROR: Wait timed out.\n' >"${STDERR}"
+        return "${ERROR}"
+      }
     }
   done
 
   return "${OK}"
+}
+
+# _CC_wait_for_cluster runs a `kubectl` command in the master-1 container,
+# which doesn't exit until the all pods are fully up and running before it
+# returns.
+# Args: arg1 - the master container name to log into
+#       arg2 - the worker container name to wait for
+_CC_wait_for_cluster() {
+
+  local setupfile nl idx masteriplist
+
+  setupfile=$(mktemp -p /var/tmp) || {
+    printf 'ERROR: mktmp failed.\n' >"${STDERR}"
+    return "${ERROR}"
+  }
+
+  cat <<'EnD' >"${setupfile}"
+export KUBECONFIG=/etc/kubernetes/admin.conf
+found=0
+for i in $(seq 1 20); do
+  if kubectl get pods &>/dev/null; then
+    found=1
+    break
+  fi
+  sleep 1
+done
+[[ $found == 0 ]] && {
+  printf '# kubectl get pods\n'
+  kubectl get pods
+  printf '\nWaited for 20 seconds for kubectl to work.\n'
+  printf 'Kubectl cannot contact master. Aborting.\n'
+  exit 1
+}
+counter=0
+while ! kubectl get nodes | grep -qs "$1"; do
+  ((counter++))
+  [[ ${counter} -gt 60 ]] && {
+    printf '# kubectl get nodes\n'
+    kubectl get nodes
+    printf '\nWaited for 2 minutes for node to appear in master. Aborting.\n'
+    exit 1
+  }
+  sleep 2
+done
+counter=0
+while kubectl get pods -A | tail -n +2 | awk '{ print $3; }' | grep -qs 0; do
+  ((counter++))
+  [[ ${counter} -gt 120 ]] && {
+    printf '# kubectl get pods -A\n'
+    kubectl get pods -A
+    printf '\nWaited for 3 minutes for pods to be ready. Aborting.\n'
+    exit 1
+  }
+  sleep 2
+done
+exit 0
+EnD
+
+  docker cp "${setupfile}" "$1":/root/wait.sh || err || {
+    rm -f "${setupfile}"
+    return "${ERROR}"
+  }
+
+  docker exec "$1" bash /root/wait.sh "$2" || err
 }
 
 # _CC_set_up_worker_node calls the correct set up function based on the version.

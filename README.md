@@ -24,7 +24,7 @@ Take note of the [Status](#status) below and the [Releases](https://github.com/m
 
 - stable version - not yet.
 
-- development version - 0.8.4-alpha
+- development version - 0.8.5-alpha
   
   | OS      | Version | Terminal       | Status                            | Notes                                 |
   | ------- | ------- | -------------- | --------------------------------- | ------------------------------------- |

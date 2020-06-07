@@ -27,18 +27,18 @@ docker-baseimage: all
 	docker tag local/mok-centos-7-v1.18.3 myownkind/mok-centos-7-v1.18.3
 	docker tag myownkind/mok-centos-7-v1.18.3 myownkind/mok-centos-7-v1.18.3:${VERSION}
 
-.PHONY: docker-upload-mokctl
+.PHONY:
 docker-upload-mokctl: docker-mokctl
 	docker push myownkind/mokctl
 	docker push myownkind/mokctl:${VERSION}
 
 .PHONY: docker-upload-mokbox
-docker-upload-mokbox: docker-mokbox
+docker-upload-mokbox:
 	docker push myownkind/mokbox
 	docker push myownkind/mokbox:${VERSION}
 
 .PHONY: docker-upload-baseimage
-docker-upload-baseimage: docker-baseimage
+docker-upload-baseimage:
 	# mok-centos-7-v1.18.3 - Build with 'mokctl build image' first!
 	docker push myownkind/mok-centos-7-v1.18.3
 	docker push myownkind/mok-centos-7-v1.18.3:${VERSION}

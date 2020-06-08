@@ -1,0 +1,899 @@
+
+tests(master*)$ errstop() { [[ $1 -gt 0 ]] && { printf 'SCREENCAST STOP &'; read
+; }; }
+tests(master*)$ date
+Mon  8 Jun 22:29:02 BST 2020
+tests(master*)$ alias mokbox='docker run --rm -ti --hostname mokbox --name mokbo
+x -v /var/run/docker.sock:/var/run/docker.sock -v /var/tmp:/var/tmp myownkind/mo
+kbox'
+tests(master*)$ mokbox
+[root@mokbox /]# retval=$?
+[root@mokbox /]# errstop() { [[ $1 -gt 0 ]] && { printf 'SCREENCAST STOP &'; rea
+d; }; }
+[root@mokbox /]# errstop $retval
+[root@mokbox /]#
+[root@mokbox /]# # Test 2 - create the prebuilt image and test
+[root@mokbox /]#
+[root@mokbox /]# mokctl -p build image --tailf
+Sending build context to Docker daemon  19.46kB
+Step 1/14 : FROM centos:7
+ ---> b5b4d78bc90c
+Step 2/14 : ARG CRIO_VERSION=1.18
+ ---> Using cache
+ ---> bc3f070b3689
+Step 3/14 : ARG CRICTL_VERSION=v1.18.0
+ ---> Using cache
+ ---> 9ba6228576ac
+Step 4/14 : ARG K8SBINVER=-1.18.3
+ ---> Using cache
+ ---> 08bfa03f85cd
+Step 5/14 : ENV container docker
+ ---> Using cache
+ ---> fc47beb75012
+Step 6/14 : COPY kubernetes.repo /etc/yum.repos.d/kubernetes.repo
+ ---> 62d9995cac87
+Step 7/14 : RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do
+  [ $i == systemd-tmpfiles-setup.service ] || rm -f $i; done);     rm -f /lib/sy
+stemd/system/multi-user.target.wants/*;     rm -f /etc/systemd/system/*.wants/*;
+     rm -f /lib/systemd/system/local-fs.target.wants/*;     rm -f /lib/systemd/s
+ystem/sockets.target.wants/*udev*;     rm -f /lib/systemd/system/sockets.target.
+wants/*initctl*;     rm -f /lib/systemd/system/basic.target.wants/*;     rm -f /
+lib/systemd/system/anaconda.target.wants/*;     yum -y update     && curl -L htt
+p://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/CentO
+S_7/devel:kubic:libcontainers:stable.repo | sed 's/https/http/g' >/etc/yum.repos
+.d/devel:kubic:libcontainers:stable.repo     && curl -L http://download.opensuse
+.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/$CRIO_VERSION/Cent
+OS_7/devel:kubic:libcontainers:stable:cri-o:$CRIO_VERSION.repo | sed 's/https/ht
+tp/g' >/etc/yum.repos.d/devel:kubic:libcontainers:stable:cri-o:$CRIO_VERSION.rep
+o     && yum install -y       cri-o       iptables       iproute-tc       openss
+l       socat       conntrack       ipset       kubelet$K8SBINVER       kubeadm$
+K8SBINVER       kubectl$K8SBINVER       --disableexcludes=kubernetes     && sed
+-i 's/\(cgroup_manager =\).*/\1 "systemd"/' /etc/crio/crio.conf     && sed -i 's
+/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config     && sed -i 's/\
+(conmon = .*\)/#\1/' /etc/crio/crio.conf     && rm -f /etc/cni/net.d/100-crio-br
+idge.conf     && rm -f /etc/cni/net.d/200-loopback.conf     && sed -i 's/\(^driv
+er = \).*/\1"vfs"/' /etc/containers/storage.conf     && systemctl enable crio
+  && curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRI
+CTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL
+_VERSION}-linux-amd64.tar.gz     && tar zxvf crictl-$CRICTL_VERSION-linux-amd64.
+tar.gz -C /usr/local/bin     && rm -f crictl-$CRICTL_VERSION-linux-amd64.tar.gz
+    && mkdir -p /opt/cni/     && ln -s /usr/libexec/cni /opt/cni/bin
+ ---> Running in 6ccce9531627
+Loaded plugins: fastestmirror, ovl
+Determining fastest mirrors
+ * base: anorien.csc.warwick.ac.uk
+ * extras: mirrors.clouvider.net
+ * updates: anorien.csc.warwick.ac.uk
+Retrieving key from https://packages.cloud.google.com/yum/doc/yum-key.gpg
+Importing GPG key 0xA7317B0F:
+ Userid     : "Google Cloud Packages Automatic Signing Key <gc-team@google.com>"
+ Fingerprint: d0bc 747f d8ca f711 7500 d6fa 3746 c208 a731 7b0f
+ From       : https://packages.cloud.google.com/yum/doc/yum-key.gpg
+Retrieving key from https://packages.cloud.google.com/yum/doc/rpm-package-key.gp
+g
+Resolving Dependencies
+--> Running transaction check
+---> Package bind-license.noarch 32:9.11.4-16.P2.el7_8.2 will be updated
+---> Package bind-license.noarch 32:9.11.4-16.P2.el7_8.6 will be an update
+---> Package binutils.x86_64 0:2.27-43.base.el7 will be updated
+---> Package binutils.x86_64 0:2.27-43.base.el7_8.1 will be an update
+---> Package device-mapper.x86_64 7:1.02.164-7.el7_8.1 will be updated
+---> Package device-mapper.x86_64 7:1.02.164-7.el7_8.2 will be an update
+---> Package device-mapper-libs.x86_64 7:1.02.164-7.el7_8.1 will be updated
+---> Package device-mapper-libs.x86_64 7:1.02.164-7.el7_8.2 will be an update
+---> Package systemd.x86_64 0:219-73.el7_8.5 will be updated
+---> Package systemd.x86_64 0:219-73.el7_8.6 will be an update
+---> Package systemd-libs.x86_64 0:219-73.el7_8.5 will be updated
+---> Package systemd-libs.x86_64 0:219-73.el7_8.6 will be an update
+---> Package yum-plugin-fastestmirror.noarch 0:1.1.31-53.el7 will be updated
+---> Package yum-plugin-fastestmirror.noarch 0:1.1.31-54.el7_8 will be an update
+---> Package yum-plugin-ovl.noarch 0:1.1.31-53.el7 will be updated
+---> Package yum-plugin-ovl.noarch 0:1.1.31-54.el7_8 will be an update
+---> Package yum-utils.noarch 0:1.1.31-53.el7 will be updated
+---> Package yum-utils.noarch 0:1.1.31-54.el7_8 will be an update
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package                    Arch     Version                    Repository
+                                                                           Size
+================================================================================
+Updating:
+ bind-license               noarch   32:9.11.4-16.P2.el7_8.6    updates    90 k
+ binutils                   x86_64   2.27-43.base.el7_8.1       updates   5.9 M
+ device-mapper              x86_64   7:1.02.164-7.el7_8.2       updates   295 k
+ device-mapper-libs         x86_64   7:1.02.164-7.el7_8.2       updates   324 k
+ systemd                    x86_64   219-73.el7_8.6             updates   5.1 M
+ systemd-libs               x86_64   219-73.el7_8.6             updates   416 k
+ yum-plugin-fastestmirror   noarch   1.1.31-54.el7_8            updates    34 k
+ yum-plugin-ovl             noarch   1.1.31-54.el7_8            updates    28 k
+ yum-utils                  noarch   1.1.31-54.el7_8            updates   122 k
+
+Transaction Summary
+================================================================================
+Upgrade  9 Packages
+
+Total download size: 12 M
+Downloading packages:
+Delta RPMs disabled because /usr/bin/applydeltarpm not installed.
+warning: /var/cache/yum/x86_64/7/updates/packages/device-mapper-libs-1.02.164-7.
+el7_8.2.x86_64.rpm: Header V3 RSA/SHA256 Signature, key ID f4a80eb5: NOKEY
+Public key for device-mapper-libs-1.02.164-7.el7_8.2.x86_64.rpm is not installed
+--------------------------------------------------------------------------------
+Total                                              3.4 MB/s |  12 MB  00:03
+Retrieving key from file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+Importing GPG key 0xF4A80EB5:
+ Userid     : "CentOS-7 Key (CentOS 7 Official Signing Key) <security@centos.org
+>"
+ Fingerprint: 6341 ab27 53d7 8a78 a7c2 7bb1 24c6 a8a7 f4a8 0eb5
+ Package    : centos-release-7-8.2003.0.el7.centos.x86_64 (@CentOS)
+ From       : /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+Running transaction check
+Running transaction test
+Transaction test succeeded
+Running transaction
+  Updating   : systemd-libs-219-73.el7_8.6.x86_64                          1/18
+  Updating   : systemd-219-73.el7_8.6.x86_64                               2/18
+Failed to get D-Bus connection: Operation not permitted
+  Updating   : 7:device-mapper-libs-1.02.164-7.el7_8.2.x86_64              3/18
+  Updating   : 7:device-mapper-1.02.164-7.el7_8.2.x86_64                   4/18
+  Updating   : yum-utils-1.1.31-54.el7_8.noarch                            5/18
+  Updating   : yum-plugin-fastestmirror-1.1.31-54.el7_8.noarch             6/18
+  Updating   : 32:bind-license-9.11.4-16.P2.el7_8.6.noarch                 7/18
+  Updating   : binutils-2.27-43.base.el7_8.1.x86_64                        8/18
+install-info: No such file or directory for /usr/share/info/as.info.gz
+install-info: No such file or directory for /usr/share/info/binutils.info.gz
+install-info: No such file or directory for /usr/share/info/gprof.info.gz
+install-info: No such file or directory for /usr/share/info/ld.info.gz
+install-info: No such file or directory for /usr/share/info/standards.info.gz
+  Updating   : yum-plugin-ovl-1.1.31-54.el7_8.noarch                       9/18
+  Cleanup    : yum-utils-1.1.31-53.el7.noarch                             10/18
+  Cleanup    : yum-plugin-fastestmirror-1.1.31-53.el7.noarch              11/18
+  Cleanup    : 32:bind-license-9.11.4-16.P2.el7_8.2.noarch                12/18
+  Cleanup    : yum-plugin-ovl-1.1.31-53.el7.noarch                        13/18
+  Cleanup    : 7:device-mapper-libs-1.02.164-7.el7_8.1.x86_64             14/18
+  Cleanup    : 7:device-mapper-1.02.164-7.el7_8.1.x86_64                  15/18
+  Cleanup    : systemd-219-73.el7_8.5.x86_64                              16/18
+  Cleanup    : systemd-libs-219-73.el7_8.5.x86_64                         17/18
+  Cleanup    : binutils-2.27-43.base.el7.x86_64                           18/18
+  Verifying  : 7:device-mapper-1.02.164-7.el7_8.2.x86_64                   1/18
+  Verifying  : yum-plugin-ovl-1.1.31-54.el7_8.noarch                       2/18
+  Verifying  : systemd-libs-219-73.el7_8.6.x86_64                          3/18
+  Verifying  : binutils-2.27-43.base.el7_8.1.x86_64                        4/18
+  Verifying  : 32:bind-license-9.11.4-16.P2.el7_8.6.noarch                 5/18
+  Verifying  : 7:device-mapper-libs-1.02.164-7.el7_8.2.x86_64              6/18
+  Verifying  : yum-plugin-fastestmirror-1.1.31-54.el7_8.noarch             7/18
+  Verifying  : yum-utils-1.1.31-54.el7_8.noarch                            8/18
+  Verifying  : systemd-219-73.el7_8.6.x86_64                               9/18
+  Verifying  : systemd-219-73.el7_8.5.x86_64                              10/18
+  Verifying  : yum-utils-1.1.31-53.el7.noarch                             11/18
+  Verifying  : 32:bind-license-9.11.4-16.P2.el7_8.2.noarch                12/18
+  Verifying  : yum-plugin-ovl-1.1.31-53.el7.noarch                        13/18
+  Verifying  : binutils-2.27-43.base.el7.x86_64                           14/18
+  Verifying  : 7:device-mapper-libs-1.02.164-7.el7_8.1.x86_64             15/18
+  Verifying  : 7:device-mapper-1.02.164-7.el7_8.1.x86_64                  16/18
+  Verifying  : systemd-libs-219-73.el7_8.5.x86_64                         17/18
+  Verifying  : yum-plugin-fastestmirror-1.1.31-53.el7.noarch              18/18
+
+Updated:
+  bind-license.noarch 32:9.11.4-16.P2.el7_8.6
+  binutils.x86_64 0:2.27-43.base.el7_8.1
+  device-mapper.x86_64 7:1.02.164-7.el7_8.2
+  device-mapper-libs.x86_64 7:1.02.164-7.el7_8.2
+  systemd.x86_64 0:219-73.el7_8.6
+  systemd-libs.x86_64 0:219-73.el7_8.6
+  yum-plugin-fastestmirror.noarch 0:1.1.31-54.el7_8
+  yum-plugin-ovl.noarch 0:1.1.31-54.el7_8
+  yum-utils.noarch 0:1.1.31-54.el7_8
+
+Complete!
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   359  100   359    0     0   4693      0 --:--:-- --:--:-- --:--:--  4723
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   375  100   375    0     0   6413      0 --:--:-- --:--:-- --:--:--  6355
+Loaded plugins: fastestmirror, ovl
+Loading mirror speeds from cached hostfile
+ * base: anorien.csc.warwick.ac.uk
+ * extras: mirrors.clouvider.net
+ * updates: anorien.csc.warwick.ac.uk
+No package iproute-tc available.
+Resolving Dependencies
+--> Running transaction check
+---> Package conntrack-tools.x86_64 0:1.4.4-7.el7 will be installed
+--> Processing Dependency: libnetfilter_conntrack >= 1.0.6 for package: conntrac
+k-tools-1.4.4-7.el7.x86_64
+--> Processing Dependency: libnetfilter_cttimeout.so.1(LIBNETFILTER_CTTIMEOUT_1.
+1)(64bit) for package: conntrack-tools-1.4.4-7.el7.x86_64
+--> Processing Dependency: libnetfilter_cttimeout.so.1(LIBNETFILTER_CTTIMEOUT_1.
+0)(64bit) for package: conntrack-tools-1.4.4-7.el7.x86_64
+--> Processing Dependency: libnetfilter_cthelper.so.0(LIBNETFILTER_CTHELPER_1.0)
+(64bit) for package: conntrack-tools-1.4.4-7.el7.x86_64
+--> Processing Dependency: libmnl.so.0(LIBMNL_1.0)(64bit) for package: conntrack
+-tools-1.4.4-7.el7.x86_64
+--> Processing Dependency: libnfnetlink.so.0()(64bit) for package: conntrack-too
+ls-1.4.4-7.el7.x86_64
+--> Processing Dependency: libnetfilter_queue.so.1()(64bit) for package: conntra
+ck-tools-1.4.4-7.el7.x86_64
+--> Processing Dependency: libnetfilter_cttimeout.so.1()(64bit) for package: con
+ntrack-tools-1.4.4-7.el7.x86_64
+--> Processing Dependency: libnetfilter_cthelper.so.0()(64bit) for package: conn
+track-tools-1.4.4-7.el7.x86_64
+--> Processing Dependency: libnetfilter_conntrack.so.3()(64bit) for package: con
+ntrack-tools-1.4.4-7.el7.x86_64
+--> Processing Dependency: libmnl.so.0()(64bit) for package: conntrack-tools-1.4
+.4-7.el7.x86_64
+---> Package cri-o.x86_64 2:1.18.1-1.2.el7 will be installed
+--> Processing Dependency: runc >= 1.0.0-16 for package: 2:cri-o-1.18.1-1.2.el7.
+x86_64
+--> Processing Dependency: containers-common >= 1:0.1.31-14 for package: 2:cri-o
+-1.18.1-1.2.el7.x86_64
+--> Processing Dependency: containernetworking-plugins >= 0.7.5-1 for package: 2
+:cri-o-1.18.1-1.2.el7.x86_64
+--> Processing Dependency: conmon >= 2.0.2-1 for package: 2:cri-o-1.18.1-1.2.el7
+.x86_64
+--> Processing Dependency: container-selinux for package: 2:cri-o-1.18.1-1.2.el7
+.x86_64
+--> Processing Dependency: libseccomp.so.2()(64bit) for package: 2:cri-o-1.18.1-
+1.2.el7.x86_64
+---> Package ipset.x86_64 0:7.1-1.el7 will be installed
+--> Processing Dependency: ipset-libs(x86-64) = 7.1-1.el7 for package: ipset-7.1
+-1.el7.x86_64
+--> Processing Dependency: libipset.so.13(LIBIPSET_4.8)(64bit) for package: ipse
+t-7.1-1.el7.x86_64
+--> Processing Dependency: libipset.so.13(LIBIPSET_2.0)(64bit) for package: ipse
+t-7.1-1.el7.x86_64
+--> Processing Dependency: libipset.so.13()(64bit) for package: ipset-7.1-1.el7.
+x86_64
+---> Package iptables.x86_64 0:1.4.21-34.el7 will be installed
+---> Package kubeadm.x86_64 0:1.18.3-0 will be installed
+--> Processing Dependency: cri-tools >= 1.13.0 for package: kubeadm-1.18.3-0.x86
+_64
+---> Package kubectl.x86_64 0:1.18.3-0 will be installed
+---> Package kubelet.x86_64 0:1.18.3-0 will be installed
+--> Processing Dependency: iproute for package: kubelet-1.18.3-0.x86_64
+--> Processing Dependency: ethtool for package: kubelet-1.18.3-0.x86_64
+--> Processing Dependency: ebtables for package: kubelet-1.18.3-0.x86_64
+---> Package openssl.x86_64 1:1.0.2k-19.el7 will be installed
+--> Processing Dependency: make for package: 1:openssl-1.0.2k-19.el7.x86_64
+---> Package socat.x86_64 0:1.7.3.2-2.el7 will be installed
+--> Processing Dependency: libwrap.so.0()(64bit) for package: socat-1.7.3.2-2.el
+7.x86_64
+--> Running transaction check
+---> Package conmon.x86_64 2:2.0.17-1.el7 will be installed
+---> Package container-selinux.noarch 2:2.119.1-1.c57a6f9.el7 will be installed
+--> Processing Dependency: selinux-policy-targeted >= 3.13.1-216.el7 for package
+: 2:container-selinux-2.119.1-1.c57a6f9.el7.noarch
+--> Processing Dependency: selinux-policy-base >= 3.13.1-216.el7 for package: 2:
+container-selinux-2.119.1-1.c57a6f9.el7.noarch
+--> Processing Dependency: selinux-policy >= 3.13.1-216.el7 for package: 2:conta
+iner-selinux-2.119.1-1.c57a6f9.el7.noarch
+--> Processing Dependency: policycoreutils >= 2.5-11 for package: 2:container-se
+linux-2.119.1-1.c57a6f9.el7.noarch
+--> Processing Dependency: policycoreutils-python for package: 2:container-selin
+ux-2.119.1-1.c57a6f9.el7.noarch
+--> Processing Dependency: libselinux-utils for package: 2:container-selinux-2.1
+19.1-1.c57a6f9.el7.noarch
+---> Package containernetworking-plugins.x86_64 0:0.8.6-1.el7 will be installed
+---> Package containers-common.x86_64 2:0.2.0-3.1.el7 will be installed
+---> Package cri-tools.x86_64 0:1.13.0-0 will be installed
+---> Package ebtables.x86_64 0:2.0.10-16.el7 will be installed
+---> Package ethtool.x86_64 2:4.8-10.el7 will be installed
+---> Package iproute.x86_64 0:4.11.0-25.el7_7.2 will be installed
+---> Package ipset-libs.x86_64 0:7.1-1.el7 will be installed
+---> Package libmnl.x86_64 0:1.0.3-7.el7 will be installed
+---> Package libnetfilter_conntrack.x86_64 0:1.0.6-1.el7_3 will be installed
+---> Package libnetfilter_cthelper.x86_64 0:1.0.0-11.el7 will be installed
+---> Package libnetfilter_cttimeout.x86_64 0:1.0.0-7.el7 will be installed
+---> Package libnetfilter_queue.x86_64 0:1.0.2-2.el7_2 will be installed
+---> Package libnfnetlink.x86_64 0:1.0.1-4.el7 will be installed
+---> Package libseccomp.x86_64 0:2.3.1-4.el7 will be installed
+---> Package make.x86_64 1:3.82-24.el7 will be installed
+---> Package runc.x86_64 0:1.0.0-103.dev.el7 will be installed
+--> Processing Dependency: criu for package: runc-1.0.0-103.dev.el7.x86_64
+---> Package tcp_wrappers-libs.x86_64 0:7.6-77.el7 will be installed
+--> Running transaction check
+---> Package criu.x86_64 0:3.12-2.el7 will be installed
+--> Processing Dependency: libprotobuf-c.so.1(LIBPROTOBUF_C_1.0.0)(64bit) for pa
+ckage: criu-3.12-2.el7.x86_64
+--> Processing Dependency: libnl-3.so.200(libnl_3)(64bit) for package: criu-3.12
+-2.el7.x86_64
+--> Processing Dependency: libprotobuf-c.so.1()(64bit) for package: criu-3.12-2.
+el7.x86_64
+--> Processing Dependency: libnl-3.so.200()(64bit) for package: criu-3.12-2.el7.
+x86_64
+--> Processing Dependency: libnet.so.1()(64bit) for package: criu-3.12-2.el7.x86
+_64
+---> Package libselinux-utils.x86_64 0:2.5-15.el7 will be installed
+---> Package policycoreutils.x86_64 0:2.5-34.el7 will be installed
+---> Package policycoreutils-python.x86_64 0:2.5-34.el7 will be installed
+--> Processing Dependency: setools-libs >= 3.3.8-4 for package: policycoreutils-
+python-2.5-34.el7.x86_64
+--> Processing Dependency: libsemanage-python >= 2.5-14 for package: policycoreu
+tils-python-2.5-34.el7.x86_64
+--> Processing Dependency: audit-libs-python >= 2.1.3-4 for package: policycoreu
+tils-python-2.5-34.el7.x86_64
+--> Processing Dependency: python-IPy for package: policycoreutils-python-2.5-34
+.el7.x86_64
+--> Processing Dependency: libselinux-python for package: policycoreutils-python
+-2.5-34.el7.x86_64
+--> Processing Dependency: libqpol.so.1(VERS_1.4)(64bit) for package: policycore
+utils-python-2.5-34.el7.x86_64
+--> Processing Dependency: libqpol.so.1(VERS_1.2)(64bit) for package: policycore
+utils-python-2.5-34.el7.x86_64
+--> Processing Dependency: libcgroup for package: policycoreutils-python-2.5-34.
+el7.x86_64
+--> Processing Dependency: libapol.so.4(VERS_4.0)(64bit) for package: policycore
+utils-python-2.5-34.el7.x86_64
+--> Processing Dependency: checkpolicy for package: policycoreutils-python-2.5-3
+4.el7.x86_64
+--> Processing Dependency: libqpol.so.1()(64bit) for package: policycoreutils-py
+thon-2.5-34.el7.x86_64
+--> Processing Dependency: libapol.so.4()(64bit) for package: policycoreutils-py
+thon-2.5-34.el7.x86_64
+---> Package selinux-policy.noarch 0:3.13.1-266.el7 will be installed
+---> Package selinux-policy-targeted.noarch 0:3.13.1-266.el7 will be installed
+--> Running transaction check
+---> Package audit-libs-python.x86_64 0:2.8.5-4.el7 will be installed
+---> Package checkpolicy.x86_64 0:2.5-8.el7 will be installed
+---> Package libcgroup.x86_64 0:0.41-21.el7 will be installed
+---> Package libnet.x86_64 0:1.1.6-7.el7 will be installed
+---> Package libnl3.x86_64 0:3.2.28-4.el7 will be installed
+---> Package libselinux-python.x86_64 0:2.5-15.el7 will be installed
+---> Package libsemanage-python.x86_64 0:2.5-14.el7 will be installed
+---> Package protobuf-c.x86_64 0:1.0.2-3.el7 will be installed
+---> Package python-IPy.noarch 0:0.75-6.el7 will be installed
+---> Package setools-libs.x86_64 0:3.3.8-4.el7 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package                     Arch   Version                 Repository     Size
+================================================================================
+Installing:
+ conntrack-tools             x86_64 1.4.4-7.el7             base          187 k
+ cri-o                       x86_64 2:1.18.1-1.2.el7        devel_kubic_libconta
+iners_stable_cri-o_1.18
+                                                                           44 M
+ ipset                       x86_64 7.1-1.el7               base           39 k
+ iptables                    x86_64 1.4.21-34.el7           base          432 k
+ kubeadm                     x86_64 1.18.3-0                kubernetes    8.8 M
+ kubectl                     x86_64 1.18.3-0                kubernetes    9.5 M
+ kubelet                     x86_64 1.18.3-0                kubernetes     21 M
+ openssl                     x86_64 1:1.0.2k-19.el7         base          493 k
+ socat                       x86_64 1.7.3.2-2.el7           base          290 k
+Installing for dependencies:
+ audit-libs-python           x86_64 2.8.5-4.el7             base           76 k
+ checkpolicy                 x86_64 2.5-8.el7               base          295 k
+ conmon                      x86_64 2:2.0.17-1.el7          devel_kubic_libconta
+iners_stable
+                                                                           36 k
+ container-selinux           noarch 2:2.119.1-1.c57a6f9.el7 extras         40 k
+ containernetworking-plugins x86_64 0.8.6-1.el7             devel_kubic_libconta
+iners_stable
+                                                                           35 M
+ containers-common           x86_64 2:0.2.0-3.1.el7         devel_kubic_libconta
+iners_stable
+                                                                           53 k
+ cri-tools                   x86_64 1.13.0-0                kubernetes    5.1 M
+ criu                        x86_64 3.12-2.el7              base          453 k
+ ebtables                    x86_64 2.0.10-16.el7           base          123 k
+ ethtool                     x86_64 2:4.8-10.el7            base          127 k
+ iproute                     x86_64 4.11.0-25.el7_7.2       base          803 k
+ ipset-libs                  x86_64 7.1-1.el7               base           64 k
+ libcgroup                   x86_64 0.41-21.el7             base           66 k
+ libmnl                      x86_64 1.0.3-7.el7             base           23 k
+ libnet                      x86_64 1.1.6-7.el7             base           59 k
+ libnetfilter_conntrack      x86_64 1.0.6-1.el7_3           base           55 k
+ libnetfilter_cthelper       x86_64 1.0.0-11.el7            base           18 k
+ libnetfilter_cttimeout      x86_64 1.0.0-7.el7             base           18 k
+ libnetfilter_queue          x86_64 1.0.2-2.el7_2           base           23 k
+ libnfnetlink                x86_64 1.0.1-4.el7             base           26 k
+ libnl3                      x86_64 3.2.28-4.el7            base          278 k
+ libseccomp                  x86_64 2.3.1-4.el7             base           56 k
+ libselinux-python           x86_64 2.5-15.el7              base          236 k
+ libselinux-utils            x86_64 2.5-15.el7              base          151 k
+ libsemanage-python          x86_64 2.5-14.el7              base          113 k
+ make                        x86_64 1:3.82-24.el7           base          421 k
+ policycoreutils             x86_64 2.5-34.el7              base          917 k
+ policycoreutils-python      x86_64 2.5-34.el7              base          457 k
+ protobuf-c                  x86_64 1.0.2-3.el7             base           28 k
+ python-IPy                  noarch 0.75-6.el7              base           32 k
+ runc                        x86_64 1.0.0-103.dev.el7       devel_kubic_libconta
+iners_stable
+                                                                          4.5 M
+ selinux-policy              noarch 3.13.1-266.el7          base          497 k
+ selinux-policy-targeted     noarch 3.13.1-266.el7          base          7.0 M
+ setools-libs                x86_64 3.3.8-4.el7             base          620 k
+ tcp_wrappers-libs           x86_64 7.6-77.el7              base           66 k
+
+Transaction Summary
+================================================================================
+Install  9 Packages (+35 Dependent packages)
+
+Total download size: 142 M
+Installed size: 508 M
+Downloading packages:
+warning: /var/cache/yum/x86_64/7/devel_kubic_libcontainers_stable/packages/conmo
+n-2.0.17-1.el7.x86_64.rpm: Header V3 RSA/SHA256 Signature, key ID 75060aa4: NOKE
+Y
+Public key for conmon-2.0.17-1.el7.x86_64.rpm is not installed
+warning: /var/cache/yum/x86_64/7/kubernetes/packages/14bfe6e75a9efc8eca3f638eb22
+c7e2ce759c67f95b43b16fae4ebabde1549f3-cri-tools-1.13.0-0.x86_64.rpm: Header V4 R
+SA/SHA512 Signature, key ID 3e1ba8d5: NOKEY
+Public key for 14bfe6e75a9efc8eca3f638eb22c7e2ce759c67f95b43b16fae4ebabde1549f3-
+cri-tools-1.13.0-0.x86_64.rpm is not installed
+Public key for cri-o-1.18.1-1.2.el7.x86_64.rpm is not installed
+--------------------------------------------------------------------------------
+Total                                              2.8 MB/s | 142 MB  00:50
+Retrieving key from https://packages.cloud.google.com/yum/doc/yum-key.gpg
+Importing GPG key 0xA7317B0F:
+ Userid     : "Google Cloud Packages Automatic Signing Key <gc-team@google.com>"
+ Fingerprint: d0bc 747f d8ca f711 7500 d6fa 3746 c208 a731 7b0f
+ From       : https://packages.cloud.google.com/yum/doc/yum-key.gpg
+Retrieving key from https://packages.cloud.google.com/yum/doc/rpm-package-key.gp
+g
+Importing GPG key 0x3E1BA8D5:
+ Userid     : "Google Cloud Packages RPM Signing Key <gc-team@google.com>"
+ Fingerprint: 3749 e1ba 95a8 6ce0 5454 6ed2 f09c 394c 3e1b a8d5
+ From       : https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+Retrieving key from http://download.opensuse.org/repositories/devel:/kubic:/libc
+ontainers:/stable/CentOS_7/repodata/repomd.xml.key
+Importing GPG key 0x75060AA4:
+ Userid     : "devel:kubic OBS Project <devel:kubic@build.opensuse.org>"
+ Fingerprint: 2472 d6d0 d2f6 6af8 7aba 8da3 4d64 3903 7506 0aa4
+ From       : http://download.opensuse.org/repositories/devel:/kubic:/libcontain
+ers:/stable/CentOS_7/repodata/repomd.xml.key
+Running transaction check
+Running transaction test
+Transaction test succeeded
+Running transaction
+  Installing : libmnl-1.0.3-7.el7.x86_64                                   1/44
+  Installing : libnfnetlink-1.0.1-4.el7.x86_64                             2/44
+  Installing : containernetworking-plugins-0.8.6-1.el7.x86_64              3/44
+  Installing : libnetfilter_conntrack-1.0.6-1.el7_3.x86_64                 4/44
+  Installing : iptables-1.4.21-34.el7.x86_64                               5/44
+  Installing : libselinux-utils-2.5-15.el7.x86_64                          6/44
+  Installing : policycoreutils-2.5-34.el7.x86_64                           7/44
+  Installing : selinux-policy-3.13.1-266.el7.noarch                        8/44
+  Installing : libseccomp-2.3.1-4.el7.x86_64                               9/44
+  Installing : selinux-policy-targeted-3.13.1-266.el7.noarch              10/44
+  Installing : iproute-4.11.0-25.el7_7.2.x86_64                           11/44
+  Installing : libnetfilter_queue-1.0.2-2.el7_2.x86_64                    12/44
+  Installing : libnetfilter_cttimeout-1.0.0-7.el7.x86_64                  13/44
+  Installing : ipset-libs-7.1-1.el7.x86_64                                14/44
+  Installing : libnetfilter_cthelper-1.0.0-11.el7.x86_64                  15/44
+  Installing : conntrack-tools-1.4.4-7.el7.x86_64                         16/44
+  Installing : ebtables-2.0.10-16.el7.x86_64                              17/44
+  Installing : libnl3-3.2.28-4.el7.x86_64                                 18/44
+  Installing : libnet-1.1.6-7.el7.x86_64                                  19/44
+  Installing : libcgroup-0.41-21.el7.x86_64                               20/44
+  Installing : 2:conmon-2.0.17-1.el7.x86_64                               21/44
+  Installing : kubectl-1.18.3-0.x86_64                                    22/44
+  Installing : libselinux-python-2.5-15.el7.x86_64                        23/44
+  Installing : libsemanage-python-2.5-14.el7.x86_64                       24/44
+  Installing : setools-libs-3.3.8-4.el7.x86_64                            25/44
+  Installing : 1:make-3.82-24.el7.x86_64                                  26/44
+  Installing : 2:containers-common-0.2.0-3.1.el7.x86_64                   27/44
+  Installing : python-IPy-0.75-6.el7.noarch                               28/44
+  Installing : 2:ethtool-4.8-10.el7.x86_64                                29/44
+  Installing : audit-libs-python-2.8.5-4.el7.x86_64                       30/44
+  Installing : checkpolicy-2.5-8.el7.x86_64                               31/44
+  Installing : policycoreutils-python-2.5-34.el7.x86_64                   32/44
+  Installing : 2:container-selinux-2.119.1-1.c57a6f9.el7.noarch           33/44
+setsebool:  SELinux is disabled.
+  Installing : cri-tools-1.13.0-0.x86_64                                  34/44
+  Installing : tcp_wrappers-libs-7.6-77.el7.x86_64                        35/44
+  Installing : socat-1.7.3.2-2.el7.x86_64                                 36/44
+  Installing : kubelet-1.18.3-0.x86_64                                    37/44
+  Installing : protobuf-c-1.0.2-3.el7.x86_64                              38/44
+  Installing : criu-3.12-2.el7.x86_64                                     39/44
+  Installing : runc-1.0.0-103.dev.el7.x86_64                              40/44
+  Installing : 2:cri-o-1.18.1-1.2.el7.x86_64                              41/44
+  Installing : kubeadm-1.18.3-0.x86_64                                    42/44
+  Installing : 1:openssl-1.0.2k-19.el7.x86_64                             43/44
+  Installing : ipset-7.1-1.el7.x86_64                                     44/44
+  Verifying  : 2:container-selinux-2.119.1-1.c57a6f9.el7.noarch            1/44
+  Verifying  : libmnl-1.0.3-7.el7.x86_64                                   2/44
+  Verifying  : libnetfilter_queue-1.0.2-2.el7_2.x86_64                     3/44
+  Verifying  : protobuf-c-1.0.2-3.el7.x86_64                               4/44
+  Verifying  : tcp_wrappers-libs-7.6-77.el7.x86_64                         5/44
+  Verifying  : cri-tools-1.13.0-0.x86_64                                   6/44
+  Verifying  : libnetfilter_conntrack-1.0.6-1.el7_3.x86_64                 7/44
+  Verifying  : checkpolicy-2.5-8.el7.x86_64                                8/44
+  Verifying  : audit-libs-python-2.8.5-4.el7.x86_64                        9/44
+  Verifying  : iproute-4.11.0-25.el7_7.2.x86_64                           10/44
+  Verifying  : conntrack-tools-1.4.4-7.el7.x86_64                         11/44
+  Verifying  : iptables-1.4.21-34.el7.x86_64                              12/44
+  Verifying  : policycoreutils-2.5-34.el7.x86_64                          13/44
+  Verifying  : selinux-policy-3.13.1-266.el7.noarch                       14/44
+  Verifying  : 2:ethtool-4.8-10.el7.x86_64                                15/44
+  Verifying  : python-IPy-0.75-6.el7.noarch                               16/44
+  Verifying  : libseccomp-2.3.1-4.el7.x86_64                              17/44
+  Verifying  : 2:containers-common-0.2.0-3.1.el7.x86_64                   18/44
+  Verifying  : runc-1.0.0-103.dev.el7.x86_64                              19/44
+  Verifying  : libselinux-utils-2.5-15.el7.x86_64                         20/44
+  Verifying  : 1:make-3.82-24.el7.x86_64                                  21/44
+  Verifying  : libnetfilter_cttimeout-1.0.0-7.el7.x86_64                  22/44
+  Verifying  : ipset-libs-7.1-1.el7.x86_64                                23/44
+  Verifying  : setools-libs-3.3.8-4.el7.x86_64                            24/44
+  Verifying  : ipset-7.1-1.el7.x86_64                                     25/44
+  Verifying  : libsemanage-python-2.5-14.el7.x86_64                       26/44
+  Verifying  : 2:cri-o-1.18.1-1.2.el7.x86_64                              27/44
+  Verifying  : policycoreutils-python-2.5-34.el7.x86_64                   28/44
+  Verifying  : 1:openssl-1.0.2k-19.el7.x86_64                             29/44
+  Verifying  : libselinux-python-2.5-15.el7.x86_64                        30/44
+  Verifying  : kubeadm-1.18.3-0.x86_64                                    31/44
+  Verifying  : kubectl-1.18.3-0.x86_64                                    32/44
+  Verifying  : containernetworking-plugins-0.8.6-1.el7.x86_64             33/44
+  Verifying  : 2:conmon-2.0.17-1.el7.x86_64                               34/44
+  Verifying  : libcgroup-0.41-21.el7.x86_64                               35/44
+  Verifying  : libnet-1.1.6-7.el7.x86_64                                  36/44
+  Verifying  : libnetfilter_cthelper-1.0.0-11.el7.x86_64                  37/44
+  Verifying  : kubelet-1.18.3-0.x86_64                                    38/44
+  Verifying  : libnfnetlink-1.0.1-4.el7.x86_64                            39/44
+  Verifying  : selinux-policy-targeted-3.13.1-266.el7.noarch              40/44
+  Verifying  : criu-3.12-2.el7.x86_64                                     41/44
+  Verifying  : libnl3-3.2.28-4.el7.x86_64                                 42/44
+  Verifying  : socat-1.7.3.2-2.el7.x86_64                                 43/44
+  Verifying  : ebtables-2.0.10-16.el7.x86_64                              44/44
+
+Installed:
+  conntrack-tools.x86_64 0:1.4.4-7.el7      cri-o.x86_64 2:1.18.1-1.2.el7
+  ipset.x86_64 0:7.1-1.el7                  iptables.x86_64 0:1.4.21-34.el7
+  kubeadm.x86_64 0:1.18.3-0                 kubectl.x86_64 0:1.18.3-0
+  kubelet.x86_64 0:1.18.3-0                 openssl.x86_64 1:1.0.2k-19.el7
+  socat.x86_64 0:1.7.3.2-2.el7
+
+Dependency Installed:
+  audit-libs-python.x86_64 0:2.8.5-4.el7
+  checkpolicy.x86_64 0:2.5-8.el7
+  conmon.x86_64 2:2.0.17-1.el7
+  container-selinux.noarch 2:2.119.1-1.c57a6f9.el7
+  containernetworking-plugins.x86_64 0:0.8.6-1.el7
+  containers-common.x86_64 2:0.2.0-3.1.el7
+  cri-tools.x86_64 0:1.13.0-0
+  criu.x86_64 0:3.12-2.el7
+  ebtables.x86_64 0:2.0.10-16.el7
+  ethtool.x86_64 2:4.8-10.el7
+  iproute.x86_64 0:4.11.0-25.el7_7.2
+  ipset-libs.x86_64 0:7.1-1.el7
+  libcgroup.x86_64 0:0.41-21.el7
+  libmnl.x86_64 0:1.0.3-7.el7
+  libnet.x86_64 0:1.1.6-7.el7
+  libnetfilter_conntrack.x86_64 0:1.0.6-1.el7_3
+  libnetfilter_cthelper.x86_64 0:1.0.0-11.el7
+  libnetfilter_cttimeout.x86_64 0:1.0.0-7.el7
+  libnetfilter_queue.x86_64 0:1.0.2-2.el7_2
+  libnfnetlink.x86_64 0:1.0.1-4.el7
+  libnl3.x86_64 0:3.2.28-4.el7
+  libseccomp.x86_64 0:2.3.1-4.el7
+  libselinux-python.x86_64 0:2.5-15.el7
+  libselinux-utils.x86_64 0:2.5-15.el7
+  libsemanage-python.x86_64 0:2.5-14.el7
+  make.x86_64 1:3.82-24.el7
+  policycoreutils.x86_64 0:2.5-34.el7
+  policycoreutils-python.x86_64 0:2.5-34.el7
+  protobuf-c.x86_64 0:1.0.2-3.el7
+  python-IPy.noarch 0:0.75-6.el7
+  runc.x86_64 0:1.0.0-103.dev.el7
+  selinux-policy.noarch 0:3.13.1-266.el7
+  selinux-policy-targeted.noarch 0:3.13.1-266.el7
+  setools-libs.x86_64 0:3.3.8-4.el7
+  tcp_wrappers-libs.x86_64 0:7.6-77.el7
+
+Complete!
+Created symlink /etc/systemd/system/multi-user.target.wants/crio.service, pointi
+ng to /usr/lib/systemd/system/crio.service.
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   644  100   644    0     0   1000      0 --:--:-- --:--:-- --:--:--  1000
+100 12.0M  100 12.0M    0     0  1286k      0  0:00:09  0:00:09 --:--:-- 1429k
+crictl
+Removing intermediate container 6ccce9531627
+ ---> 525e7d17b480
+Step 8/14 : COPY k8s.conf /etc/sysctl.d/k8s.conf
+ ---> 149c82ec0d98
+Step 9/14 : COPY 100-crio-bridge.conf-flannel /etc/cni/net.d/100-crio-bridge.con
+f
+ ---> b3e4499795f0
+Step 10/14 : COPY kubelet-config /etc/sysconfig/kubelet
+ ---> a88186a53fb8
+Step 11/14 : COPY entrypoint /usr/local/bin
+ ---> 41118ec57ec2
+Step 12/14 : VOLUME [ "/sys/fs/cgroup" ]
+ ---> Running in e5faaa02611a
+Removing intermediate container e5faaa02611a
+ ---> 1aabcb05189b
+Step 13/14 : STOPSIGNAL SIGRTMIN+3
+ ---> Running in 63dc70f07638
+Removing intermediate container 63dc70f07638
+ ---> d17a999f4a59
+Step 14/14 : ENTRYPOINT ["/usr/local/bin/entrypoint", "/usr/sbin/init"]
+ ---> Running in bd066c30a939
+Removing intermediate container bd066c30a939
+ ---> dbc293394076
+Successfully built dbc293394076
+Successfully tagged local/mok-centos-7-v1.18.3:latest
+
+STATUS: OK
+
+6b3a7e4bc4ba3eb0d3b3986f045f53771d7d59b99fe3a5557dc0f82f75ddfadd
+
+ ** WAITING FOR CRIO TO BECOME READY **
+
+Failed to get D-Bus connection: Operation not permitted
+Ï crio.service - Container Runtime Interface for OCI (CRI-O)
+   Loaded: loaded (/usr/lib/systemd/system/crio.service; enabled; vendor preset:
+ disabled)
+   Active: active (running) since Mon 2020-06-08 21:31:24 UTC; 717ms ago
+     Docs: https://github.com/cri-o/cri-o
+ Main PID: 110 (crio)
+   CGroup: /system.slice/docker-6b3a7e4bc4ba3eb0d3b3986f045f53771d7d59b99fe3a555
+7dc0f82f75ddfadd.scope/system.slice/crio.service
+            110 /usr/bin/crio
+
+Jun 08 21:31:24 mok-build-modify systemd[1]: Starting Container Runtime Interfac
+e for OCI (CRI-O)...
+Jun 08 21:31:24 mok-build-modify crio[110]: time="2020-06-08 21:31:24.504252819Z
+" level=info msg="Using default capabilities: CAP_CHOWN, CAP_DAC_OVERRIDE, CAP_F
+SETID, CAP_FOWNER, CAP_SETGID, CAP_SETUID, CAP_SETPCAP, CAP_NET_BIND_SERVICE, CA
+P_KILL"
+Jun 08 21:31:24 mok-build-modify crio[110]: time="2020-06-08 21:31:24.506165986Z
+" level=info msg="No seccomp profile specified, using the internal default"
+Jun 08 21:31:24 mok-build-modify crio[110]: time="2020-06-08 21:31:24.506193287Z
+" level=info msg="AppArmor is disabled by the system or at CRI-O build-time"
+Jun 08 21:31:24 mok-build-modify crio[110]: time="2020-06-08 21:31:24.509930169Z
+" level=info msg="Found CNI network crio (type=flannel) at /etc/cni/net.d/100-cr
+io-bridge.conf"
+Jun 08 21:31:24 mok-build-modify crio[110]: time="2020-06-08 21:31:24.509962010Z
+" level=info msg="Update default CNI network name to crio"
+Jun 08 21:31:24 mok-build-modify systemd[1]: Started Container Runtime Interface
+ for OCI (CRI-O).
+W0608 21:31:25.913410     148 configset.go:202] WARNING: kubeadm cannot validate
+ component configs for API groups [kubelet.config.k8s.io kubeproxy.config.k8s.io
+]
+[config/images] Pulled k8s.gcr.io/kube-apiserver:v1.18.3
+[config/images] Pulled k8s.gcr.io/kube-controller-manager:v1.18.3
+[config/images] Pulled k8s.gcr.io/kube-scheduler:v1.18.3
+[config/images] Pulled k8s.gcr.io/kube-proxy:v1.18.3
+[config/images] Pulled k8s.gcr.io/pause:3.2
+[config/images] Pulled k8s.gcr.io/etcd:3.4.3-0
+[config/images] Pulled k8s.gcr.io/coredns:1.6.7
+mok-build-modify
+sha256:eb9df7fddad4118d3e28f7831305e105e8247ecd054ce373d21282437388512a
+mok-build-modify
+mok-build-modify
+
+STATUS: OK
+
+/usr/bin/mokctl: line 703: kill: `': not a pid or valid job spec
+[root@mokbox /]# errstop $?
+[root@mokbox /]# time mokctl -p create cluster myk8s --masters 1 --tailf
+3b4838c67344f9bf01effd876525b7049a5519beed15a468db7630388cb404a3
+
+STATUS: OK
+
+net.ipv6.conf.all.disable_ipv6 = 1
+net.ipv6.conf.default.disable_ipv6 = 1
+W0608 21:33:47.309941     115 configset.go:202] WARNING: kubeadm cannot validate
+ component configs for API groups [kubelet.config.k8s.io kubeproxy.config.k8s.io
+]
+[init] Using Kubernetes version: v1.18.3
+[preflight] Running pre-flight checks
+        [WARNING Swap]: running with swap on is not supported. Please disable sw
+ap
+        [WARNING Service-Kubelet]: kubelet service is not enabled, please run 's
+ystemctl enable kubelet.service'
+[preflight] Pulling images required for setting up a Kubernetes cluster
+[preflight] This might take a minute or two, depending on the speed of your inte
+rnet connection
+[preflight] You can also perform this action in beforehand using 'kubeadm config
+ images pull'
+[kubelet-start] Writing kubelet environment file with flags to file "/var/lib/ku
+belet/kubeadm-flags.env"
+[kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/config.y
+aml"
+[kubelet-start] Starting the kubelet
+[certs] Using certificateDir folder "/etc/kubernetes/pki"
+[certs] Generating "ca" certificate and key
+[certs] Generating "apiserver" certificate and key
+[certs] apiserver serving cert is signed for DNS names [myk8s-master-1 kubernete
+s kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local
+] and IPs [10.96.0.1 172.17.0.3 172.17.0.3]
+[certs] Generating "apiserver-kubelet-client" certificate and key
+[certs] Generating "front-proxy-ca" certificate and key
+[certs] Generating "front-proxy-client" certificate and key
+[certs] Generating "etcd/ca" certificate and key
+[certs] Generating "etcd/server" certificate and key
+[certs] etcd/server serving cert is signed for DNS names [myk8s-master-1 localho
+st] and IPs [172.17.0.3 127.0.0.1 ::1]
+[certs] Generating "etcd/peer" certificate and key
+[certs] etcd/peer serving cert is signed for DNS names [myk8s-master-1 localhost
+] and IPs [172.17.0.3 127.0.0.1 ::1]
+[certs] Generating "etcd/healthcheck-client" certificate and key
+[certs] Generating "apiserver-etcd-client" certificate and key
+[certs] Generating "sa" key and public key
+[kubeconfig] Using kubeconfig folder "/etc/kubernetes"
+[kubeconfig] Writing "admin.conf" kubeconfig file
+[kubeconfig] Writing "kubelet.conf" kubeconfig file
+[kubeconfig] Writing "controller-manager.conf" kubeconfig file
+[kubeconfig] Writing "scheduler.conf" kubeconfig file
+[control-plane] Using manifest folder "/etc/kubernetes/manifests"
+[control-plane] Creating static Pod manifest for "kube-apiserver"
+[control-plane] Creating static Pod manifest for "kube-controller-manager"
+W0608 21:33:53.634682     115 manifests.go:225] the default kube-apiserver autho
+rization-mode is "Node,RBAC"; using "Node,RBAC"
+[control-plane] Creating static Pod manifest for "kube-scheduler"
+W0608 21:33:53.636100     115 manifests.go:225] the default kube-apiserver autho
+rization-mode is "Node,RBAC"; using "Node,RBAC"
+[etcd] Creating static Pod manifest for local etcd in "/etc/kubernetes/manifests
+"
+[wait-control-plane] Waiting for the kubelet to boot up the control plane as sta
+tic Pods from directory "/etc/kubernetes/manifests". This can take up to 4m0s
+[apiclient] All control plane components are healthy after 24.005677 seconds
+[upload-config] Storing the configuration used in ConfigMap "kubeadm-config" in
+the "kube-system" Namespace
+[kubelet] Creating a ConfigMap "kubelet-config-1.18" in namespace kube-system wi
+th the configuration for the kubelets in the cluster
+[upload-certs] Skipping phase. Please see --upload-certs
+[mark-control-plane] Marking the node myk8s-master-1 as control-plane by adding
+the label "node-role.kubernetes.io/master=''"
+[mark-control-plane] Marking the node myk8s-master-1 as control-plane by adding
+the taints [node-role.kubernetes.io/master:NoSchedule]
+[bootstrap-token] Using token: abcdef.0123456789abcdef
+[bootstrap-token] Configuring bootstrap tokens, cluster-info ConfigMap, RBAC Rol
+es
+[bootstrap-token] configured RBAC rules to allow Node Bootstrap tokens to get no
+des
+[bootstrap-token] configured RBAC rules to allow Node Bootstrap tokens to post C
+SRs in order for nodes to get long term certificate credentials
+[bootstrap-token] configured RBAC rules to allow the csrapprover controller auto
+matically approve CSRs from a Node Bootstrap Token
+[bootstrap-token] configured RBAC rules to allow certificate rotation for all no
+de client certificates in the cluster
+[bootstrap-token] Creating the "cluster-info" ConfigMap in the "kube-public" nam
+espace
+[kubelet-finalize] Updating "/etc/kubernetes/kubelet.conf" to point to a rotatab
+le kubelet client certificate and key
+[addons] Applied essential addon: CoreDNS
+[addons] Applied essential addon: kube-proxy
+
+Your Kubernetes control-plane has initialized successfully!
+
+To start using your cluster, you need to run the following as a regular user:
+
+  mkdir -p $HOME/.kube
+  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+  sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+You should now deploy a pod network to the cluster.
+Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
+  https://kubernetes.io/docs/concepts/cluster-administration/addons/
+
+You can now join any number of control-plane nodes by copying certificate author
+ities
+and service account keys on each node and then running the following as root:
+
+  kubeadm join 172.17.0.3:6443 --token abcdef.0123456789abcdef \
+    --discovery-token-ca-cert-hash sha256:6a659e3a67074caddad9644fd0d87005fb9b80
+d55390f2ca28441b061598b645 \
+    --control-plane
+
+Then you can join any number of worker nodes by running the following on each as
+ root:
+
+kubeadm join 172.17.0.3:6443 --token abcdef.0123456789abcdef \
+    --discovery-token-ca-cert-hash sha256:6a659e3a67074caddad9644fd0d87005fb9b80
+d55390f2ca28441b061598b645
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100 14366  100 14366    0     0  28286      0 --:--:-- --:--:-- --:--:-- 28279
+podsecuritypolicy.policy/psp.flannel.unprivileged created
+clusterrole.rbac.authorization.k8s.io/flannel created
+clusterrolebinding.rbac.authorization.k8s.io/flannel created
+serviceaccount/flannel created
+configmap/kube-flannel-cfg created
+daemonset.apps/kube-flannel-ds-amd64 created
+daemonset.apps/kube-flannel-ds-arm64 created
+daemonset.apps/kube-flannel-ds-arm created
+daemonset.apps/kube-flannel-ds-ppc64le created
+daemonset.apps/kube-flannel-ds-s390x created
+Created symlink from /etc/systemd/system/multi-user.target.wants/kubelet.service
+ to /usr/lib/systemd/system/kubelet.service.
+node/myk8s-master-1 untainted
+
+STATUS: OK
+
+Cluster, "myk8s", can be accessed using:
+
+export KUBECONFIG=/var/tmp/admin-myk8s.conf
+
+/usr/bin/mokctl: line 703: kill: `': not a pid or valid job spec
+
+real    0m35.730s
+user    0m0.431s
+sys     0m0.287s
+[root@mokbox /]# errstop $?
+[root@mokbox /]# export KUBECONFIG=/var/tmp/admin-myk8s.conf
+[root@mokbox /]# for i in `seq 1 20`; do if kubectl get pods &>/dev/null; then b
+reak; fi; echo -n "."; sleep 1; done
+[root@mokbox /]# while kubectl get pods -A | tail -n +2 | awk '{ print $3; }' |
+grep -qs 0; do echo -n "."; sleep 2; done; echo
+...................
+[root@mokbox /]# kubectl get pods -A
+NAMESPACE     NAME                                     READY   STATUS    RESTART
+S   AGE
+kube-system   coredns-66bff467f8-2dgs6                 1/1     Running   0
+    34s
+kube-system   coredns-66bff467f8-mqxbk                 1/1     Running   0
+    34s
+kube-system   etcd-myk8s-master-1                      1/1     Running   0
+    42s
+kube-system   kube-apiserver-myk8s-master-1            1/1     Running   0
+    41s
+kube-system   kube-controller-manager-myk8s-master-1   1/1     Running   0
+    42s
+kube-system   kube-flannel-ds-amd64-969p5              1/1     Running   0
+    33s
+kube-system   kube-proxy-fh54c                         1/1     Running   0
+    33s
+kube-system   kube-scheduler-myk8s-master-1            1/1     Running   0
+    42s
+[root@mokbox /]# errstop $?
+[root@mokbox /]# kubectl run --rm -ti --restart=Never --image=alpine shell2 sh |
+| errstop $?
+If you don't see a command prompt, try pressing enter.
+/ # ip address
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+3: eth0@if6: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1450 qdisc noqueue sta
+te UP
+    link/ether f2:5e:5d:eb:27:43 brd ff:ff:ff:ff:ff:ff
+    inet 10.244.0.4/24 brd 10.244.0.255 scope global eth0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::f05e:5dff:feeb:2743/64 scope link
+       valid_lft forever preferred_lft forever
+/ # apk add fortune
+fetch http://dl-cdn.alpinelinux.org/alpine/v3.12/main/x86_64/APKINDEX.tar.gz
+fetch http://dl-cdn.alpinelinux.org/alpine/v3.12/community/x86_64/APKINDEX.tar.g
+z
+(1/2) Installing libbsd (0.10.0-r0)
+(2/2) Installing fortune (0.1-r1)
+ 23% #################
+Executing busybox-1.31.1-r16.trigger
+ERROR: busybox-1.31.1-r16.trigger: script exited with error 127
+OK: 9 MiB in 16 packages
+/ # exit 0
+pod "shell2" deleted
+[root@mokbox /]# errstop $?
+[root@mokbox /]# mokctl -p get cluster
+MOK_Cluster  Docker_ID     Container_Name  IP_Address
+myk8s        3b4838c67344  myk8s-master-1  172.17.0.3
+[root@mokbox /]# errstop $?
+[root@mokbox /]# mokctl -p delete cluster myk8s || errstop $?
+The following containers will be deleted:
+
+MOK_Cluster  Docker_ID     Container_Name  IP_Address
+myk8s        3b4838c67344  myk8s-master-1  172.17.0.3
+
+Are you sure you want to delete the cluster? (y/N) >y
+
+    Deleting id, '3b4838c67344' from cluster 'myk8s'. .. SUCCESS
+
+[root@mokbox /]# mokctl -p get cluster
+[root@mokbox /]# errstop $?
+[root@mokbox /]# exit
+exit
+tests(master*)$
+tests(master*)$ # Test complete
+tests(master*)$ date
+Mon  8 Jun 22:35:40 BST 2020
+tests(master*)$

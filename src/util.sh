@@ -100,13 +100,16 @@ UT_run_with_progress() {
         sleep .1
       done
     done) &
+    _UT[spinnerpid]=$!
+    disown
 
     # Wait for the command to finish
     wait %1 2>/dev/null
     retval=$?
 
     # Kill the spinner
-    kill %2 2>/dev/null
+    kill "${_UT[spinnerpid]}" 2>/dev/null
+    _UT[spinnerpid]=
 
     # Mark success/fail
     if [[ ${retval} -eq 127 ]]; then
@@ -156,13 +159,14 @@ UT_cleanup() {
 
   # Kill the spinny, and anything else, if they're running
   if [[ ${_UT[tailf]} == "${FALSE}" ]]; then
-    [[ -n $(jobs -p) ]] && printf '%s\r  ✕%s\n' "${_UT[red]}" "${_UT[normal]}"
-    for int in $(jobs -p); do kill "${int}"; done
-
+    [[ -n ${_UT[spinnerpid]} ]] && {
+      printf '%s\r  ✕%s\n' "${_UT[red]}" "${_UT[normal]}"
+      kill "${_UT[spinnerpid]}"
+    }
     # If progress spinner crashed make sure the cursor is shown
     [ -t 1 ] && tput cnorm
   else
-    for int in $(jobs -p); do kill "${int}"; done
+    kill "${_UT[spinnerpid]}"
   fi
 
   return "${OK}"
@@ -183,6 +187,7 @@ _UT_new() {
   _UT[failure]="${_UT[red]}✕${_UT[normal]}"
   _UT[runlogfile]=
   _UT[spinnerchars]='◐◓◑◒'
+  _UT[spinnerpid]=
 }
 
 # Initialise _UT

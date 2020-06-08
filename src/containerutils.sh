@@ -163,6 +163,7 @@ EnD
   docker run --privileged \
     -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
     -v /lib/modules:/lib/modules:ro \
+    -v /boot:/boot:ro \
     --tmpfs /run --tmpfs /tmp \
     --detach \
     --name "$1" \
@@ -198,6 +199,17 @@ _CU_podman_or_docker() {
   if type docker &>/dev/null; then
     _CU[imgprefix]=""
     _CU[containerrt]="docker"
+    if docker ps &>/dev/stdout | grep -qs 'docker.sock.*permission denied'; then
+      cat <<'EnD' >"${STDERR}"
+Not enough permissions to write to 'docker.sock'.
+Fix the permissions for this user or run as root, such as:
+
+  $ alias mokctl="sudo mokctl"
+
+Then run the command again.
+EnD
+      return "${ERROR}"
+    fi
   elif type podman &>/dev/null; then
     _CU[imgprefix]="localhost/"
     _CU[containerrt]="podman"

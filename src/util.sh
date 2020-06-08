@@ -93,7 +93,7 @@ UT_run_with_progress() {
     tput civis
 
     # Start the spin animation
-    printf '%s' "${displaytext}"
+    printf ' %s' "${displaytext}"
     (while true; do
       for int in {0..3}; do
         printf '\r  %s ' "${spinner[int]}"

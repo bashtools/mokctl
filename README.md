@@ -2,41 +2,11 @@
 
 ![](docs/images/install-mokctl-linux.gif)
 
-View a [Transcript of the screenscast](/cmdline-player/install-mokctl-linux.md).
+View a [Transcript of the screenscast](docs/install-mokctl-linux.md).
 
-## Summary
+### Install on Linux, Mac or Windows
 
-Build a verifiably conformant kubernetes cluster in containers.
-
-## Documentation
-
-The FAQ, Kubernetes the Hard Way using `mokctl`, integrating the Parser in your own project, and how `mokctl` was created are all in [Documentation](/docs/README.md).
-
-## Contributing
-
-All types of contributions are welcome, from giving this project a STAR, bug reports, success stories, feature requests, fixing typppos, correcting documentation, to coding. Also check the [CONTRIBUTING.md](/CONTRIBUTING.md) document.
-
-## Try mokctl
-
-Take note of the [Status](#status) below and the [Releases](https://github.com/mclarkson/my-own-kind/releases) page.
-
-### Status
-
-- stable version - not yet.
-
-- development version - 0.8.6-alpha
-  
-  | OS      | Version | Terminal       | Status                            | Notes                                 |
-  | ------- | ------- | -------------- | --------------------------------- | ------------------------------------- |
-  | Ubuntu  | 18.04.4 | gnome terminal | works                             | install as below                      |
-  | Fedora  | 31      | gnome terminal | works                             | disable cgroups2<br/>install as below |
-  | Fedora  | 32      | gnome terminal | works                             | disable cgroups2<br/>install as below |
-  | Mac OS  |         |                | not tried<br/>no reports received |                                       |
-  | Windows |         |                | not tried<br/>no reports received |                                       |
-
-### Install on Linux, Mac and Windows
-
-> Note for **Linux** users: Cgroups 2 must be disabled. See [Install Linux](/docs/install-linux.md).
+> Note for **Fedora Linux** users: Cgroups 2 must be disabled. See [Install Linux](/docs/install-linux.md).
 
 Ensure [Docker](https://www.docker.com/get-started) or [Moby](https://github.com/moby/moby) are installed first.
 

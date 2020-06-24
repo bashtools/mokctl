@@ -29,38 +29,42 @@ _CC_set_up_master_node_v1_18_3() {
 
   masternum="${1##*-}" # <- eg. for xxx-master-1, masternum=1
 
-  if [[ ${_CC[withlb]} == "${TRUE}" && ${masternum} -eq 1 ]]; then
+  if [[ ${_CC[skipmastersetup]} != "${TRUE}" ]]; then
 
-    # This is the first master node
+    if [[ ${_CC[withlb]} == "${TRUE}" && ${masternum} -eq 1 ]]; then
 
-    # Sets cahash, token, and masterip:
-    lbaddr=$(CU_get_container_ip "${_CC[clustername]}-lb")
-    certSANs="certSANs: [ '${lbaddr}' ]"
-    uploadcerts="--upload-certs"
-    certkey="CertificateKey: f8802e114ef118304e561c3acd4d0b543adc226b7a27f675f56564185ffe0c07"
+      # This is the first master node
 
-  elif [[ ${_CC[withlb]} == "${TRUE}" && ${masternum} -ne 1 ]]; then
+      # Sets cahash, token, and masterip:
+      lbaddr=$(CU_get_container_ip "${_CC[clustername]}-lb")
+      certSANs="certSANs: [ '${lbaddr}' ]"
+      uploadcerts="--upload-certs"
+      certkey="CertificateKey: f8802e114ef118304e561c3acd4d0b543adc226b7a27f675f56564185ffe0c07"
 
-    # This is not the first master node, so join with the master
-    # https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/
+    elif [[ ${_CC[withlb]} == "${TRUE}" && ${masternum} -ne 1 ]]; then
 
-    # Keep trying to get join details until apiserver is ready or we run out of tries
-    for try in $(seq 1 9); do
-      # Runs a script on master node to get join details
-      t=$(_CC_get_master_join_details "${_CC[clustername]}-master-1")
-      retval=$?
-      [[ ${retval} -eq 0 ]] && break
-      [[ ${try} -eq 9 ]] && {
-        printf '\nERROR: Problem with "_CC_get_master_join_details". Tried %d times\n\n' "${try}" \
-          >"${STDERR}"
-        return "${ERROR}"
-      }
-      sleep 5
-    done
-    eval "${t}"
+      # This is not the first master node, so join with the master
+      # https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/
+
+      # Keep trying to get join details until apiserver is ready or we run out of tries
+      for try in $(seq 1 9); do
+        # Runs a script on master node to get join details
+        t=$(_CC_get_master_join_details "${_CC[clustername]}-master-1")
+        retval=$?
+        [[ ${retval} -eq 0 ]] && break
+        [[ ${try} -eq 9 ]] && {
+          printf '\nERROR: Problem with "_CC_get_master_join_details". Tried %d times\n\n' "${try}" \
+            >"${STDERR}"
+          return "${ERROR}"
+        }
+        sleep 5
+      done
+      eval "${t}"
+    fi
   fi
 
-  # Write the file
+  # Write the file regardless, so the user can use it if required
+
   cat <<EnD >"${setupfile}"
 # Disable ipv6
 sysctl -w net.ipv6.conf.all.disable_ipv6=1
@@ -165,30 +169,30 @@ EnD
   # Run the file
   [[ -z ${_CC[skipmastersetup]} ]] && {
     docker exec "$1" bash /root/setup.sh || err || return
-  }
 
-  # Remove the taint if we're setting up a single node cluster
+    # Remove the taint if we're setting up a single node cluster
 
-  [[ ${_CC[numworkers]} -eq 0 ]] && {
+    [[ ${_CC[numworkers]} -eq 0 ]] && {
 
-    removetaint=$(mktemp -p /var/tmp) || {
-      printf 'ERROR: mktmp failed.\n' >"${STDERR}"
-      return "${ERROR}"
-    }
+      removetaint=$(mktemp -p /var/tmp) || {
+        printf 'ERROR: mktmp failed.\n' >"${STDERR}"
+        return "${ERROR}"
+      }
 
-    # Write the file
-    cat <<'EnD' >"${removetaint}"
+      # Write the file
+      cat <<'EnD' >"${removetaint}"
 export KUBECONFIG=/etc/kubernetes/admin.conf
 kubectl taint nodes --all node-role.kubernetes.io/master-
 EnD
 
-    docker cp "${removetaint}" "$1":/root/removetaint.sh || err || {
-      rm -f "${removetaint}"
-      return "${ERROR}"
-    }
+      docker cp "${removetaint}" "$1":/root/removetaint.sh || err || {
+        rm -f "${removetaint}"
+        return "${ERROR}"
+      }
 
-    # Run the file
-    docker exec "$1" bash /root/removetaint.sh || err
+      # Run the file
+      docker exec "$1" bash /root/removetaint.sh || err
+    }
   }
 
   return "${OK}"
@@ -260,3 +264,7 @@ EnD
 
   docker exec "$1" bash /root/setup.sh || err
 }
+
+# vim helpers -----------------------------------------------------------------
+#include globals.sh
+# vim:ft=sh:sw=2:et:ts=2:

@@ -295,24 +295,26 @@ _CC_setup_master_nodes() {
 
   # For now, copy admin.conf from master to /var/tmp/admin-CLUSTERNAME.conf
 
-  if [[ ${_CC[withlb]} -eq ${TRUE} ]]; then
-    lbaddr=$(CU_get_container_ip "${_CC[clustername]}-lb") || err || return
-    docker cp "${_CC[clustername]}-master-1:/etc/kubernetes/admin.conf" \
-      "/var/tmp/admin-${_CC[clustername]}.conf" || err || return
-    sed -i 's#\(server: https://\)[0-9.]*\(:.*\)#\1'"${lbaddr}"'\2#' \
-      "/var/tmp/admin-${_CC[clustername]}.conf"
-  else
-    [[ -n ${_CC[skipworkersetup]} || -n \
-    ${_CC[skipmastersetup]} ]] || {
+  if [[ -z ${_CC[skipmastersetup]} ]]; then
+    if [[ ${_CC[withlb]} -eq ${TRUE} ]]; then
+      lbaddr=$(CU_get_container_ip "${_CC[clustername]}-lb") || err || return
       docker cp "${_CC[clustername]}-master-1:/etc/kubernetes/admin.conf" \
         "/var/tmp/admin-${_CC[clustername]}.conf" || err || return
+      sed -i 's#\(server: https://\)[0-9.]*\(:.*\)#\1'"${lbaddr}"'\2#' \
+        "/var/tmp/admin-${_CC[clustername]}.conf"
+    else
+      [[ -n ${_CC[skipworkersetup]} || -n \
+      ${_CC[skipmastersetup]} ]] || {
+        docker cp "${_CC[clustername]}-master-1:/etc/kubernetes/admin.conf" \
+          "/var/tmp/admin-${_CC[clustername]}.conf" || err || return
+      }
+    fi
+
+    chmod 666 "/var/tmp/admin-${_CC[clustername]}.conf" || {
+      printf 'ERROR: Could not "chown 666 /var/tmp/admin-%s.conf"' "${_CC[clustername]}"
+      err || return
     }
   fi
-
-  chmod 666 "/var/tmp/admin-${_CC[clustername]}.conf" || {
-    printf 'ERROR: Could not "chown 666 /var/tmp/admin-%s.conf"' "${_CC[clustername]}"
-    err || return
-  }
 
   return "${OK}"
 }
@@ -491,7 +493,7 @@ EnD
   docker exec "$1" bash /root/setup.sh || err
 }
 
-# _CC_create_worker_nodes creates the master nodes.
+# _CC_create_worker_nodes creates the worker nodes.
 # Args: arg1 - number of worker nodes to create
 _CC_create_worker_nodes() {
 
@@ -529,8 +531,7 @@ _CC_create_worker_nodes() {
       return "${ERROR}"
     }
 
-    [[ -n ${_CC[skipworkersetup]} || -n \
-    ${_CC[skipmastersetup]} ]] || {
+    [[ -n ${_CC[skipworkersetup]} || -n ${_CC[skipmastersetup]} ]] || {
       UT_run_with_progress \
         "    Setting up '${_CC[clustername]}-worker-${int}'" \
         _CC_set_up_worker_node "${_CC[clustername]}-worker-${int}" \

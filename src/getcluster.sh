@@ -136,15 +136,19 @@ _GC_new() {
   # Program the parser's state machine
   PA_add_state "COMMAND" "get" "SUBCOMMAND" ""
   PA_add_state "SUBCOMMAND" "getcluster" "ARG1" ""
+  PA_add_state "SUBCOMMAND" "getclusters" "ARG1" ""
   PA_add_state "ARG1" "getcluster" "END" "GC_set_clustername"
+  PA_add_state "ARG1" "getclusters" "END" "GC_set_clustername"
 
   # Set up the parser's option callbacks
   PA_add_option_callback "get" "GC_process_options" || return
   PA_add_option_callback "getcluster" "GC_process_options" || return
+  PA_add_option_callback "getclusters" "GC_process_options" || return
 
   # Set up the parser's usage callbacks
   PA_add_usage_callback "get" "GC_usage" || return
   PA_add_usage_callback "getcluster" "GC_usage" || return
+  PA_add_usage_callback "getclusters" "GC_usage" || return
 }
 
 # GC_sanity_checks is expected to run some quick and simple checks to

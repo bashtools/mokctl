@@ -26,7 +26,7 @@ MA_main() {
   create | createcluster) CC_run ;;
   delete | deletecluster) DC_run ;;
   build | buildimage) BI_run ;;
-  get | getcluster) GC_run ;;
+  get | getcluster | getclusters) GC_run ;;
   exec) EX_run ;;
   *)
     PA_usage

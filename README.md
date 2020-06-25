@@ -57,3 +57,6 @@ See also:
 * [Mokctl on Docker Hub](https://hub.docker.com/repository/docker/myownkind/mokctl) - to alias the `mokctl` command only, no mokbox.
 
 * [Linux installation options](/docs/install-linux.md)
+
+* [Full Documentation](https://github.com/my-own-kind/mokctl-docs)
+

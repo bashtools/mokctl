@@ -24,6 +24,8 @@ docker run --rm -ti --hostname mokbox --name mokbox \
   -v /var/tmp:/var/tmp myownkind/mokbox
 ```
 
+Then use `mokctl` and `kubectl` in mokbox:
+
 ```bash
 mokctl build image --get-prebuilt-image
 

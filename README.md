@@ -6,7 +6,7 @@ View a [Transcript of the screenscast](docs/install-mokctl-linux.md).
 
 ### Install on Linux, Mac or Windows
 
-> Note for **Fedora Linux** users: Cgroups 2 must be disabled. See [Install Linux](/docs/install-linux.md).
+> Note for **Fedora Linux** users: Cgroups 2 must be disabled. See [Linux Installation Options](/docs/install-linux.md).
 
 Ensure [Docker](https://www.docker.com/get-started) or [Moby](https://github.com/moby/moby) are installed first.
 

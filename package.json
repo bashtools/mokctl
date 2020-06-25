@@ -2,10 +2,10 @@
   "name": "my-own-kind",
   "version": "0.8.7",
   "description": "Build verifiably conformant kubernetes clusters on your laptop.",
-  "homepage": "http://github.com/mclarkson/my-own-kind",
+  "homepage": "http://github.com/my-own-kind/mokctl",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mclarkson/my-own-kind.git"
+    "url": "https://github.com/my-own-kind/mokctl.git"
   },
   "bin": {
     "mokctl": "./mokctl.deploy"

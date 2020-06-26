@@ -1,7 +1,6 @@
 FROM centos:7
-ARG CRIO_VERSION=1.18
 ARG CRICTL_VERSION=v1.18.0
-ARG K8SBINVER=-1.18.3
+ARG K8SBINVER=-1.18.4
 # Tell systemd that it's running in a container
 ENV container docker
 COPY kubernetes.repo /etc/yum.repos.d/kubernetes.repo
@@ -15,9 +14,7 @@ RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do \
     rm -f /lib/systemd/system/basic.target.wants/*; \
     rm -f /lib/systemd/system/anaconda.target.wants/*; \
     yum -y update \
-    # Fix for opensuse during an https outage - PUT THIS BACK HOW IT WAS
-    && curl -L http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/CentOS_7/devel:kubic:libcontainers:stable.repo | sed 's/https/http/g' >/etc/yum.repos.d/devel:kubic:libcontainers:stable.repo \
-    && curl -L http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/$CRIO_VERSION/CentOS_7/devel:kubic:libcontainers:stable:cri-o:$CRIO_VERSION.repo | sed 's/https/http/g' >/etc/yum.repos.d/devel:kubic:libcontainers:stable:cri-o:$CRIO_VERSION.repo \
+    && curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.18:/1.18.1/CentOS_7/devel:kubic:libcontainers:stable:cri-o:1.18:1.18.1.repo >/etc/yum.repos.d/devel:kubic:libcontainers:stable:cri-o:1.18:1.18.1.repo \
     && yum install -y \
       cri-o \
       iptables \

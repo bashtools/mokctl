@@ -1,7 +1,7 @@
 FROM fedora:32
 ENV container docker
 RUN dnf -y install moby-engine procps-ng iproute findutils \
-    && curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.3/bin/linux/amd64/kubectl \
+    && curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.4/bin/linux/amd64/kubectl \
     && chmod +x kubectl && mv kubectl /usr/local/bin
 COPY mokctl.deploy /usr/bin/mokctl
 CMD ["bash"]

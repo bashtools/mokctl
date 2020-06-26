@@ -127,7 +127,7 @@ BI_run() {
 # Args: None expected.
 _BI_new() {
   _BI[tailf]="${FALSE}"
-  _BI[k8sver]="1.18.3"
+  _BI[k8sver]="1.18.4"
   _BI[baseimagename]="mok-centos-7"
   _BI[useprebuiltimage]=
   _BI[dockerbuildtmpdir]=
@@ -266,13 +266,11 @@ _BI_get_build_args_for_k8s_ver() {
   local buildargs
 
   case "${_BI[k8sver]}" in
-  "1.18.2" | "1.18.3")
+  "1.18.2" | "1.18.3" | "1.18.4")
     buildargs="--build-arg"
-    buildargs="${buildargs} CRIO_VERSION=1.18"
-    buildargs="${buildargs} --build-arg"
     buildargs="${buildargs} CRICTL_VERSION=v1.18.0"
     buildargs="${buildargs} --build-arg"
-    buildargs="${buildargs} K8SBINVER=-1.18.3"
+    buildargs="${buildargs} K8SBINVER=-1.18.4"
     ;;
   *)
     printf 'INTERNAL ERROR: This should not happen.\n' >"${STDERR}"

@@ -166,7 +166,7 @@ UT_cleanup() {
     # If progress spinner crashed make sure the cursor is shown
     [ -t 1 ] && tput cnorm
   else
-    kill "${_UT[spinnerpid]}"
+    kill "${_UT[spinnerpid]}" &>/dev/null
   fi
 
   return "${OK}"

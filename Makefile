@@ -24,8 +24,8 @@ docker-mokbox: all
 .PHONY: mokctl-docker-baseimage
 docker-baseimage: all
 	bash mokctl.deploy build image
-	docker tag local/mok-centos-7-v1.18.3 myownkind/mok-centos-7-v1.18.3
-	docker tag myownkind/mok-centos-7-v1.18.3 myownkind/mok-centos-7-v1.18.3:${VERSION}
+	docker tag local/mok-centos-7-v1.18.4 myownkind/mok-centos-7-v1.18.4
+	docker tag myownkind/mok-centos-7-v1.18.4 myownkind/mok-centos-7-v1.18.4:${VERSION}
 
 .PHONY:
 docker-upload-mokctl: docker-mokctl
@@ -39,9 +39,9 @@ docker-upload-mokbox:
 
 .PHONY: docker-upload-baseimage
 docker-upload-baseimage:
-	# mok-centos-7-v1.18.3 - Build with 'mokctl build image' first!
-	docker push myownkind/mok-centos-7-v1.18.3
-	docker push myownkind/mok-centos-7-v1.18.3:${VERSION}
+	# mok-centos-7-v1.18.4 - Build with 'mokctl build image' first!
+	docker push myownkind/mok-centos-7-v1.18.4
+	docker push myownkind/mok-centos-7-v1.18.4:${VERSION}
 
 mokctl.deploy: src/*.sh src/lib/*.sh mok-centos-7
 	bash src/embed-dockerfile.sh
@@ -56,7 +56,6 @@ mokctl.deploy: src/*.sh src/lib/*.sh mok-centos-7
 
 .PHONY: install
 install: all
-	install cmdline-player/cmdline-player /usr/local/bin/cmdline-player
 	install mokctl.deploy /usr/local/bin/mokctl
 
 .PHONY: uninstall
@@ -66,7 +65,7 @@ uninstall:
 .PHONY: clean
 clean:
 	rm -f mokctl.deploy src/buildimage.deploy package/mokctl.deploy \
-		tests/hardcopy tests/screenlog.0
+		tests/hardcopy tests/screenlog.0 tags
 
 .PHONY: test
 test: clean mokctl.deploy

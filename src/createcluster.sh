@@ -118,10 +118,11 @@ create cluster [flags] options:
          and set up to reverse proxy to the master node(s), unless
          --skiplbsetup is used.
   --k8sver VERSION - Unimplemented.
-  --masters - The number of master containers to create.
-  --workers - The number of worker containers to create. If NUM_WORKERS is
-              zero then the 'node-role.kubernetes.io/master' taint will be
-              removed from master nodes so that pods are schedulable.
+  --masters NUM - The number of master containers to create.
+  --workers NUM - The number of worker containers to create. When
+                  workers is zero then the 'node-role.kubernetes.io/master'
+                  taint will be removed from master nodes so that pods
+                  are schedulable.
   --tailf - Show the log output whilst creating the cluster.
 
 EnD

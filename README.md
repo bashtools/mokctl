@@ -4,6 +4,36 @@
 
 View a [Transcript of the screenscast](docs/install-mokctl-linux.md).
 
+## Features
+
+* Tracks the latest stable version
+
+* Very simple to use without need for YAML files
+
+* Builds kubernetes master and worker nodes in containers
+
+* Can create multi-master and multi-node clusters
+
+* Can create an haproxy load balancer to front master nodes with '--with-lb'
+
+* For multi-node clusters the 'create cluster' command returns when kubernetes is completely ready, with all nodes and pods up and ready.
+
+* Can skip master, worker, or load balancer set up
+  
+  * In this case the set-up scripts are placed in `/root` in the containers
+  
+  * The set-up scripts can be run by hand
+  
+  * Can do kubernetes the hard way (see [kthwic](https://github.com/my-own-kind/kubernetes-the-hard-way-in-containers))
+
+* Each release tested by AI and test logs saved in e2e-logs
+
+* Build and create can show extensive logs with '--tailf'
+
+* Supports docker, podman and moby
+
+* Written in Bash in the style of Go for maintainability - see [Why Bash?](https://github.com/my-own-kind/mokctl-docs/blob/master/docs/faq.md#why-bash) and `src/`
+
 ### Install on Linux, Mac or Windows
 
 > Note for **Fedora Linux** users: Cgroups 2 must be disabled. See [Linux Installation Options](/docs/install-linux.md).
@@ -50,7 +80,7 @@ mokctl delete cluster myk8s
 exit
 ```
 
-Two docker images will remain, 'myownkind/mokbox' and 'myownkind/mok-centos-7-v1.18.4'. Remove them to reclaim disk space, or keep them around to be able to quickly build kubernetes clusters.
+Two docker images will remain, 'myownkind/mokbox' and 'myownkind/mok-centos-7-v1.18.5'. Remove them to reclaim disk space, or keep them around to be able to quickly build kubernetes clusters.
 
 See also:
 
@@ -59,4 +89,3 @@ See also:
 * [Linux installation options](/docs/install-linux.md)
 
 * [Full Documentation](https://github.com/my-own-kind/mokctl-docs)
-

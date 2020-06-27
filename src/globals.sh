@@ -9,6 +9,13 @@
 # Args: None expected.
 _GL_new() {
 
+  declare -rg MOKVERSION="0.8.9"
+  declare -rg K8SVERSION="1.18.5"
+  declare -rg CRICTL_VERSION="1.18.0"
+  declare -rg CRIO_MAJOR="1"
+  declare -rg CRIO_MINOR="18"
+  declare -rg CRIO_PATCH="1"
+
   # Returns, exit codes
   declare -rg OK=0
   declare -rg SUCCESS=0
@@ -36,6 +43,12 @@ _GL_new() {
   dummy="${FALSE}"
   dummy="${SUCCESS}"
   dummy="${FAILURE}"
+  dummy="${MOKVERSION}"
+  dummy="${K8SVERSION}"
+  dummy="${CRICTL_VERSION}"
+  dummy="${CRIO_MAJOR}"
+  dummy="${CRIO_MINOR}"
+  dummy="${CRIO_PATCH}"
   dummy="${dummy}"
 }
 

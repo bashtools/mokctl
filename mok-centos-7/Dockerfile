@@ -1,6 +1,9 @@
 FROM centos:7
-ARG CRICTL_VERSION=v1.18.0
-ARG K8SBINVER=-1.18.4
+ARG CRICTL_VERSION
+ARG K8SVERSION
+ARG CRIO_MAJOR
+ARG CRIO_MINOR
+ARG CRIO_PATCH
 # Tell systemd that it's running in a container
 ENV container docker
 COPY kubernetes.repo /etc/yum.repos.d/kubernetes.repo
@@ -14,7 +17,7 @@ RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do \
     rm -f /lib/systemd/system/basic.target.wants/*; \
     rm -f /lib/systemd/system/anaconda.target.wants/*; \
     yum -y update \
-    && curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.18:/1.18.1/CentOS_7/devel:kubic:libcontainers:stable:cri-o:1.18:1.18.1.repo >/etc/yum.repos.d/devel:kubic:libcontainers:stable:cri-o:1.18:1.18.1.repo \
+    && curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/$CRIO_MAJOR.$CRIO_MINOR:/$CRIO_MAJOR.$CRIO_MINOR.$CRIO_PATCH/CentOS_7/devel:kubic:libcontainers:stable:cri-o:$CRIO_MAJOR.$CRIO_MINOR:$CRIO_MAJOR.$CRIO_MINOR.$CRIO_PATCH.repo >/etc/yum.repos.d/devel:kubic:libcontainers:stable:cri-o:$CRIO_MAJOR.$CRIO_MINOR:$CRIO_MAJOR.$CRIO_MINOR.$CRIO_PATCH.repo \
     && yum install -y \
       cri-o \
       iptables \
@@ -23,9 +26,9 @@ RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do \
       socat \
       conntrack \
       ipset \
-      kubelet$K8SBINVER \
-      kubeadm$K8SBINVER \
-      kubectl$K8SBINVER \
+      kubelet-$K8SVERSION \
+      kubeadm-$K8SVERSION \
+      kubectl-$K8SVERSION \
       --disableexcludes=kubernetes \
     && sed -i 's/\(cgroup_manager =\).*/\1 "systemd"/' /etc/crio/crio.conf \
     && sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config \
@@ -34,9 +37,9 @@ RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do \
     && rm -f /etc/cni/net.d/200-loopback.conf \
     && sed -i 's/\(^driver = \).*/\1"vfs"/' /etc/containers/storage.conf \
     && systemctl enable crio \
-    && curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz \
-    && tar zxvf crictl-$CRICTL_VERSION-linux-amd64.tar.gz -C /usr/local/bin \
-    && rm -f crictl-$CRICTL_VERSION-linux-amd64.tar.gz \
+    && curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/v$CRICTL_VERSION/crictl-v${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-v${CRICTL_VERSION}-linux-amd64.tar.gz \
+    && tar zxvf crictl-v$CRICTL_VERSION-linux-amd64.tar.gz -C /usr/local/bin \
+    && rm -f crictl-v$CRICTL_VERSION-linux-amd64.tar.gz \
     && mkdir -p /opt/cni/ \
     && ln -s /usr/libexec/cni /opt/cni/bin
 COPY k8s.conf /etc/sysctl.d/k8s.conf

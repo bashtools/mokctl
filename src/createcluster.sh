@@ -6,7 +6,7 @@ declare -A _CC
 # Declare externally defined variables ----------------------------------------
 
 # Defined in GL (globals.sh)
-declare OK ERROR STDERR STOP TRUE FALSE
+declare OK ERROR STDERR STOP TRUE FALSE K8SVERSION
 
 # Getters/Setters -------------------------------------------------------------
 
@@ -193,7 +193,7 @@ _CC_new() {
   _CC[clustername]=
   _CC[nummasters]=0
   _CC[numworkers]=0
-  _CC[k8sver]="1.18.4"
+  _CC[k8sver]="${K8SVERSION}"
 
   # Program the parser's state machine
   PA_add_state "COMMAND" "create" "SUBCOMMAND" ""
@@ -324,8 +324,8 @@ _CC_setup_master_nodes() {
 _CC_set_up_master_node() {
 
   case "${_CC[k8sver]}" in
-  "1.18.2" | "1.18.3" | "1.18.4")
-    _CC_set_up_master_node_v1_18_3 "$@"
+  "1.18.2" | "1.18.3" | "1.18.4" | "1.18.5")
+    _CC_set_up_master_node_v1_18_2 "$@"
     ;;
   *)
     printf 'ERROR: Version not found, "%s".\n' "${_CC[k8sver]}" >"${STDERR}"

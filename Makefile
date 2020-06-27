@@ -1,4 +1,5 @@
-VERSION = 0.8.7-alpha
+VERSION = 0.8.9
+K8SVERSION = 1.18.5
 
 .PHONY: all
 all: mokctl.deploy tags
@@ -11,21 +12,23 @@ docker-uploads: docker-upload-mokctl docker-upload-mokbox docker-upload-baseimag
 
 .PHONY: mokctl-docker-mokctl
 docker-mokctl: all
-	docker build -f package/Dockerfile.mokctl -t local/mokctl package
+	docker build --build-arg K8SVERSION=${K8SVERSION} -f package/Dockerfile.mokctl \
+		-t local/mokctl package
 	docker tag local/mokctl myownkind/mokctl
 	docker tag myownkind/mokctl myownkind/mokctl:${VERSION}
 
 .PHONY: mokctl-docker-mokbox
 docker-mokbox: all
-	docker build -f package/Dockerfile.mokbox -t local/mokbox package
+	docker build --build-arg K8SVERSION=${K8SVERSION} -f package/Dockerfile.mokbox \
+		-t local/mokbox package
 	docker tag local/mokbox docker.io/myownkind/mokbox
 	docker tag docker.io/myownkind/mokbox:latest docker.io/myownkind/mokbox:${VERSION}
 
 .PHONY: mokctl-docker-baseimage
 docker-baseimage: all
-	bash mokctl.deploy build image
-	docker tag local/mok-centos-7-v1.18.4 myownkind/mok-centos-7-v1.18.4
-	docker tag myownkind/mok-centos-7-v1.18.4 myownkind/mok-centos-7-v1.18.4:${VERSION}
+	bash mokctl.deploy build image --tailf
+	docker tag local/mok-centos-7-v${K8SVERSION} myownkind/mok-centos-7-v${K8SVERSION}
+	docker tag myownkind/mok-centos-7-v${K8SVERSION} myownkind/mok-centos-7-v${K8SVERSION}:${VERSION}
 
 .PHONY:
 docker-upload-mokctl: docker-mokctl
@@ -39,9 +42,9 @@ docker-upload-mokbox:
 
 .PHONY: docker-upload-baseimage
 docker-upload-baseimage:
-	# mok-centos-7-v1.18.4 - Build with 'mokctl build image' first!
-	docker push myownkind/mok-centos-7-v1.18.4
-	docker push myownkind/mok-centos-7-v1.18.4:${VERSION}
+	# mok-centos-7-v${K8SVERSION} - Build with 'mokctl build image' first!
+	docker push myownkind/mok-centos-7-v${K8SVERSION}
+	docker push myownkind/mok-centos-7-v${K8SVERSION}:${VERSION}
 
 mokctl.deploy: src/*.sh src/lib/*.sh mok-centos-7
 	bash src/embed-dockerfile.sh

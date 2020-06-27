@@ -8,15 +8,9 @@ declare -A _CC
 # Defined in GL (globals.sh)
 declare OK ERROR STDERR TRUE
 
-# _CC_set_up_master_node_v1_18_2 sets up a master node of a kubernetes 1.18.2
-# cluster.
-_CC_set_up_master_node_v1_18_2() {
-  _CC_set_up_master_node_v1_18_3 "$@"
-}
-
-# _CC_set_up_worker_node_v1_18_3 uses kubeadm to set up the master node.
+# _CC_set_up_worker_node_v1_18_2 uses kubeadm to set up the master node.
 # Args: arg1 - the container to set up.
-_CC_set_up_master_node_v1_18_3() {
+_CC_set_up_master_node_v1_18_2() {
 
   local setupfile lbaddr certSANs certkey masternum t
   # Set by _CC_get_master_join_details:
@@ -198,15 +192,9 @@ EnD
   return "${OK}"
 }
 
-# _CC_set_up_worker_node_v1_18_2 sets up a worker node of a kubernetes 1.18.2
-# cluster.
-_CC_set_up_worker_node_v1_18_2() {
-  _CC_set_up_worker_node_v1_18_3 "$@"
-}
-
-# _CC_set_up_worker_node_v1_18_3 uses kubeadm to set up the worker node.
+# _CC_set_up_worker_node_v1_18_2 uses kubeadm to set up the worker node.
 # Args: arg1 - the container to set up.
-_CC_set_up_worker_node_v1_18_3() {
+_CC_set_up_worker_node_v1_18_2() {
 
   local setupfile cahash="$2" token="$3" masterip="$4"
 

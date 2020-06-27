@@ -67,6 +67,8 @@ UT_run_with_progress() {
 
   if [[ ${_UT[tailf]} == "${FALSE}" && ${_UT[plain]} == "${TRUE}" ]]; then
 
+    # Output with no colours or spinny
+
     printf '%s' "${displaytext}"
 
     eval "$*" &>"${_UT[runlogfile]}"
@@ -80,6 +82,8 @@ UT_run_with_progress() {
     fi
 
   elif [[ ${_UT[tailf]} == "${FALSE}" ]]; then
+
+    # Output with colours and spinny
 
     while read -r char; do
       spinner+=("${char}")
@@ -111,6 +115,8 @@ UT_run_with_progress() {
     kill "${_UT[spinnerpid]}" 2>/dev/null
     _UT[spinnerpid]=
 
+    sleep .5
+
     # Mark success/fail
     if [[ ${retval} -eq 127 ]]; then
       # The job finished before we started waiting for it
@@ -123,8 +129,13 @@ UT_run_with_progress() {
 
     # Restore the cursor
     tput cnorm
+    sleep .5
 
   else
+
+    # Tailf output
+
+    printf 'COMMAND: %s\n\n' "$*"
 
     (
       eval "$*" &>/dev/stdout

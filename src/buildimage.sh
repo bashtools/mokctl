@@ -6,7 +6,8 @@ declare -A _BI
 # Declare externally defined variables ----------------------------------------
 
 # Defined in GL (globals.sh)
-declare OK ERROR STDERR STOP TRUE FALSE
+declare OK ERROR STDERR STOP TRUE FALSE K8SVERSION CRICTL_VERSION
+declare CRIO_MAJOR CRIO_MINOR CRIO_PATCH
 
 # Getters/Setters -------------------------------------------------------------
 
@@ -14,13 +15,6 @@ declare OK ERROR STDERR STOP TRUE FALSE
 # This is called by the parser, via a callback in _BI_new.
 BI_setflag_useprebuiltimage() {
   _BI[useprebuiltimage]="$1"
-}
-
-# BI_k8sver getter outputs the value of the _BI[k8sver], the kubernetes version
-# to be installed.
-# Args: None expected.
-BI_k8sver() {
-  printf '%s' "${_BI[baseimagename]}"
 }
 
 # BI_baseimagename getter outputs the value of the _BI[baseimagename].
@@ -127,11 +121,9 @@ BI_run() {
 # Args: None expected.
 _BI_new() {
   _BI[tailf]="${FALSE}"
-  _BI[k8sver]="1.18.4"
   _BI[baseimagename]="mok-centos-7"
-  _BI[useprebuiltimage]=
+  _BI[useprebuiltimage]="${FALSE}"
   _BI[dockerbuildtmpdir]=
-  _BI[runwithprogress_output]=
 
   # Program the parser's state machine
   PA_add_state "COMMAND" "build" "SUBCOMMAND" ""
@@ -161,12 +153,12 @@ _BI_build_container_image() {
 
   _BI_create_docker_build_dir || return
 
-  buildargs=$(_BI_get_build_args_for_k8s_ver "${_BI[k8sver]}") || return
-  tagname="${_BI[baseimagename]}-v${_BI[k8sver]}"
+  buildargs=$(_BI_get_build_args_for_latest) || return
+  tagname="${_BI[baseimagename]}-v${K8SVERSION}"
 
   local imgprefix
   imgprefix=$(CU_imgprefix) || err || return
-  if [[ -z ${_BI[useprebuiltimage]} ]]; then
+  if [[ ${_BI[useprebuiltimage]} == "${FALSE}" ]]; then
     buildtype="create"
     cmd="docker build \
       -t "${imgprefix}local/${tagname}" \
@@ -225,7 +217,7 @@ _BI_modify_container_image() {
   docker rm mok-build-modify &>/dev/null
 
   # Start container
-  CU_create_container "mok-build-modify" "mok-build-modify" "${_BI[k8sver]}" ||
+  CU_create_container "mok-build-modify" "mok-build-modify" "${K8SVERSION}" ||
     return
 
   # Wait for crio to become ready
@@ -240,7 +232,8 @@ _BI_modify_container_image() {
   done
 
   # Modify container
-  docker exec mok-build-modify kubeadm config images pull || err || return
+  docker exec mok-build-modify kubeadm config images pull \
+    --kubernetes-version "${K8SVERSION}" || err || return
 
   # Stop container
   docker stop -t 5 "mok-build-modify"
@@ -248,7 +241,7 @@ _BI_modify_container_image() {
   # Write image
   local imgprefix tagname
   imgprefix=$(CU_imgprefix) || err || return
-  tagname="${_BI[baseimagename]}-v${_BI[k8sver]}"
+  tagname="${_BI[baseimagename]}-v${K8SVERSION}"
   docker commit mok-build-modify "${imgprefix}local/${tagname}" || err || return
 
   # Delete container, just in case it was left behind
@@ -258,25 +251,19 @@ _BI_modify_container_image() {
   return "${OK}"
 }
 
-# _BI_get_build_args_for_k8s_ver sets the buildargs variable that is added
-# to the 'podman build ...' command line.
+# _BI_get_build_args_for_latest sets the buildargs variable that is added
+# to the 'podman build ...' command line.  Only the latest version is built
+# from scratch.  Earlier versions are downloaded using '--get-prebuilt-image'.
 # Args: None expected
-_BI_get_build_args_for_k8s_ver() {
+_BI_get_build_args_for_latest() {
 
   local buildargs
 
-  case "${_BI[k8sver]}" in
-  "1.18.2" | "1.18.3" | "1.18.4")
-    buildargs="--build-arg"
-    buildargs="${buildargs} CRICTL_VERSION=v1.18.0"
-    buildargs="${buildargs} --build-arg"
-    buildargs="${buildargs} K8SBINVER=-1.18.4"
-    ;;
-  *)
-    printf 'INTERNAL ERROR: This should not happen.\n' >"${STDERR}"
-    err || return
-    ;;
-  esac
+  buildargs="--build-arg CRICTL_VERSION=${CRICTL_VERSION}"
+  buildargs+=" --build-arg K8SVERSION=${K8SVERSION}"
+  buildargs+=" --build-arg CRIO_MAJOR=${CRIO_MAJOR}"
+  buildargs+=" --build-arg CRIO_MINOR=${CRIO_MINOR}"
+  buildargs+=" --build-arg CRIO_PATCH=${CRIO_PATCH}"
 
   printf '%s' "${buildargs}"
 }

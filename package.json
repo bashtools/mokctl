@@ -1,6 +1,6 @@
 {
   "name": "my-own-kind",
-  "version": "0.8.10",
+  "version": "0.8.9",
   "description": "Build verifiably conformant kubernetes clusters on your laptop.",
   "homepage": "http://github.com/my-own-kind/mokctl",
   "repository": {

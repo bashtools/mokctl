@@ -8,6 +8,8 @@ View a [Transcript of the screenscast](docs/install-mokctl-linux.md).
 
 * Tracks the latest stable version
 
+* After downloading 'build' images a single node cluster builds in under 60 seconds
+
 * Very simple to use without need for YAML files
 
 * Builds kubernetes master and worker nodes in containers

@@ -6,7 +6,7 @@ declare -A _CC
 # Declare externally defined variables ----------------------------------------
 
 # Defined in GL (globals.sh)
-declare OK ERROR STDERR TRUE
+declare OK ERROR STDERR TRUE K8SVERSION
 
 # _CC_set_up_worker_node_v1_18_2 uses kubeadm to set up the master node.
 # Args: arg1 - the container to set up.
@@ -118,7 +118,7 @@ etcd:
   local:
     dataDir: /var/lib/etcd
 imageRepository: k8s.gcr.io
-kubernetesVersion: v1.18.4
+kubernetesVersion: v${K8SVERSION}
 networking:
   dnsDomain: cluster.local
   podSubnet: \$podsubnet

@@ -47,6 +47,22 @@ main() {
 
   for x in 1 2; do
     cmdline-player -n "e2e/e2e-test-${x}.scr"
+    while true; do
+      hardcopy=no
+      for i in {1..5}; do
+        [[ -e hardcopy ]] && {
+          i="${i}"
+          hardcopy=yes
+          printf 'hardcopy found\n'
+          break
+        }
+        printf 'hardcopy not found\n'
+        sleep .5
+      done
+      [[ ${hardcopy} == "yes" ]] && break
+      printf 'creating hardcopy - why!'
+      screen -S screencast -X hardcopy -h hardcopy
+    done
     status=$(classify_status)
     probability=$(classify_probability)
     save_hardcopy "${x}" "${status}" "${probability}"

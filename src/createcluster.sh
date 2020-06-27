@@ -634,7 +634,7 @@ EnD
 _CC_set_up_worker_node() {
 
   case "${_CC[k8sver]}" in
-  "1.18.3" | "1.18.4")
+  "1.18.2" | "1.18.3" | "1.18.4" | "1.18.5")
     _CC_set_up_worker_node_v1_18_3 "$@"
     ;;
   *)

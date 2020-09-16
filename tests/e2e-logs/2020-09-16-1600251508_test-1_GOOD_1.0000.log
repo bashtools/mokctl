@@ -1,0 +1,177 @@
+
+% errstop() { [[ $1 -gt 0 ]] && { printf 'SCREENCAST STOP &'; read; }; }
+% date
+Wed 16 Sep 11:17:31 BST 2020
+% alias mokbox='docker run --rm -ti --hostname mokbox --name mokbox -v /var/run/
+docker.sock:/var/run/docker.sock -v /var/tmp:/var/tmp myownkind/mokbox'
+% mokbox
+[root@mokbox /]# retval=$?
+[root@mokbox /]# errstop() { [[ $1 -gt 0 ]] && { printf 'SCREENCAST STOP &'; rea
+d; }; }
+[root@mokbox /]# errstop $retval
+[root@mokbox /]#
+[root@mokbox /]# # Test 1 - download the prebuilt image and test
+[root@mokbox /]#
+[root@mokbox /]# mokctl -p build image --get-prebuilt-image
+    Downloading base image, 'mok-centos-7-v1.19.1' .. SUCCESS
+[root@mokbox /]# errstop $?
+[root@mokbox /]# time mokctl -p create cluster myk8s --masters 1 --tailf
+COMMAND: CU_create_container myk8s-master-1 MokCluster=myk8s 1.19.1
+
+314ec414359e67fad38379dd75e7c986a85910f49bf6f0e5e5d9f1ef1a7d323a
+
+STATUS: OK
+
+COMMAND: _CC_set_up_master_node myk8s-master-1
+
+net.ipv6.conf.all.disable_ipv6 = 1
+net.ipv6.conf.default.disable_ipv6 = 1
+W0916 10:17:47.714671     129 configset.go:348] WARNING: kubeadm cannot validate
+ component configs for API groups [kubelet.config.k8s.io kubeproxy.config.k8s.io
+]
+[init] Using Kubernetes version: v1.19.1
+[preflight] Running pre-flight checks
+        [WARNING Swap]: running with swap on is not supported. Please disable sw
+ap
+        [WARNING Service-Kubelet]: kubelet service is not enabled, please run 's
+ystemctl enable kubelet.service'
+[preflight] Pulling images required for setting up a Kubernetes cluster
+[preflight] This might take a minute or two, depending on the speed of your inte
+rnet connection
+[preflight] You can also perform this action in beforehand using 'kubeadm config
+ images pull'
+[certs] Using certificateDir folder "/etc/kubernetes/pki"
+[certs] Generating "ca" certificate and key
+[certs] Generating "apiserver" certificate and key
+[certs] apiserver serving cert is signed for DNS names [kubernetes kubernetes.de
+fault kubernetes.default.svc kubernetes.default.svc.cluster.local myk8s-master-1
+] and IPs [10.96.0.1 172.17.0.3]
+[certs] Generating "apiserver-kubelet-client" certificate and key
+[certs] Generating "front-proxy-ca" certificate and key
+[certs] Generating "front-proxy-client" certificate and key
+[certs] Generating "etcd/ca" certificate and key
+[certs] Generating "etcd/server" certificate and key
+[certs] etcd/server serving cert is signed for DNS names [localhost myk8s-master
+-1] and IPs [172.17.0.3 127.0.0.1 ::1]
+[certs] Generating "etcd/peer" certificate and key
+[certs] etcd/peer serving cert is signed for DNS names [localhost myk8s-master-1
+] and IPs [172.17.0.3 127.0.0.1 ::1]
+[certs] Generating "etcd/healthcheck-client" certificate and key
+[certs] Generating "apiserver-etcd-client" certificate and key
+[certs] Generating "sa" key and public key
+[kubeconfig] Using kubeconfig folder "/etc/kubernetes"
+[kubeconfig] Writing "admin.conf" kubeconfig file
+[kubeconfig] Writing "kubelet.conf" kubeconfig file
+[kubeconfig] Writing "controller-manager.conf" kubeconfig file
+[kubeconfig] Writing "scheduler.conf" kubeconfig file
+[kubelet-start] Writing kubelet environment file with flags to file "/var/lib/ku
+belet/kubeadm-flags.env"
+[kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/config.y
+aml"
+[kubelet-start] Starting the kubelet
+[control-plane] Using manifest folder "/etc/kubernetes/manifests"
+[control-plane] Creating static Pod manifest for "kube-apiserver"
+[control-plane] Creating static Pod manifest for "kube-controller-manager"
+[control-plane] Creating static Pod manifest for "kube-scheduler"
+[etcd] Creating static Pod manifest for local etcd in "/etc/kubernetes/manifests
+"
+[wait-control-plane] Waiting for the kubelet to boot up the control plane as sta
+tic Pods from directory "/etc/kubernetes/manifests". This can take up to 4m0s
+[apiclient] All control plane components are healthy after 22.004893 seconds
+[upload-config] Storing the configuration used in ConfigMap "kubeadm-config" in
+the "kube-system" Namespace
+[kubelet] Creating a ConfigMap "kubelet-config-1.19" in namespace kube-system wi
+th the configuration for the kubelets in the cluster
+[upload-certs] Skipping phase. Please see --upload-certs
+[mark-control-plane] Marking the node myk8s-master-1 as control-plane by adding
+the label "node-role.kubernetes.io/master=''"
+[mark-control-plane] Marking the node myk8s-master-1 as control-plane by adding
+the taints [node-role.kubernetes.io/master:NoSchedule]
+[bootstrap-token] Using token: abcdef.0123456789abcdef
+[bootstrap-token] Configuring bootstrap tokens, cluster-info ConfigMap, RBAC Rol
+es
+[bootstrap-token] configured RBAC rules to allow Node Bootstrap tokens to get no
+des
+[bootstrap-token] configured RBAC rules to allow Node Bootstrap tokens to post C
+SRs in order for nodes to get long term certificate credentials
+[bootstrap-token] configured RBAC rules to allow the csrapprover controller auto
+matically approve CSRs from a Node Bootstrap Token
+[bootstrap-token] configured RBAC rules to allow certificate rotation for all no
+de client certificates in the cluster
+[bootstrap-token] Creating the "cluster-info" ConfigMap in the "kube-public" nam
+espace
+[kubelet-finalize] Updating "/etc/kubernetes/kubelet.conf" to point to a rotatab
+le kubelet client certificate and key
+[addons] Applied essential addon: CoreDNS
+[addons] Applied essential addon: kube-proxy
+
+Your Kubernetes control-plane has initialized successfully!
+
+To start using your cluster, you need to run the following as a regular user:
+
+  mkdir -p $HOME/.kube
+  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+  sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+You should now deploy a pod network to the cluster.
+Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
+  https://kubernetes.io/docs/concepts/cluster-administration/addons/
+
+You can now join any number of control-plane nodes by copying certificate author
+ities
+and service account keys on each node and then running the following as root:
+
+  kubeadm join 172.17.0.3:6443 --token abcdef.0123456789abcdef \
+    --discovery-token-ca-cert-hash sha256:16d12b4d52c3d6831d83c67f30aa000c0df10d
+40eebb6f7e3bb1528c126be4f3 \
+    --control-plane
+
+Then you can join any number of worker nodes by running the following on each as
+ root:
+
+kubeadm join 172.17.0.3:6443 --token abcdef.0123456789abcdef \
+    --discovery-token-ca-cert-hash sha256:16d12b4d52c3d6831d83c67f30aa000c0df10d
+40eebb6f7e3bb1528c126be4f3
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  4831  100  4831    0     0   9801      0 --:--:-- --:--:-- --:--:--  9799
+podsecuritypolicy.policy/psp.flannel.unprivileged created
+Warning: rbac.authorization.k8s.io/v1beta1 ClusterRole is deprecated in v1.17+,
+unavailable in v1.22+; use rbac.authorization.k8s.io/v1 ClusterRole
+clusterrole.rbac.authorization.k8s.io/flannel created
+Warning: rbac.authorization.k8s.io/v1beta1 ClusterRoleBinding is deprecated in v
+1.17+, unavailable in v1.22+; use rbac.authorization.k8s.io/v1 ClusterRoleBindin
+g
+clusterrolebinding.rbac.authorization.k8s.io/flannel created
+serviceaccount/flannel created
+configmap/kube-flannel-cfg created
+daemonset.apps/kube-flannel-ds created
+Created symlink from /etc/systemd/system/multi-user.target.wants/kubelet.service
+ to /usr/lib/systemd/system/kubelet.service.
+node/myk8s-master-1 untainted
+
+STATUS: OK
+
+Cluster, "myk8s", can be accessed using:
+
+export KUBECONFIG=/var/tmp/admin-myk8s.conf
+
+real    0m31.855s
+user    0m0.416s
+sys     0m0.299s
+[root@mokbox /]# errstop $?
+[root@mokbox /]# export KUBECONFIG=/var/tmp/admin-myk8s.conf
+[root@mokbox /]# for i in `seq 1 20`; do if kubectl get pods &>/dev/null; then b
+reak; fi; echo -n "."; sleep 1; done
+[root@mokbox /]# while kubectl get pods -A | tail -n +2 | awk '{ print $3; }' |
+grep -qs 0; do echo -n "."; sleep 2; done; echo
+No resources found
+
+[root@mokbox /]# kubectl get pods -A
+No resources found
+[root@mokbox /]# errstop $?
+[root@mokbox /]# kubectl run --rm -ti --restart=Never --image=alpine shell2 sh |
+| errstop $?
+Error from server (Forbidden): pods "shell2" is forbidden: error looking up serv
+ice account default/default: serviceaccount "default" not found
+SCREENCAST STOP &

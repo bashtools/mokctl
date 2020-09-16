@@ -16,7 +16,9 @@ errstop $?
 time mokctl -p create cluster myk8s --masters 1 --tailf
 errstop $?
 export KUBECONFIG=/var/tmp/admin-myk8s.conf
+sleep 5
 for i in `seq 1 20`; do if kubectl get pods &>/dev/null; then break; fi; echo -n "."; sleep 1; done
+sleep 5
 while kubectl get pods -A | tail -n +2 | awk '{ print $3; }' | grep -qs 0; do echo -n "."; sleep 2; done; echo
 kubectl get pods -A
 errstop $?

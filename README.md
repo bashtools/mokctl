@@ -82,7 +82,7 @@ mokctl delete cluster myk8s
 exit
 ```
 
-Two docker images will remain, 'myownkind/mokbox' and 'myownkind/mok-centos-7-v1.18.5'. Remove them to reclaim disk space, or keep them around to be able to quickly build kubernetes clusters.
+Two docker images will remain, 'myownkind/mokbox' and 'myownkind/mok-centos-7-v1.19.1'. Remove them to reclaim disk space, or keep them around to be able to quickly build kubernetes clusters.
 
 See also:
 

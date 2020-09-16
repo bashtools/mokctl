@@ -1,5 +1,5 @@
-VERSION = 0.8.9
-K8SVERSION = 1.18.5
+VERSION = 0.8.10
+K8SVERSION = 1.19.1
 
 .PHONY: all
 all: mokctl.deploy tags

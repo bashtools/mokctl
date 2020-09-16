@@ -13,7 +13,7 @@ errstop $retval
 
 mokctl -p build image --tailf
 errstop $?
-time mokctl -p create cluster myk8s --masters 1 --tailf
+time mokctl -p create cluster myk8s --masters 1 --workers 1 --tailf
 errstop $?
 export KUBECONFIG=/var/tmp/admin-myk8s.conf
 for i in `seq 1 20`; do if kubectl get pods &>/dev/null; then break; fi; echo -n "."; sleep 1; done

@@ -7,6 +7,7 @@ ARG CRIO_PATCH
 # Tell systemd that it's running in a container
 ENV container docker
 COPY kubernetes.repo /etc/yum.repos.d/kubernetes.repo
+RUN yum -y update
 RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do \
     [ $i == systemd-tmpfiles-setup.service ] || rm -f $i; done); \
     rm -f /lib/systemd/system/multi-user.target.wants/*; \
@@ -15,10 +16,9 @@ RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do \
     rm -f /lib/systemd/system/sockets.target.wants/*udev*; \
     rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
     rm -f /lib/systemd/system/basic.target.wants/*; \
-    rm -f /lib/systemd/system/anaconda.target.wants/*; \
-    yum -y update \
-    && curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/$CRIO_MAJOR.$CRIO_MINOR:/$CRIO_MAJOR.$CRIO_MINOR.$CRIO_PATCH/CentOS_7/devel:kubic:libcontainers:stable:cri-o:$CRIO_MAJOR.$CRIO_MINOR:$CRIO_MAJOR.$CRIO_MINOR.$CRIO_PATCH.repo >/etc/yum.repos.d/devel:kubic:libcontainers:stable:cri-o:$CRIO_MAJOR.$CRIO_MINOR:$CRIO_MAJOR.$CRIO_MINOR.$CRIO_PATCH.repo \
-    && yum install -y \
+    rm -f /lib/systemd/system/anaconda.target.wants/*;
+RUN curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/$CRIO_MAJOR.$CRIO_MINOR:/$CRIO_MAJOR.$CRIO_MINOR.$CRIO_PATCH/CentOS_7/devel:kubic:libcontainers:stable:cri-o:$CRIO_MAJOR.$CRIO_MINOR:$CRIO_MAJOR.$CRIO_MINOR.$CRIO_PATCH.repo >/etc/yum.repos.d/devel:kubic:libcontainers:stable:cri-o:$CRIO_MAJOR.$CRIO_MINOR:$CRIO_MAJOR.$CRIO_MINOR.$CRIO_PATCH.repo
+RUN yum install -y \
       cri-o \
       iptables \
       iproute-tc \
@@ -29,8 +29,8 @@ RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do \
       kubelet-$K8SVERSION \
       kubeadm-$K8SVERSION \
       kubectl-$K8SVERSION \
-      --disableexcludes=kubernetes \
-    && sed -i 's/\(cgroup_manager =\).*/\1 "systemd"/' /etc/crio/crio.conf \
+      --disableexcludes=kubernetes
+RUN sed -i 's/\(cgroup_manager =\).*/\1 "systemd"/' /etc/crio/crio.conf \
     && sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config \
     && sed -i 's/\(conmon = .*\)/#\1/' /etc/crio/crio.conf \
     && rm -f /etc/cni/net.d/100-crio-bridge.conf \
@@ -49,4 +49,7 @@ COPY entrypoint /usr/local/bin
 VOLUME [ "/sys/fs/cgroup" ]
 # SystemD's instuction to halt
 STOPSIGNAL SIGRTMIN+3
-ENTRYPOINT ["/usr/local/bin/entrypoint", "/usr/sbin/init"]
+# Using the full explicit command seemed to be required. Amazingly
+# things work on Fedora 37 (with cgroupsv1 enabled and using Podman) with no entrypoint script!!
+#ENTRYPOINT ["/usr/local/bin/entrypoint", "/usr/sbin/init"]
+CMD [ "/lib/systemd/systemd", "log-level=info", "unit=sysinit.target" ]

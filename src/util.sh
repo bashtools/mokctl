@@ -1,3 +1,4 @@
+# shellcheck shell=bash disable=SC2148
 # UT - Utilities
 
 # _UT is an associative array that holds data specific to shared utilities.

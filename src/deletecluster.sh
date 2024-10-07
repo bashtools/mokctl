@@ -1,3 +1,4 @@
+# shellcheck shell=bash disable=SC2148
 # DC - Delete Cluster
 
 # _DC is an associative array that holds data specific to the get cluster command.

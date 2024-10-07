@@ -1,3 +1,4 @@
+# shellcheck shell=bash disable=SC2148
 # MA - execution starts here
 
 # Defined in GL (globals.sh)

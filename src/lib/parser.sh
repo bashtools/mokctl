@@ -1,3 +1,4 @@
+# shellcheck shell=bash disable=SC2148
 # PA - PArser
 
 # _PA holds data specific to parsing the command line arguments.

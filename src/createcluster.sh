@@ -1,3 +1,4 @@
+# shellcheck shell=bash disable=SC2148
 # CC - Create Cluster
 
 # CC is an associative array that holds data specific to creating a cluster.
@@ -29,7 +30,7 @@ CC_set_numworkers() {
 
 # Public Functions ------------------------------------------------------------
 
-# CC_process_options checks if arg1 is in a list of valid create cluser
+# CC_process_options checks if arg1 is in a list of valid create cluster
 # options. This function is called by the parser.
 # Args: arg1 - the option to check.
 #       arg2 - value of the option to be set, optional. This depends on the
@@ -328,6 +329,9 @@ _CC_set_up_master_node() {
   "1.18.2" | "1.18.3" | "1.18.4" | "1.18.5" | "1.19.1")
     _CC_set_up_master_node_v1_18_2 "$@"
     ;;
+  "1.29.1")
+    _CC_set_up_master_node_v1_29_1 "$@"
+    ;;
   *)
     printf 'ERROR: Version not found, "%s".\n' "${_CC[k8sver]}" >"${STDERR}"
     err || return
@@ -384,7 +388,7 @@ _CC_create_lb_node() {
   local labelkey runlogfile
   labelkey=$(CU_labelkey) || err || return
 
-  # Ceate container
+  # Create container
   UT_run_with_progress \
     "    Creating load balancer container, '${_CC[clustername]}-lb'" \
     CU_create_container \

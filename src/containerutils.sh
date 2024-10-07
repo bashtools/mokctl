@@ -1,3 +1,4 @@
+# shellcheck shell=bash disable=SC2148
 # CU - Container Utilities
 
 # _CU is an associative array that holds data specific to containers.
@@ -199,7 +200,7 @@ _CU_podman_or_docker() {
   if type docker &>/dev/null; then
     _CU[imgprefix]=""
     _CU[containerrt]="docker"
-    if docker ps &>/dev/stdout | grep -qs 'docker.sock.*permission denied'; then
+    if docker ps >/dev/stdout 2>&1 | grep -qs 'docker.sock.*permission denied'; then
       cat <<'EnD' >"${STDERR}"
 Not enough permissions to write to 'docker.sock'.
 Fix the permissions for this user or run as root, such as:

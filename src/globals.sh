@@ -1,3 +1,4 @@
+# shellcheck shell=bash disable=SC2148
 # GL - Globals
 
 # Private Functions -----------------------------------------------------------
@@ -10,11 +11,8 @@
 _GL_new() {
 
   declare -rg MOKVERSION="0.8.10"
-  declare -rg K8SVERSION="1.19.1"
-  declare -rg CRICTL_VERSION="1.19.0"
-  declare -rg CRIO_MAJOR="1"
-  declare -rg CRIO_MINOR="18"
-  declare -rg CRIO_PATCH="3"
+  declare -rg K8SVERSION="1.29.1"
+  declare -rg GOVERSION="1.23.2"
 
   # Returns, exit codes
   declare -rg OK=0
@@ -33,7 +31,7 @@ _GL_new() {
   declare -rg STDERR="/dev/stderr"
 
   # The following just keep shellcheck happy
-  local dummy
+  local dummy dumb
   dummy="${OK}"
   dummy="${ERROR}"
   dummy="${STOP}"
@@ -44,12 +42,9 @@ _GL_new() {
   dummy="${SUCCESS}"
   dummy="${FAILURE}"
   dummy="${MOKVERSION}"
+  dummy="${GOVERSION}"
   dummy="${K8SVERSION}"
-  dummy="${CRICTL_VERSION}"
-  dummy="${CRIO_MAJOR}"
-  dummy="${CRIO_MINOR}"
-  dummy="${CRIO_PATCH}"
-  dummy="${dummy}"
+  dumb="${dummy}${dumb}"
 }
 
 # Initialise GL

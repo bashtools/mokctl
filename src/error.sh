@@ -1,3 +1,4 @@
+# shellcheck shell=bash disable=SC2148
 # ER - Error handling
 
 # ER is an associative array that holds data specific to error handling.

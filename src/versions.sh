@@ -1,3 +1,4 @@
+# shellcheck shell=bash disable=SC2148
 # CC - Create Cluster - versions file
 
 # CC is an associative array that holds data specific to creating a cluster.

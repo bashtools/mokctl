@@ -35,8 +35,8 @@ COPY --chmod=0755 files/kind/bin/ /kind/bin/
 
 COPY --chmod=0644 files/LICENSES/* /LICENSES/*
 COPY --chmod=0644 files/etc/* /etc/
-COPY --chmod=0644 files/etc/containerd/* /etc/containerd/
-COPY --chmod=0644 files/etc/default/* /etc/default/
+# COPY --chmod=0644 files/etc/containerd/* /etc/containerd/
+# COPY --chmod=0644 files/etc/default/* /etc/default/
 COPY --chmod=0644 files/etc/sysctl.d/* /etc/sysctl.d/
 COPY --chmod=0644 files/etc/systemd/system/* /etc/systemd/system/
 COPY --chmod=0644 files/etc/systemd/system/kubelet.service.d/* /etc/systemd/system/kubelet.service.d/
@@ -90,9 +90,9 @@ RUN chmod 755 /kind/bin && \
 # NOTE: systemd-binfmt.service will register things into binfmt_misc which is kernel-global
 RUN echo "Enabling / Disabling services ... " \
     && systemctl enable kubelet.service \
-    && systemctl enable containerd.service \
     && systemctl enable undo-mount-hacks.service \
     && systemctl mask systemd-binfmt.service
+    # && systemctl enable containerd.service \
 
 RUN echo "Ensuring /etc/kubernetes/manifests" \
     && mkdir -p /etc/kubernetes/manifests

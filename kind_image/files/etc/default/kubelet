@@ -1,1 +1,1 @@
-KUBELET_EXTRA_ARGS=--runtime-cgroups=/system.slice/containerd.service
+KUBELET_EXTRA_ARGS=

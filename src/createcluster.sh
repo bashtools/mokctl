@@ -329,8 +329,8 @@ _CC_set_up_master_node() {
   "1.18.2" | "1.18.3" | "1.18.4" | "1.18.5" | "1.19.1")
     _CC_set_up_master_node_v1_18_2 "$@"
     ;;
-  "1.29.1")
-    _CC_set_up_master_node_v1_29_1 "$@"
+  "1.30.0")
+    _CC_set_up_master_node_v1_18_2 "$@"
     ;;
   *)
     printf 'ERROR: Version not found, "%s".\n' "${_CC[k8sver]}" >"${STDERR}"
@@ -640,6 +640,9 @@ _CC_set_up_worker_node() {
 
   case "${_CC[k8sver]}" in
   "1.18.2" | "1.18.3" | "1.18.4" | "1.18.5" | "1.19.1")
+    _CC_set_up_worker_node_v1_18_2 "$@"
+    ;;
+  "1.30.0")
     _CC_set_up_worker_node_v1_18_2 "$@"
     ;;
   *)

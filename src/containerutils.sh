@@ -162,10 +162,8 @@ EnD
   fi
 
   docker run --privileged \
-    -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
     -v /lib/modules:/lib/modules:ro \
-    -v /boot:/boot:ro \
-    --tmpfs /run --tmpfs /tmp \
+    --systemd=always \
     --detach \
     --name "$1" \
     --hostname "$1" \

@@ -90,6 +90,7 @@ localAPIEndpoint:
   bindPort: 6443
 nodeRegistration:
   criSocket: /var/run/crio/crio.sock
+  imagePullPolicy: IfNotPresent
   name: $1
   kubeletExtraArgs: {}
   taints:
@@ -109,7 +110,7 @@ controlPlaneEndpoint: "${lbaddr:-\$ipaddr}:6443"
 apiServer:
   timeoutForControlPlane: 4m0s
   ${certSANs}
-apiVersion: kubeadm.k8s.io/v1beta2
+apiVersion: kubeadm.k8s.io/v1beta3
 certificatesDir: /etc/kubernetes/pki
 clusterName: kubernetes
 controllerManager: {}
@@ -118,8 +119,8 @@ dns:
 etcd:
   local:
     dataDir: /var/lib/etcd
-imageRepository: k8s.gcr.io
-kubernetesVersion: v${K8SVERSION}
+imageRepository: registry.k8s.io
+kubernetesVersion: ${K8SVERSION}
 networking:
   dnsDomain: cluster.local
   podSubnet: \$podsubnet
@@ -132,11 +133,11 @@ if [[ -z "${masterip}" ]]; then
     --ignore-preflight-errors Swap \\
     --config=kubeadm-init-defaults.yaml ${uploadcerts}
 
-  export KUBECONFIG=/etc/kubernetes/admin.conf
+  export KUBECONFIG=/etc/kubernetes/super-admin.conf
 
   # Flannel - 10.244.0.0./16
   # Why isn't NETADMIN enough here? I think this is a CRI-O 'problem'
-  curl -L https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml | sed 's/privileged: false/privileged: true/' | kubectl apply -f -
+  curl -L https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml | sed 's/privileged: false/privileged: true/' | kubectl apply -f -
 
   # Weave - ?
   #kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=\$(kubectl version | base64 | tr -d '\n')"
@@ -153,7 +154,7 @@ else
     --certificate-key f8802e114ef118304e561c3acd4d0b543adc226b7a27f675f56564185ffe0c07
 fi
 
-systemctl enable kubelet
+systemctl  enable kubelet
 EnD
 
   docker cp "${setupfile}" "$1":/root/setup.sh || err || {
@@ -176,8 +177,8 @@ EnD
 
       # Write the file
       cat <<'EnD' >"${removetaint}"
-export KUBECONFIG=/etc/kubernetes/admin.conf
-kubectl taint nodes --all node-role.kubernetes.io/master-
+export KUBECONFIG=/etc/kubernetes/super-admin.conf
+kubectl taint nodes --all node-role.kubernetes.io/control-plane:NoSchedule-
 EnD
 
       docker cp "${removetaint}" "$1":/root/removetaint.sh || err || {
@@ -210,8 +211,8 @@ _CC_set_up_worker_node_v1_18_2() {
 
   cat <<EnD >"${setupfile}"
 # CRIO version 1.18 needs storage changing to VFS
-sed -i 's/\(^driver = \).*/\1"vfs"/' /etc/containers/storage.conf
-systemctl restart crio
+# sed -i 's/\(^driver = \).*/\1"vfs"/' /etc/containers/storage.conf
+# systemctl restart crio
 
 # Wait for the master API to become ready
 while true; do
@@ -242,6 +243,7 @@ while true; do
 
 # Edit the kubelet configuration file
 echo "failSwapOn: false" >>/var/lib/kubelet/config.yaml
+sed -i 's/cgroupDriver: systemd/cgroupDriver: cgroupfs/' /var/lib/kubelet/config.yaml
 
 systemctl enable --now kubelet
 EnD

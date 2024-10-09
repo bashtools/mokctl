@@ -33,7 +33,7 @@ BI_usage() {
   cat <<'EnD'
 BUILD subcommands are:
  
-  image - Creates the docker 'mok-centos-7' container image.
+  image - Creates the docker 'mokctl-image' container image.
  
 build image options:
  
@@ -121,7 +121,7 @@ BI_run() {
 # Args: None expected.
 _BI_new() {
   _BI[tailf]="${FALSE}"
-  _BI[baseimagename]="mok-kind"
+  _BI[baseimagename]="mokctl-image"
   _BI[useprebuiltimage]="${FALSE}"
   _BI[dockerbuildtmpdir]=
 
@@ -259,7 +259,7 @@ _BI_get_build_args_for_latest() {
 
   local buildargs
 
-  buildargs="--build-arg GOVERSION=${GOVERSION}"
+  buildargs="--build-arg GO_VERSION=${GO_VERSION}"
   # buildargs="--build-arg CRICTL_VERSION=${CRICTL_VERSION}"
   # buildargs+=" --build-arg K8SVERSION=${K8SVERSION}"
   # buildargs+=" --build-arg CRIO_MAJOR=${CRIO_MAJOR}"
@@ -283,8 +283,8 @@ _BI_create_docker_build_dir() {
   # embed-dockerfile.sh adds a base64 encoded tarball and
   # unpacking code between them.
 
-  #mok-centos-7-tarball-start
-  #mok-centos-7-tarball-end
+  #mokctl-image-tarball-start
+  #mokctl-image-tarball-end
 }
 
 # Initialise _BI

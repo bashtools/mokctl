@@ -10,9 +10,9 @@
 # Args: None expected.
 _GL_new() {
 
-  declare -rg MOKVERSION="0.8.10"
-  declare -rg K8SVERSION="1.29.1"
-  declare -rg GOVERSION="1.23.2"
+  declare -rg MOKVERSION="0.8.11"
+  declare -rg K8SVERSION="1.30.0"
+  declare -rg GO_VERSION="1.23.2"
 
   # Returns, exit codes
   declare -rg OK=0
@@ -42,7 +42,7 @@ _GL_new() {
   dummy="${SUCCESS}"
   dummy="${FAILURE}"
   dummy="${MOKVERSION}"
-  dummy="${GOVERSION}"
+  dummy="${GO_VERSION}"
   dummy="${K8SVERSION}"
   dumb="${dummy}${dumb}"
 }

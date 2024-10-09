@@ -23,6 +23,9 @@
 ARG BASE_IMAGE=debian:bookworm-slim
 FROM $BASE_IMAGE AS base
 
+ARG KUBERNETES_VERSION=v1.30
+ARG CRIO_VERSION=v1.30
+
 # copy in static files
 # all scripts and directories are 0755 (rwx r-x r-x)
 # all non-scripts are 0644 (rw- r-- r--)
@@ -34,9 +37,8 @@ COPY --chmod=0644 files/kind/ /kind/
 COPY --chmod=0755 files/kind/bin/ /kind/bin/
 
 COPY --chmod=0644 files/LICENSES/* /LICENSES/*
-COPY --chmod=0644 files/etc/* /etc/
-# COPY --chmod=0644 files/etc/containerd/* /etc/containerd/
-# COPY --chmod=0644 files/etc/default/* /etc/default/
+COPY --chmod=0644 files/etc/crictl.yaml /etc/
+COPY --chmod=0644 files/etc/crio/crio.conf.d/* /etc/crio/crio.conf.d/
 COPY --chmod=0644 files/etc/sysctl.d/* /etc/sysctl.d/
 COPY --chmod=0644 files/etc/systemd/system/* /etc/systemd/system/
 COPY --chmod=0644 files/etc/systemd/system/kubelet.service.d/* /etc/systemd/system/kubelet.service.d/
@@ -72,7 +74,7 @@ COPY --chmod=0644 files/etc/systemd/system/kubelet.service.d/* /etc/systemd/syst
 RUN chmod 755 /kind/bin && \
     echo "Installing Packages ..." \
     && DEBIAN_FRONTEND=noninteractive clean-install \
-      systemd \
+      systemd apt-transport-https ca-certificates gpg socat \
       conntrack iptables nftables iproute2 ethtool util-linux mount kmod \
       libseccomp2 pigz fuse-overlayfs \
       nfs-common open-iscsi \
@@ -87,12 +89,23 @@ RUN chmod 755 /kind/bin && \
     && echo "ReadKMsg=no" >> /etc/systemd/journald.conf \
     && ln -s "$(which systemd)" /sbin/init
 
+RUN curl -fsSL https://pkgs.k8s.io/core:/stable:/$KUBERNETES_VERSION/deb/Release.key | \
+    gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/$KUBERNETES_VERSION/deb/ /" | \
+    tee /etc/apt/sources.list.d/kubernetes.list \
+    && curl -fsSL https://pkgs.k8s.io/addons:/cri-o:/stable:/$CRIO_VERSION/deb/Release.key | \
+    gpg --dearmor -o /etc/apt/keyrings/cri-o-apt-keyring.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/cri-o-apt-keyring.gpg] https://pkgs.k8s.io/addons:/cri-o:/stable:/$CRIO_VERSION/deb/ /" | \
+    tee /etc/apt/sources.list.d/cri-o.list \
+    && apt-get update \
+    && apt-get install -y cri-o kubelet kubeadm kubectl
+
 # NOTE: systemd-binfmt.service will register things into binfmt_misc which is kernel-global
 RUN echo "Enabling / Disabling services ... " \
     && systemctl enable kubelet.service \
     && systemctl enable undo-mount-hacks.service \
-    && systemctl mask systemd-binfmt.service
-    # && systemctl enable containerd.service \
+    && systemctl mask systemd-binfmt.service \
+    && systemctl enable crio.service
 
 RUN echo "Ensuring /etc/kubernetes/manifests" \
     && mkdir -p /etc/kubernetes/manifests

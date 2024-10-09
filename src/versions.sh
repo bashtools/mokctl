@@ -74,7 +74,7 @@ podsubnet="10.244.0.0/16"
 servicesubnet="10.96.0.0/16"
 
 cat <<EOF >kubeadm-init-defaults.yaml
-apiVersion: kubeadm.k8s.io/v1beta2
+apiVersion: kubeadm.k8s.io/v1beta3
 kind: InitConfiguration
 ${certkey}
 bootstrapTokens:

@@ -101,58 +101,23 @@ MA_sanity_checks() {
 MA_usage() {
 
   cat <<'EnD'
-
 Usage: mokctl [-h] <command> [subcommand] [ARGS...]
  
 Global options:
- 
   --help
   -h     - This help text
   --plain
   -p     - Plain output. No colours or animations.
  
 Where command can be one of:
- 
   create - Add item(s) to the system.
   delete - Delete item(s) from the system.
   build  - Build item(s) used by the system.
   get    - Get details about items in the system.
   exec   - 'Log in' to the container.
 
-EnD
-
-  # Output individual help pages
-  CC_usage # <- create cluster
-  DC_usage # <- delete cluster
-  BI_usage # <- build image
-  GC_usage # <- get
-  EX_usage # <- exec
-
-  cat <<'EnD'
-EXAMPLES
- 
-Get a list of mok clusters
- 
-  mokctl get clusters
- 
-Build the image used for masters and workers:
- 
-  mokctl build image
- 
-Create a single node cluster:
-Note that the master node will be made schedulable for pods.
- 
-  mokctl create cluster mycluster --masters 1
- 
-Create a single master and single node cluster:
-Note that the master node will NOT be schedulable for pods.
- 
-  mokctl create cluster mycluster --masters 1 --workers 2
- 
-Delete a cluster:
- 
-  mokctl delete cluster mycluster
-
+For help on a specific command, run:
+  mokctl <command> --help
 EnD
 }
 

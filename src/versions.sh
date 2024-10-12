@@ -89,7 +89,7 @@ localAPIEndpoint:
   advertiseAddress: \$ipaddr
   bindPort: 6443
 nodeRegistration:
-  criSocket: /var/run/crio/crio.sock
+  criSocket: unix:///var/run/crio/crio.sock
   imagePullPolicy: IfNotPresent
   name: $1
   kubeletExtraArgs: {}
@@ -97,7 +97,7 @@ nodeRegistration:
   - effect: NoSchedule
     key: node-role.kubernetes.io/master
 ---
-apiVersion: kubelet.config.k8s.io/v1beta1
+apiVersion: kubelet.config.k8s.io/v1beta3
 kind: KubeletConfiguration
 failSwapOn: false
 featureGates:
@@ -129,22 +129,29 @@ scheduler: {}
 EOF
 
 if [[ -z "${masterip}" ]]; then
+  # Run the preflight phase
   kubeadm init \\
     --ignore-preflight-errors Swap \\
-    --config=kubeadm-init-defaults.yaml ${uploadcerts}
+    --config=kubeadm-init-defaults.yaml ${uploadcerts} \\
+    phase preflight
+
+  # Set up the kubelet
+  kubeadm init phase kubelet-start
+
+  # Edit the kubelet configuration file
+  echo "failSwapOn: false" >>/var/lib/kubelet/config.yaml
+  sed -i 's/cgroupDriver: systemd/cgroupDriver: cgroupfs/' /var/lib/kubelet/config.yaml
+
+  # Tell kubeadm to carry on from here
+  kubeadm init \\
+    --pod-network-cidr=10.244.0.0/16 \\
+    --ignore-preflight-errors Swap \\
+    --skip-phases=preflight,kubelet-start
 
   export KUBECONFIG=/etc/kubernetes/super-admin.conf
 
   # Flannel - 10.244.0.0./16
-  # Why isn't NETADMIN enough here? I think this is a CRI-O 'problem'
-  curl -L https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml | sed 's/privileged: false/privileged: true/' | kubectl apply -f -
-
-  # Weave - ?
-  #kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=\$(kubectl version | base64 | tr -d '\n')"
-
-  # Calico - custom 10.123.0.0/16
-  # Calico is e2e tested by k8s team. Requires --pod-network-cidr=192.168.0.0/16
-  #curl https://docs.projectcalico.org/v3.11/manifests/calico.yaml | sed 's#192.168.0.0/16#10.123.0.0/16#' | kubectl apply -f -
+  kubectl apply -f /root/kube-flannel.yml
 else
   kubeadm join ${masterip}:6443 \\
     --ignore-preflight-errors Swap \\
@@ -154,7 +161,7 @@ else
     --certificate-key f8802e114ef118304e561c3acd4d0b543adc226b7a27f675f56564185ffe0c07
 fi
 
-systemctl  enable kubelet
+systemctl enable kubelet
 EnD
 
   docker cp "${setupfile}" "$1":/root/setup.sh || err || {

@@ -198,7 +198,7 @@ _UT_new() {
   _UT[success]="${_UT[green]}✓${_UT[normal]}"
   _UT[failure]="${_UT[red]}✕${_UT[normal]}"
   _UT[runlogfile]=
-  _UT[spinnerchars]='|\-/'
+  _UT[spinnerchars]="|/-\\"
   _UT[spinnerpid]=
 }
 

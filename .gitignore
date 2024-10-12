@@ -1,5 +1,6 @@
 mokctl.deploy
 mokctl.deploy.noconst
+buildimage.deploy
 latest.hardcopy
 tags
 *.swp

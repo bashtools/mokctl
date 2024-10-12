@@ -30,18 +30,17 @@ ARG CRIO_VERSION=v1.30
 # all scripts and directories are 0755 (rwx r-x r-x)
 # all non-scripts are 0644 (rw- r-- r--)
 COPY --chmod=0755 files/usr/local/bin/* /usr/local/bin/
-
 COPY --chmod=0644 files/kind/ /kind/
 # COPY only applies to files, not the directory itself, so the permissions are
 # fixed in RUN below with a chmod.
 COPY --chmod=0755 files/kind/bin/ /kind/bin/
-
 COPY --chmod=0644 files/LICENSES/* /LICENSES/*
 COPY --chmod=0644 files/etc/crictl.yaml /etc/
 COPY --chmod=0644 files/etc/crio/crio.conf.d/* /etc/crio/crio.conf.d/
 COPY --chmod=0644 files/etc/sysctl.d/* /etc/sysctl.d/
 COPY --chmod=0644 files/etc/systemd/system/* /etc/systemd/system/
 COPY --chmod=0644 files/etc/systemd/system/kubelet.service.d/* /etc/systemd/system/kubelet.service.d/
+COPY --chmod=0644 files/kube-flannel.yml /root/kube-flannel.yml
 
 # Install dependencies, first from apt, then from release tarballs.
 # NOTE: we use one RUN to minimize layers.
@@ -89,6 +88,7 @@ RUN chmod 755 /kind/bin && \
     && echo "ReadKMsg=no" >> /etc/systemd/journald.conf \
     && ln -s "$(which systemd)" /sbin/init
 
+# Install CRI-O (and delete the config it creates in /etc/cni/net.d)
 RUN curl -fsSL https://pkgs.k8s.io/core:/stable:/$KUBERNETES_VERSION/deb/Release.key | \
     gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg \
     && echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/$KUBERNETES_VERSION/deb/ /" | \
@@ -98,7 +98,8 @@ RUN curl -fsSL https://pkgs.k8s.io/core:/stable:/$KUBERNETES_VERSION/deb/Release
     && echo "deb [signed-by=/etc/apt/keyrings/cri-o-apt-keyring.gpg] https://pkgs.k8s.io/addons:/cri-o:/stable:/$CRIO_VERSION/deb/ /" | \
     tee /etc/apt/sources.list.d/cri-o.list \
     && apt-get update \
-    && apt-get install -y cri-o kubelet kubeadm kubectl
+    && apt-get install -y cri-o kubelet kubeadm kubectl \
+    && rm -f /etc/cni/net.d/*
 
 # NOTE: systemd-binfmt.service will register things into binfmt_misc which is kernel-global
 RUN echo "Enabling / Disabling services ... " \
@@ -130,25 +131,6 @@ ARG GO_VERSION
 RUN eval "$(gimme "${GO_VERSION}")" \
     && export GOTOOLCHAIN="go${GO_VERSION}" \
     && GOBIN=/usr/local/bin go install github.com/google/go-licenses@latest
-
-
-# # stage for building containerd
-# FROM go-build AS build-containerd
-# ARG TARGETARCH GO_VERSION
-# ARG CONTAINERD_VERSION="v1.7.18"
-# ARG CONTAINERD_CLONE_URL="https://github.com/containerd/containerd"
-# # we don't build with optional snapshotters, we never select any of these
-# # they're not ideal inside kind anyhow, and we save some disk space
-# ARG BUILDTAGS="no_aufs no_zfs no_btrfs no_devmapper"
-# RUN git clone --filter=tree:0 "${CONTAINERD_CLONE_URL}" /containerd \
-#     && cd /containerd \
-#     && git checkout "${CONTAINERD_VERSION}" \
-#     && eval "$(gimme "${GO_VERSION}")" \
-#     && export GOTOOLCHAIN="go${GO_VERSION}" \
-#     && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=1 \
-#     && make bin/ctr bin/containerd bin/containerd-shim-runc-v2 \
-#     && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES \
-#         ./cmd/ctr ./cmd/containerd ./cmd/containerd-shim-runc-v2
 
 # stage for building runc
 FROM go-build AS build-runc
@@ -199,34 +181,8 @@ RUN git clone --filter=tree:0 "${CNI_PLUGINS_CLONE_URL}" /cni-plugins \
         ./plugins/main/loopback ./plugins/main/ptp \
         ./plugins/meta/portmap
 
-# # stage for building containerd-fuse-overlayfs
-# FROM go-build AS build-fuse-overlayfs
-# ARG TARGETARCH GO_VERSION
-# ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="v1.0.8"
-# ARG CONTAINERD_FUSE_OVERLAYFS_CLONE_URL="https://github.com/containerd/fuse-overlayfs-snapshotter"
-# RUN git clone --filter=tree:0 "${CONTAINERD_FUSE_OVERLAYFS_CLONE_URL}" /fuse-overlayfs-snapshotter \
-#     && cd /fuse-overlayfs-snapshotter \
-#     && git checkout "${CONTAINERD_FUSE_OVERLAYFS_VERSION}" \
-#     && eval "$(gimme "${GO_VERSION}")" \
-#     && export GOTOOLCHAIN="go${GO_VERSION}" \
-#     && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=1 \
-#     && make bin/containerd-fuse-overlayfs-grpc \
-#     && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES ./cmd/containerd-fuse-overlayfs-grpc
-
-
 # build final image layout from other stages
 FROM base AS build
-# copy over containerd build and install
-# COPY --from=build-containerd /containerd/bin/containerd /usr/local/bin/
-# COPY --from=build-containerd /containerd/bin/ctr /usr/local/bin/
-# COPY --from=build-containerd /containerd/bin/containerd-shim-runc-v2 /usr/local/bin/
-# RUN ctr oci spec \
-#         | jq '.hooks.createContainer[.hooks.createContainer| length] |= . + {"path": "/kind/bin/mount-product-files.sh"}' \
-#         | jq 'del(.process.rlimits)' \
-#         > /etc/containerd/cri-base.json \
-#     && containerd --version
-# COPY --from=build-containerd /_LICENSES/* /LICENSES/
-# copy over runc build and install
 COPY --from=build-runc /runc/runc /usr/local/sbin/runc
 RUN runc --version
 COPY --from=build-runc /_LICENSES/* /LICENSES/
@@ -240,9 +196,6 @@ COPY --from=build-cni /cni-plugins/bin/loopback /opt/cni/bin/
 COPY --from=build-cni /cni-plugins/bin/ptp /opt/cni/bin/
 COPY --from=build-cni /cni-plugins/bin/portmap /opt/cni/bin/
 COPY --from=build-cni /_LICENSES/* /LICENSES/
-# copy over containerd-fuse-overlayfs and install
-# COPY --from=build-fuse-overlayfs /fuse-overlayfs-snapshotter/bin/containerd-fuse-overlayfs-grpc /usr/local/bin/
-# COPY --from=build-fuse-overlayfs /_LICENSES/* /LICENSES/
 
 # squash down to one compressed layer, without any lingering whiteout files etc
 FROM scratch
@@ -254,5 +207,7 @@ ENV container=docker
 # systemd exits on SIGRTMIN+3, not SIGTERM (which re-executes it)
 # https://bugzilla.redhat.com/show_bug.cgi?id=1201657
 STOPSIGNAL SIGRTMIN+3
-# NOTE: this is *only* for documentation, the entrypoint is overridden later
-ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]
+# Using the full explicit command seemed to be required. Amazingly
+# things work on Fedora 37 (with cgroupsv1 enabled and using Podman) with no entrypoint script!!
+#ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]
+CMD [ "/lib/systemd/systemd", "log-level=info", "unit=sysinit.target" ]

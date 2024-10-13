@@ -95,7 +95,7 @@ CU_get_container_ip() {
   }
 
   docker inspect \
-    --format='{{.NetworkSettings.IPAddress}}' \
+    --format='{{.NetworkSettings.Networks.mok_network.IPAddress}}' \
     "$1" || {
     printf 'ERROR: %s inspect failed\n' "${_CU[containerrt]}" >"${STDERR}"
     err || return
@@ -161,7 +161,15 @@ EnD
     return "${ERROR}"
   fi
 
+  docker network exists mok_network || {
+    docker network create mok_network || {
+      printf 'ERROR: docker network create failed\n' >"${STDERR}"
+      err || return
+    }
+  }
+
   docker run --privileged \
+    --network mok_network \
     -v /lib/modules:/lib/modules:ro \
     --systemd=always \
     --detach \

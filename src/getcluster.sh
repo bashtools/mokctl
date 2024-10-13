@@ -119,7 +119,7 @@ GC_run() {
     containerhostname=$(JSONPath '.[0].Config.Hostname' -b <<<"${info}") ||
       err || return
 
-    containerip=$(JSONPath '.[0].NetworkSettings.IPAddress' -b <<<"${info}") ||
+    containerip=$(JSONPath '.[0].NetworkSettings.Networks.mok_network.IPAddress' -b <<<"${info}") ||
       err || return
 
     printf '%s %s %s %s\n' "${clustname}" "${id}" "${containerhostname}" "${containerip}"

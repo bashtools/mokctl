@@ -260,11 +260,6 @@ _BI_get_build_args_for_latest() {
   local buildargs
 
   buildargs="--build-arg GO_VERSION=${GO_VERSION}"
-  # buildargs="--build-arg CRICTL_VERSION=${CRICTL_VERSION}"
-  # buildargs+=" --build-arg K8SVERSION=${K8SVERSION}"
-  # buildargs+=" --build-arg CRIO_MAJOR=${CRIO_MAJOR}"
-  # buildargs+=" --build-arg CRIO_MINOR=${CRIO_MINOR}"
-  # buildargs+=" --build-arg CRIO_PATCH=${CRIO_PATCH}"
 
   printf '%s' "${buildargs}"
 }

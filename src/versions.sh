@@ -9,9 +9,9 @@ declare -A _CC
 # Defined in GL (globals.sh)
 declare OK ERROR STDERR TRUE K8SVERSION
 
-# _CC_set_up_worker_node_v1_18_2 uses kubeadm to set up the master node.
+# _CC_set_up_master_node_v1_30_0 uses kubeadm to set up the master node.
 # Args: arg1 - the container to set up.
-_CC_set_up_master_node_v1_18_2() {
+_CC_set_up_master_node_v1_30_0() {
 
   local setupfile lbaddr certSANs certkey masternum t
   # Set by _CC_get_master_join_details:
@@ -97,7 +97,7 @@ nodeRegistration:
   - effect: NoSchedule
     key: node-role.kubernetes.io/master
 ---
-apiVersion: kubelet.config.k8s.io/v1beta3
+apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 failSwapOn: false
 featureGates:
@@ -201,9 +201,9 @@ EnD
   return "${OK}"
 }
 
-# _CC_set_up_worker_node_v1_18_2 uses kubeadm to set up the worker node.
+# _CC_set_up_worker_node_v1_30_0 uses kubeadm to set up the worker node.
 # Args: arg1 - the container to set up.
-_CC_set_up_worker_node_v1_18_2() {
+_CC_set_up_worker_node_v1_30_0() {
 
   local setupfile cahash="$2" token="$3" masterip="$4"
 
@@ -217,10 +217,6 @@ _CC_set_up_worker_node_v1_18_2() {
   fi
 
   cat <<EnD >"${setupfile}"
-# CRIO version 1.18 needs storage changing to VFS
-# sed -i 's/\(^driver = \).*/\1"vfs"/' /etc/containers/storage.conf
-# systemctl restart crio
-
 # Wait for the master API to become ready
 while true; do
   curl -k https://${masterip}:6443/

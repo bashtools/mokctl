@@ -176,7 +176,8 @@ EnD
     --name "$1" \
     --hostname "$1" \
     --label "$2" \
-    "${imagename}" || {
+    "${imagename}" \
+    /usr/local/bin/entrypoint /lib/systemd/systemd log-level=info unit=sysinit.target || {
     printf 'ERROR: %s run failed\n' "${_CU[containerrt]}" >"${STDERR}"
     err || return
   }

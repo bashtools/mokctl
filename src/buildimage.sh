@@ -1,3 +1,4 @@
+# shellcheck shell=bash disable=SC2148
 # BI - Build Image
 
 # _BI is an associative array that holds data specific to building an image.
@@ -6,8 +7,7 @@ declare -A _BI
 # Declare externally defined variables ----------------------------------------
 
 # Defined in GL (globals.sh)
-declare OK ERROR STDERR STOP TRUE FALSE K8SVERSION CRICTL_VERSION
-declare CRIO_MAJOR CRIO_MINOR CRIO_PATCH
+declare OK ERROR STDERR STOP TRUE FALSE
 
 # Getters/Setters -------------------------------------------------------------
 
@@ -33,7 +33,7 @@ BI_usage() {
   cat <<'EnD'
 BUILD subcommands are:
  
-  image - Creates the docker 'mok-centos-7' container image.
+  image - Creates the docker 'mokctl-image' container image.
  
 build image options:
  
@@ -121,7 +121,7 @@ BI_run() {
 # Args: None expected.
 _BI_new() {
   _BI[tailf]="${FALSE}"
-  _BI[baseimagename]="mok-centos-7"
+  _BI[baseimagename]="mokctl-image"
   _BI[useprebuiltimage]="${FALSE}"
   _BI[dockerbuildtmpdir]=
 
@@ -259,11 +259,7 @@ _BI_get_build_args_for_latest() {
 
   local buildargs
 
-  buildargs="--build-arg CRICTL_VERSION=${CRICTL_VERSION}"
-  buildargs+=" --build-arg K8SVERSION=${K8SVERSION}"
-  buildargs+=" --build-arg CRIO_MAJOR=${CRIO_MAJOR}"
-  buildargs+=" --build-arg CRIO_MINOR=${CRIO_MINOR}"
-  buildargs+=" --build-arg CRIO_PATCH=${CRIO_PATCH}"
+  buildargs="--build-arg GO_VERSION=${GO_VERSION}"
 
   printf '%s' "${buildargs}"
 }
@@ -282,8 +278,8 @@ _BI_create_docker_build_dir() {
   # embed-dockerfile.sh adds a base64 encoded tarball and
   # unpacking code between them.
 
-  #mok-centos-7-tarball-start
-  #mok-centos-7-tarball-end
+  #mokctl-image-tarball-start
+  #mokctl-image-tarball-end
 }
 
 # Initialise _BI

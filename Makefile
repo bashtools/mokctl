@@ -1,5 +1,5 @@
-VERSION = 0.8.10
-K8SVERSION = 1.19.1
+VERSION = 0.8.11
+K8SVERSION = 1.30.0
 
 .PHONY: all
 all: mokctl.deploy tags
@@ -27,8 +27,8 @@ docker-mokbox: all
 .PHONY: mokctl-docker-baseimage
 docker-baseimage: all
 	bash mokctl.deploy build image --tailf
-	docker tag local/mok-centos-7-v${K8SVERSION} myownkind/mok-centos-7-v${K8SVERSION}
-	docker tag myownkind/mok-centos-7-v${K8SVERSION} myownkind/mok-centos-7-v${K8SVERSION}:${VERSION}
+	docker tag local/mokctl-image-v${K8SVERSION} myownkind/mokctl-image-v${K8SVERSION}
+	docker tag myownkind/mokctl-image-v${K8SVERSION} myownkind/mokctl-image-v${K8SVERSION}:${VERSION}
 
 .PHONY:
 docker-upload-mokctl: docker-mokctl
@@ -42,11 +42,11 @@ docker-upload-mokbox:
 
 .PHONY: docker-upload-baseimage
 docker-upload-baseimage:
-	# mok-centos-7-v${K8SVERSION} - Build with 'mokctl build image' first!
-	docker push myownkind/mok-centos-7-v${K8SVERSION}
-	docker push myownkind/mok-centos-7-v${K8SVERSION}:${VERSION}
+	# mokctl-image-v${K8SVERSION} - Build with 'mokctl build image' first!
+	docker push myownkind/mokctl-image-v${K8SVERSION}
+	docker push myownkind/mokctl-image-v${K8SVERSION}:${VERSION}
 
-mokctl.deploy: src/*.sh src/lib/*.sh mok-centos-7
+mokctl.deploy: src/*.sh src/lib/*.sh mokctl-image
 	bash src/embed-dockerfile.sh
 	cd src && ( echo '#!/usr/bin/env bash'; cat \
 		main.sh lib/parser.sh globals.sh error.sh util.sh getcluster.sh \

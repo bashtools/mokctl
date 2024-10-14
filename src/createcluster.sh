@@ -1,3 +1,4 @@
+# shellcheck shell=bash disable=SC2148
 # CC - Create Cluster
 
 # CC is an associative array that holds data specific to creating a cluster.
@@ -29,7 +30,7 @@ CC_set_numworkers() {
 
 # Public Functions ------------------------------------------------------------
 
-# CC_process_options checks if arg1 is in a list of valid create cluser
+# CC_process_options checks if arg1 is in a list of valid create cluster
 # options. This function is called by the parser.
 # Args: arg1 - the option to check.
 #       arg2 - value of the option to be set, optional. This depends on the
@@ -119,10 +120,9 @@ create cluster [flags] options:
          --skiplbsetup is used.
   --k8sver VERSION - Unimplemented.
   --masters NUM - The number of master containers to create.
-  --workers NUM - The number of worker containers to create. When
-                  workers is zero then the 'node-role.kubernetes.io/master'
-                  taint will be removed from master nodes so that pods
-                  are schedulable.
+  --workers NUM - The number of worker containers to create. When workers
+                  is zero then the master node taint will be removed from
+                  master nodes so that pods are schedulable on those nodes.
   --tailf - Show the log output whilst creating the cluster.
 
 EnD
@@ -164,10 +164,8 @@ CC_run() {
     _CC_setup_master_nodes "${_CC[nummasters]}" || return
   }
 
-  [[ -z ${_CC[skipworkersetup]} ]] && {
-    [[ ${_CC[numworkers]} -gt 0 ]] && {
-      _CC_create_worker_nodes "${_CC[numworkers]}" || return
-    }
+  [[ ${_CC[numworkers]} -gt 0 ]] && {
+    _CC_create_worker_nodes "${_CC[numworkers]}" || return
   }
 
   printf '\n'
@@ -304,8 +302,7 @@ _CC_setup_master_nodes() {
       sed -i 's#\(server: https://\)[0-9.]*\(:.*\)#\1'"${lbaddr}"'\2#' \
         "/var/tmp/admin-${_CC[clustername]}.conf"
     else
-      [[ -n ${_CC[skipworkersetup]} || -n \
-      ${_CC[skipmastersetup]} ]] || {
+      [[ -n ${_CC[skipmastersetup]} ]] || {
         docker cp "${_CC[clustername]}-master-1:/etc/kubernetes/admin.conf" \
           "/var/tmp/admin-${_CC[clustername]}.conf" || err || return
       }
@@ -325,8 +322,8 @@ _CC_setup_master_nodes() {
 _CC_set_up_master_node() {
 
   case "${_CC[k8sver]}" in
-  "1.18.2" | "1.18.3" | "1.18.4" | "1.18.5" | "1.19.1")
-    _CC_set_up_master_node_v1_18_2 "$@"
+  "1.30.0" | "1.30.1")
+    _CC_set_up_master_node_v1_30_0 "$@"
     ;;
   *)
     printf 'ERROR: Version not found, "%s".\n' "${_CC[k8sver]}" >"${STDERR}"
@@ -357,7 +354,7 @@ _CC_get_master_join_details() {
 set -e
 
 sed 's#\(server: https://\)[0-9.]*\(:.*\)#\1'"${master1ip}"'\2#' \
-  /etc/kubernetes/admin.conf >/etc/kubernetes/admin2.conf
+  /etc/kubernetes/super-admin.conf >/etc/kubernetes/admin2.conf
 
 cahash=\$(openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | \
         openssl rsa -pubin -outform der 2>/dev/null | \
@@ -374,7 +371,11 @@ EnD
     err || return
   rm -f "${joinvarsfile}" 2>"${STDERR}" || err || return
 
-  docker exec "$1" bash /root/joinvars.sh 2>"${STDERR}" || err
+  [[ -z ${_CC[skipworkersetup]} ]] && {
+    docker exec "$1" bash /root/joinvars.sh 2>"${STDERR}" || err || return
+  }
+
+  return "${OK}"
 }
 
 # _CC_create_lb_node creates the load balancer node container.
@@ -384,7 +385,7 @@ _CC_create_lb_node() {
   local labelkey runlogfile
   labelkey=$(CU_labelkey) || err || return
 
-  # Ceate container
+  # Create container
   UT_run_with_progress \
     "    Creating load balancer container, '${_CC[clustername]}-lb'" \
     CU_create_container \
@@ -501,8 +502,7 @@ _CC_create_worker_nodes() {
   local cahash token t masterip
   declare -i int=0
 
-  [[ -n ${_CC[skipworkersetup]} || -n \
-  ${_CC[skipmastersetup]} ]] || {
+  [[ -n ${_CC[skipmastersetup]} ]] || {
     # Runs a script on master node to get details
     t=$(_CC_get_master_join_details "${_CC[clustername]}-master-1") || {
       printf '\nERROR: Problem with "_CC_get_master_join_details".\n\n' >"${STDERR}"
@@ -581,7 +581,7 @@ _CC_wait_for_cluster() {
   }
 
   cat <<'EnD' >"${setupfile}"
-export KUBECONFIG=/etc/kubernetes/admin.conf
+export KUBECONFIG=/etc/kubernetes/super-admin.conf
 found=0
 for i in $(seq 1 20); do
   if kubectl get pods &>/dev/null; then
@@ -632,11 +632,14 @@ EnD
 
 # _CC_set_up_worker_node calls the correct set up function based on the version.
 # Args: arg1 - the container ID to set up
+#       arg2 - the CA hash
+#       arg3 - the token
+#       arg4 - the master IP
 _CC_set_up_worker_node() {
 
   case "${_CC[k8sver]}" in
-  "1.18.2" | "1.18.3" | "1.18.4" | "1.18.5" | "1.19.1")
-    _CC_set_up_worker_node_v1_18_2 "$@"
+  "1.30.0" | "1.30.1")
+    _CC_set_up_worker_node_v1_30_0 "$@"
     ;;
   *)
     printf 'ERROR: Version not found, "%s".\n' "${_CC[k8sver]}" >"${STDERR}"

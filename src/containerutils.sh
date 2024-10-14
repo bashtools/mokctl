@@ -1,3 +1,4 @@
+# shellcheck shell=bash disable=SC2148
 # CU - Container Utilities
 
 # _CU is an associative array that holds data specific to containers.
@@ -94,7 +95,7 @@ CU_get_container_ip() {
   }
 
   docker inspect \
-    --format='{{.NetworkSettings.IPAddress}}' \
+    --format='{{.NetworkSettings.Networks.mok_network.IPAddress}}' \
     "$1" || {
     printf 'ERROR: %s inspect failed\n' "${_CU[containerrt]}" >"${STDERR}"
     err || return
@@ -160,16 +161,23 @@ EnD
     return "${ERROR}"
   fi
 
+  docker network exists mok_network || {
+    docker network create mok_network || {
+      printf 'ERROR: docker network create failed\n' >"${STDERR}"
+      err || return
+    }
+  }
+
   docker run --privileged \
-    -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
+    --network mok_network \
     -v /lib/modules:/lib/modules:ro \
-    -v /boot:/boot:ro \
-    --tmpfs /run --tmpfs /tmp \
+    --systemd=always \
     --detach \
     --name "$1" \
     --hostname "$1" \
     --label "$2" \
-    "${imagename}" || {
+    "${imagename}" \
+    /usr/local/bin/entrypoint /lib/systemd/systemd log-level=info unit=sysinit.target || {
     printf 'ERROR: %s run failed\n' "${_CU[containerrt]}" >"${STDERR}"
     err || return
   }
@@ -199,7 +207,7 @@ _CU_podman_or_docker() {
   if type docker &>/dev/null; then
     _CU[imgprefix]=""
     _CU[containerrt]="docker"
-    if docker ps &>/dev/stdout | grep -qs 'docker.sock.*permission denied'; then
+    if docker ps >/dev/stdout 2>&1 | grep -qs 'docker.sock.*permission denied'; then
       cat <<'EnD' >"${STDERR}"
 Not enough permissions to write to 'docker.sock'.
 Fix the permissions for this user or run as root, such as:

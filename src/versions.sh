@@ -1,3 +1,4 @@
+# shellcheck shell=bash disable=SC2148
 # CC - Create Cluster - versions file
 
 # CC is an associative array that holds data specific to creating a cluster.
@@ -8,9 +9,9 @@ declare -A _CC
 # Defined in GL (globals.sh)
 declare OK ERROR STDERR TRUE K8SVERSION
 
-# _CC_set_up_worker_node_v1_18_2 uses kubeadm to set up the master node.
+# _CC_set_up_master_node_v1_30_0 uses kubeadm to set up the master node.
 # Args: arg1 - the container to set up.
-_CC_set_up_master_node_v1_18_2() {
+_CC_set_up_master_node_v1_30_0() {
 
   local setupfile lbaddr certSANs certkey masternum t
   # Set by _CC_get_master_join_details:
@@ -73,7 +74,7 @@ podsubnet="10.244.0.0/16"
 servicesubnet="10.96.0.0/16"
 
 cat <<EOF >kubeadm-init-defaults.yaml
-apiVersion: kubeadm.k8s.io/v1beta2
+apiVersion: kubeadm.k8s.io/v1beta3
 kind: InitConfiguration
 ${certkey}
 bootstrapTokens:
@@ -88,7 +89,8 @@ localAPIEndpoint:
   advertiseAddress: \$ipaddr
   bindPort: 6443
 nodeRegistration:
-  criSocket: /var/run/crio/crio.sock
+  criSocket: unix:///var/run/crio/crio.sock
+  imagePullPolicy: IfNotPresent
   name: $1
   kubeletExtraArgs: {}
   taints:
@@ -108,7 +110,7 @@ controlPlaneEndpoint: "${lbaddr:-\$ipaddr}:6443"
 apiServer:
   timeoutForControlPlane: 4m0s
   ${certSANs}
-apiVersion: kubeadm.k8s.io/v1beta2
+apiVersion: kubeadm.k8s.io/v1beta3
 certificatesDir: /etc/kubernetes/pki
 clusterName: kubernetes
 controllerManager: {}
@@ -117,8 +119,8 @@ dns:
 etcd:
   local:
     dataDir: /var/lib/etcd
-imageRepository: k8s.gcr.io
-kubernetesVersion: v${K8SVERSION}
+imageRepository: registry.k8s.io
+kubernetesVersion: ${K8SVERSION}
 networking:
   dnsDomain: cluster.local
   podSubnet: \$podsubnet
@@ -127,22 +129,29 @@ scheduler: {}
 EOF
 
 if [[ -z "${masterip}" ]]; then
+  # Run the preflight phase
   kubeadm init \\
     --ignore-preflight-errors Swap \\
-    --config=kubeadm-init-defaults.yaml ${uploadcerts}
+    --config=kubeadm-init-defaults.yaml ${uploadcerts} \\
+    phase preflight
 
-  export KUBECONFIG=/etc/kubernetes/admin.conf
+  # Set up the kubelet
+  kubeadm init phase kubelet-start
+
+  # Edit the kubelet configuration file
+  echo "failSwapOn: false" >>/var/lib/kubelet/config.yaml
+  sed -i 's/cgroupDriver: systemd/cgroupDriver: cgroupfs/' /var/lib/kubelet/config.yaml
+
+  # Tell kubeadm to carry on from here
+  kubeadm init \\
+    --pod-network-cidr=10.244.0.0/16 \\
+    --ignore-preflight-errors Swap \\
+    --skip-phases=preflight,kubelet-start
+
+  export KUBECONFIG=/etc/kubernetes/super-admin.conf
 
   # Flannel - 10.244.0.0./16
-  # Why isn't NETADMIN enough here? I think this is a CRI-O 'problem'
-  curl -L https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml | sed 's/privileged: false/privileged: true/' | kubectl apply -f -
-
-  # Weave - ?
-  #kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=\$(kubectl version | base64 | tr -d '\n')"
-
-  # Calico - custom 10.123.0.0/16
-  # Calico is e2e tested by k8s team. Requires --pod-network-cidr=192.168.0.0/16
-  #curl https://docs.projectcalico.org/v3.11/manifests/calico.yaml | sed 's#192.168.0.0/16#10.123.0.0/16#' | kubectl apply -f -
+  kubectl apply -f /root/kube-flannel.yml
 else
   kubeadm join ${masterip}:6443 \\
     --ignore-preflight-errors Swap \\
@@ -175,8 +184,8 @@ EnD
 
       # Write the file
       cat <<'EnD' >"${removetaint}"
-export KUBECONFIG=/etc/kubernetes/admin.conf
-kubectl taint nodes --all node-role.kubernetes.io/master-
+export KUBECONFIG=/etc/kubernetes/super-admin.conf
+kubectl taint nodes --all node-role.kubernetes.io/control-plane:NoSchedule-
 EnD
 
       docker cp "${removetaint}" "$1":/root/removetaint.sh || err || {
@@ -192,9 +201,9 @@ EnD
   return "${OK}"
 }
 
-# _CC_set_up_worker_node_v1_18_2 uses kubeadm to set up the worker node.
+# _CC_set_up_worker_node_v1_30_0 uses kubeadm to set up the worker node.
 # Args: arg1 - the container to set up.
-_CC_set_up_worker_node_v1_18_2() {
+_CC_set_up_worker_node_v1_30_0() {
 
   local setupfile cahash="$2" token="$3" masterip="$4"
 
@@ -208,10 +217,6 @@ _CC_set_up_worker_node_v1_18_2() {
   fi
 
   cat <<EnD >"${setupfile}"
-# CRIO version 1.18 needs storage changing to VFS
-sed -i 's/\(^driver = \).*/\1"vfs"/' /etc/containers/storage.conf
-systemctl restart crio
-
 # Wait for the master API to become ready
 while true; do
   curl -k https://${masterip}:6443/
@@ -241,6 +246,7 @@ while true; do
 
 # Edit the kubelet configuration file
 echo "failSwapOn: false" >>/var/lib/kubelet/config.yaml
+sed -i 's/cgroupDriver: systemd/cgroupDriver: cgroupfs/' /var/lib/kubelet/config.yaml
 
 systemctl enable --now kubelet
 EnD

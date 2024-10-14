@@ -29,7 +29,7 @@ sudo mokctl build image
 sudo mokctl create cluster myk8s --masters 1 --workers 1
 ```
 
-*Run a kubectl command*
+*Run some kubectl commands*
 
 ```bash
 export KUBECONFIG=/var/tmp/admin-myk8s.conf
@@ -53,6 +53,23 @@ kubectl run --rm -ti alpine --image alpine /bin/sh
 
 ```bash
 sudo mokctl -h
+# Usage: mokctl [-h] <command> [subcommand] [ARGS...]
+
+# Global options:
+#   --help
+#   -h     - This help text
+#   --plain
+#   -p     - Plain output. No colours or animations.
+
+# Where command can be one of:
+#   create - Add item(s) to the system.
+#   delete - Delete item(s) from the system.
+#   build  - Build item(s) used by the system.
+#   get    - Get details about items in the system.
+#   exec   - 'Log in' to the container.
+
+# For help on a specific command, run:
+#   mokctl <command> --help
 ```
 
 *Delete the cluster*
@@ -69,7 +86,7 @@ sudo rm /usr/local/bin/mokctl
 sudo podman rmi localhost/local/mokctl-image-v1.30.0
 ```
 
-## Features
+## Some Features
 
 * After creating the image a single node cluster builds in under 60 seconds
 * Very simple to use without need for YAML files

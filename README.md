@@ -1,8 +1,22 @@
-# My Own Kind
+# Mokctl
 
-![](docs/images/install-mokctl-linux.gif)
+*Install* to `/usr/local/bin`
 
-View a [Transcript of the screenscast](docs/install-mokctl-linux.md).
+```bash
+git clone https://github.com/bashtools/mokctl.git
+cd mokctl
+sudo make install
+export PATH=$PATH:/usr/local/bin
+```
+
+*First use*
+
+```bash
+mokctl build image
+```
+
+
+
 
 ## Features
 

@@ -1,7 +1,7 @@
 [Unit]
 Description=Undo KIND mount hacks
 After=slices.target
-Before=containerd.service kubelet.service
+Before=kubelet.service
 
 [Service]
 Type=oneshot

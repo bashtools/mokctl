@@ -57,10 +57,6 @@ COPY --chmod=0644 files/kube-flannel.yml /root/kube-flannel.yml
 # - removing unwanted systemd services
 # - disabling kmsg in journald (these log entries would be confusing)
 #
-# Then we install containerd from our nightly build infrastructure, as this
-# build for multiple architectures and allows us to upgrade to patched releases
-# more quickly.
-#
 # Next we download and extract crictl and CNI plugin binaries from upstream.
 #
 # Next we ensure the /etc/kubernetes/manifests directory exists. Normally

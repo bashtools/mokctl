@@ -140,10 +140,6 @@ configure_containerd() {
   if [[ -n "$snapshotter" ]]; then
     log_info "changing snapshotter from \"overlayfs\" to \"$snapshotter\""
     sed -i "s/snapshotter = \"overlayfs\"/snapshotter = \"$snapshotter\"/" /etc/containerd/config.toml
-    if [[ "$snapshotter" = "fuse-overlayfs" ]]; then
-      log_info 'enabling containerd-fuse-overlayfs service'
-      systemctl enable containerd-fuse-overlayfs
-    fi
   fi
 }
 
@@ -558,7 +554,7 @@ validate_userns
 
 # run pre-init fixups
 # NOTE: it's important that we do configure* first in this order to avoid races
-configure_containerd
+# configure_containerd
 configure_proxy
 fix_mount
 fix_cgroup

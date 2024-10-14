@@ -23,7 +23,7 @@ export PATH=$PATH:/usr/local/bin
 sudo mokctl build image
 ```
 
-*Create a multi node kuberenetes cluster*
+*Create a multi node kuberenetes cluster* (k8s v1.30.0)
 
 ```bash
 sudo mokctl create cluster myk8s --masters 1 --workers 1

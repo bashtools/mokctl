@@ -1,9 +1,9 @@
 # Mokctl
 
-*Requirements*
+*Requirements* (because this is what I have)
 
 * Fedora 40 Desktop
-* An 8 year old laptop with 8 GB of memory
+* An old slow laptop with 8 GB of memory
 * Cgroups 2 enabled (This is the default on Fedora 40)
 * Podman
 * 2 GB of free disk space

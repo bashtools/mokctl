@@ -1,4 +1,4 @@
-# Mokctl
+# Mokctl - Build and manage kubernetes clusters on your laptop
 
 *Requirements* (because this is what I have)
 
@@ -23,10 +23,30 @@ export PATH=$PATH:/usr/local/bin
 sudo mokctl build image
 ```
 
-*Create a single node kuberenetes cluster*
+*Create a multi node kuberenetes cluster*
 
 ```bash
-sudo mokctl create cluster myk8s 1
+sudo mokctl create cluster myk8s --masters 1 --workers 1
+```
+
+*Run a kubectl command*
+
+```bash
+export KUBECONFIG=/var/tmp/admin-myk8s.conf
+kubectl get nodes
+kubectl get pods --all-namespaces
+
+kubectl run --rm -ti alpine --image alpine /bin/sh
+# If you don't see a command prompt, try pressing enter.
+# / # wget google.com
+# Connecting to google.com (142.250.187.206:80)
+# Connecting to www.google.com (142.250.200.4:80)
+# saving to 'index.html'
+# index.html           100% |******************************************************************| 21243  0:00:00 ETA
+# 'index.html' saved
+# / # exit
+# Session ended, resume using 'kubectl attach alpine -c alpine -i -t' command when the pod is running
+# pod "alpine" deleted
 ```
 
 *Get help*
@@ -38,14 +58,14 @@ sudo mokctl -h
 *Delete the cluster*
 
 ```bash
-mokctl delete cluster myk8s
+sudo mokctl delete cluster myk8s
 ```
 
 *Uninstall mokctl completely*
 
 ```bash
 rm -rf mokctl/
-rm /usr/local/bin/mokctl
+sudo rm /usr/local/bin/mokctl
 sudo podman rmi localhost/local/mokctl-image-v1.30.0
 ```
 

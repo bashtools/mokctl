@@ -259,11 +259,16 @@ _CC_sanity_checks() {
   #   maxPerCore: 32768
   #   min: 131072
   if [[ $((32768*cpus)) -ne $host_max ]]; then
+    if [[ $((32768*cpus)) -lt 131072 ]]; then
+      should_be=131072
+    else
+      should_be=$((32768*cpus))
+    fi
     printf '\nWARNING: /proc/sys/net/nf_conntrack_max should be set to %d.\n' \
-      "$((32768*cpus))" >"${STDERR}"
+      "${should_be}" >"${STDERR}"
     printf '         If kube-proxy does not start then try:\n' >"${STDERR}"
     printf '           sudo sysctl -w net.netfilter.nf_conntrack_max=%d\n\n' \
-      "$((32768*cpus))" >"${STDERR}"
+      "${should_be}" >"${STDERR}"
   fi
 }
 

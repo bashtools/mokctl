@@ -217,6 +217,8 @@ _CC_new() {
 # Args: None expected.
 _CC_sanity_checks() {
 
+  declare -i host_max=0 cpus=0
+
   if [[ -z ${_CC[clustername]} ]]; then
     CC_usage
     printf 'Please provide the Cluster NAME to create.\n' >"${STDERR}"
@@ -234,6 +236,34 @@ _CC_sanity_checks() {
     CC_usage
     printf 'Please provide the number of Workers to create.\n' >"${STDERR}"
     return "${ERROR}"
+  fi
+
+  if [[ -e /proc/sys/net/nf_conntrack_max ]]; then
+    host_max=$(cat /proc/sys/net/nf_conntrack_max)
+  else
+    printf 'WARNING: /proc/sys/net/nf_conntrack_max not found.\n' >"${STDERR}"
+    printf '         kube-proxy may not work.\n' >"${STDERR}"
+  fi
+
+  if [[ -e /proc/cpuinfo ]]; then
+    cpus=$(grep -cw ^processor /proc/cpuinfo)
+  else
+    printf 'WARNING: /proc/cpuinfo not found.\n' >"${STDERR}"
+    printf '         I have no idea how many CPUs I have\n' >"${STDERR}"
+    printf '         and kube-proxy may not work.\n' >"${STDERR}"
+  fi
+
+  # These are the default values for kube-proxy:
+  # conntrack:
+  #   max: null
+  #   maxPerCore: 32768
+  #   min: 131072
+  if [[ $((32768*cpus)) -ne $host_max ]]; then
+    printf 'WARNING: /proc/sys/net/nf_conntrack_max should be set to %d.\n' \
+      "$((32768*cpus))" >"${STDERR}"
+    printf '         If kube-proxy does not start then try:\n' >"${STDERR}"
+    printf '           sudo sysctl -w net.netfilter.nf_conntrack_max=%d\n' \
+      "$((32768*cpus))" >"${STDERR}"
   fi
 }
 

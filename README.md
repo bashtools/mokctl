@@ -61,6 +61,12 @@ sudo rm /usr/local/bin/mok
 sudo podman rmi localhost/local/mok-image-v1.30.0
 ```
 
+## Known Issues
+
+* Creating a single node cluster
+  * Containers created with 'kubectl run' cannot reach the Internet
+  * Multi-node clusters do not have this problem
+
 ## Some Features
 
 * Builds kubernetes master and worker nodes in containers

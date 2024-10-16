@@ -1,4 +1,4 @@
-# MOK - Build and manage kubernetes clusters on your laptop
+# MOK - Kubernetes on your laptop in Podman containers
 
 *Requirements*
 

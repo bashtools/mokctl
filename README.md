@@ -61,17 +61,13 @@ sudo podman rmi localhost/local/mokctl-image-v1.30.0
 
 ## Some Features
 
-* After creating the image a single node cluster builds in under 60 seconds
-* Very simple to use without need for YAML files
 * Builds kubernetes master and worker nodes in containers
-* Can create multi-master and multi-node clusters
-* Can create an haproxy load balancer to front master nodes with '--with-lb'
-* For multi-node clusters the 'create cluster' command returns when kubernetes is completely ready, with all nodes and pods up and ready.
-* Can skip master, worker, or load balancer set up
-  * In this case the set-up scripts are placed in `/root` in the containers
-  * The set-up scripts can be run by hand
+* Very simple to use without need for YAML files
+* After creating the image a single node cluster builds in under 60 seconds
+* For multi-node clusters the 'create cluster' command returns only when kubernetes is completely ready, with all nodes and pods up and ready.
+* Can skip setting up kubernetes on the master and/or worker node (good for learning!)
+  * In this case the set-up scripts are placed in `/root` in the containers and run by hand
   * Can do kubernetes the hard way (see [kthwic](https://github.com/my-own-kind/kubernetes-the-hard-way-in-containers))
 * `mokctl build` and `mokctl create` can show extensive logs with '--tailf'
-* Written in Bash in the style of Go ! :) - see [Why Bash?](https://github.com/my-own-kind/mokctl-docs/blob/master/docs/faq.md#why-bash) and `src/`
 
 * [Full Documentation](https://github.com/bashtools/mokctl-docs/tree/master/docs)

@@ -90,6 +90,7 @@ GC_run() {
   ids=$(CU_get_cluster_container_ids "${_GC[clustername]}") || return
 
   if [[ -z ${ids} ]]; then
+    printf 'No clusters found\n'
     return "${OK}"
   fi
 
@@ -129,6 +130,8 @@ GC_run() {
   column -t "${output}" || err
 }
 
+# Private Functions -----------------------------------------------------------
+
 # _GC_new sets the initial values for the _GC associative array.
 # Args: None expected.
 _GC_new() {
@@ -156,7 +159,15 @@ _GC_new() {
 # see if it has all it's key components. For build image this does nothing.
 # This function should not be deleted as it is called in main.sh.
 # Args: None expected.
-_GC_sanity_checks() { :; }
+_GC_sanity_checks() {
+
+  # Only show the usage if we are in 'get' mode and have not specified a
+  # subcommand. This allows internal code to call GC_run()
+  if [[ $(PA_command) == "get" && -z $(PA_subcommand) ]]; then
+    GC_usage
+    exit "${OK}"
+  fi
+}
 
 # Initialise _GC
 _GC_new || exit 1

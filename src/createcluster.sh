@@ -219,6 +219,11 @@ _CC_sanity_checks() {
 
   declare -i host_max=0 cpus=0 should_be=0
 
+  if [[ -z $(PA_subcommand) ]]; then
+    CC_usage
+    exit "${OK}"
+  fi
+
   if [[ -z ${_CC[clustername]} ]]; then
     CC_usage
     printf 'Please provide the Cluster NAME to create.\n' >"${STDERR}"

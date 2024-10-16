@@ -30,6 +30,10 @@ BI_baseimagename() {
 # Args: None expected.
 BI_usage() {
 
+  # NOTE: This flag to be added back in the future
+  # --get-prebuilt-image - Instead of building a 'node' image
+  #        locally, download it from a container registry instead.
+
   cat <<'EnD'
 BUILD subcommands are:
  
@@ -42,8 +46,6 @@ build image options:
 
  Flags:
   --tailf - Show the build output whilst building.
-  --get-prebuilt-image - Instead of building a 'node' image
-         locally, download it from a container registry instead.
 
 EnD
 }
@@ -77,10 +79,11 @@ BI_process_options() {
     _BI[tailf]="${TRUE}"
     return "${OK}"
     ;;
-  --get-prebuilt-image)
-    _BI[useprebuiltimage]="${TRUE}"
-    return "${OK}"
-    ;;
+  # NOTE: This flag to be added back in the future
+  # --get-prebuilt-image)
+  #   _BI[useprebuiltimage]="${TRUE}"
+  #   return "${OK}"
+  #   ;;
   *)
     BI_usage
     printf 'ERROR: "%s" is not a valid "build" option.\n' "${1}" \
@@ -142,7 +145,13 @@ _BI_new() {
 # see if it has all it's key components. For build image this does nothing.
 # This function should not be deleted as it is called in main.sh.
 # Args: None expected.
-_BI_sanity_checks() { :; }
+_BI_sanity_checks() {
+
+  if [[ -z $(PA_subcommand) ]]; then
+    BI_usage
+    exit "${OK}"
+  fi
+}
 
 # _BI_build_container_image creates the docker build directory in
 # dockerbuildtmpdir then calls docker build to build the image.

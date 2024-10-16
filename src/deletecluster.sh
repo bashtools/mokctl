@@ -30,7 +30,7 @@ DC_process_options() {
     return "${STOP}"
     ;;
   *)
-    BI_usage
+    DC_usage
     printf 'ERROR: "%s" is not a valid "build" option.\n' "${1}" \
       >"${STDERR}"
     return "${ERROR}"
@@ -137,6 +137,11 @@ _DC_new() {
 # has it's main requirements before DC_run is called.
 # Args: None expected.
 _DC_sanity_checks() {
+
+  if [[ -z $(PA_subcommand) ]]; then
+    DC_usage
+    exit "${OK}"
+  fi
 
   if [[ -z ${_DC[clustername]} ]]; then
     DC_usage

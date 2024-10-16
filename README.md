@@ -1,4 +1,4 @@
-# MOK - Kubernetes on your laptop in Podman containers
+# MOK - Kubernetes on your laptop
 
 *Requirements*
 

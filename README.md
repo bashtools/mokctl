@@ -77,6 +77,6 @@ sudo podman rmi localhost/local/mok-image-v1.30.0
 * Can skip setting up kubernetes on the master and/or worker node (good for learning!)
   * In this case the set-up scripts are placed in `/root` in the containers and can be run by hand
   * Can do kubernetes the hard way (see [kthwic](https://github.com/my-own-kind/kubernetes-the-hard-way-in-containers))
-* `mok build` and `mok create` can show extensive logs with '--tailf'
+* `mok build` and `mok create` can show extensive logs with `--tailf`
 
 * [Full Documentation](https://github.com/bashtools/mok-docs/tree/master/docs)

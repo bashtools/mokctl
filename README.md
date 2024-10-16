@@ -1,10 +1,10 @@
 # Mokctl - Build and manage kubernetes clusters on your laptop
 
-*Requirements* (because this is what I have)
+*Requirements*
 
+* An old laptop with 8 GB of memory
 * Fedora 40 Desktop
-* An old slow laptop with 8 GB of memory
-* Cgroups 2 enabled (This is the default on Fedora 40)
+* Cgroups v2 enabled - the default for Fedora 40
 * Podman
 * 5 GB of free disk space
 

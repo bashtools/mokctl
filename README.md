@@ -75,7 +75,7 @@ sudo podman rmi localhost/local/mok-image-v1.30.0
 * After creating the image a single node cluster builds in under 60 seconds
 * For multi-node clusters the 'create cluster' command returns only when kubernetes is completely ready, with all nodes and pods up and ready.
 * Can skip setting up kubernetes on the master and/or worker node (good for learning!)
-  * In this case the set-up scripts are placed in `/root` in the containers and run by hand
+  * In this case the set-up scripts are placed in `/root` in the containers and can be run by hand
   * Can do kubernetes the hard way (see [kthwic](https://github.com/my-own-kind/kubernetes-the-hard-way-in-containers))
 * `mok build` and `mok create` can show extensive logs with '--tailf'
 

@@ -35,41 +35,14 @@ sudo mokctl create cluster myk8s --masters 1 --workers 1
 export KUBECONFIG=/var/tmp/admin-myk8s.conf
 kubectl get nodes
 kubectl get pods --all-namespaces
-
 kubectl run --rm -ti alpine --image alpine /bin/sh
-# If you don't see a command prompt, try pressing enter.
-# / # wget google.com
-# Connecting to google.com (142.250.187.206:80)
-# Connecting to www.google.com (142.250.200.4:80)
-# saving to 'index.html'
-# index.html           100% |******************************************************************| 21243  0:00:00 ETA
-# 'index.html' saved
-# / # exit
-# Session ended, resume using 'kubectl attach alpine -c alpine -i -t' command when the pod is running
-# pod "alpine" deleted
 ```
 
 *Get help*
 
 ```bash
 sudo mokctl -h
-# Usage: mokctl [-h] <command> [subcommand] [ARGS...]
-
-# Global options:
-#   --help
-#   -h     - This help text
-#   --plain
-#   -p     - Plain output. No colours or animations.
-
-# Where command can be one of:
-#   create - Add item(s) to the system.
-#   delete - Delete item(s) from the system.
-#   build  - Build item(s) used by the system.
-#   get    - Get details about items in the system.
-#   exec   - 'Log in' to the container.
-
-# For help on a specific command, run:
-#   mokctl <command> --help
+sudo mokctl create -h
 ```
 
 *Delete the cluster*

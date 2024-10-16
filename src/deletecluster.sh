@@ -30,7 +30,7 @@ DC_process_options() {
     return "${STOP}"
     ;;
   *)
-    BI_usage
+    DC_usage
     printf 'ERROR: "%s" is not a valid "build" option.\n' "${1}" \
       >"${STDERR}"
     return "${ERROR}"

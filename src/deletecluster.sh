@@ -138,6 +138,11 @@ _DC_new() {
 # Args: None expected.
 _DC_sanity_checks() {
 
+  if [[ -z $(PA_subcommand) ]]; then
+    DC_usage
+    exit "${OK}"
+  fi
+
   if [[ -z ${_DC[clustername]} ]]; then
     DC_usage
     printf 'Please provide the Cluster NAME to delete.\n' >"${STDERR}"

@@ -43,7 +43,7 @@ EX_process_options() {
 EX_usage() {
 
   cat <<'EnD'
-EXEC has no subcommands. Exec into a container.
+'Log in' to a container. EXEC has no subcommands.
  
 exec options:
  

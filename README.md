@@ -14,7 +14,9 @@
 git clone https://github.com/bashtools/mokctl.git
 cd mokctl
 sudo make install
-export PATH=$PATH:/usr/local/bin
+```
+```
+export PATH=/usr/local/bin:$PATH
 ```
 
 *First use*

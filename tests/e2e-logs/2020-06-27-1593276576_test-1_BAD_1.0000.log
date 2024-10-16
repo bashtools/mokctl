@@ -12,7 +12,7 @@ d; }; }
 [root@mokbox /]#
 [root@mokbox /]# # Test 1 - download the prebuilt image and test
 [root@mokbox /]#
-[root@mokbox /]# mokctl -p build image --get-prebuilt-image
+[root@mokbox /]# mok -p build image --get-prebuilt-image
     Downloading base image, 'mok-centos-7-v1.18.5' .. FAIL
 ERROR: Docker returned an error, shown below
 
@@ -23,10 +23,10 @@ cess to the resource is denied
 
 Image build failed
 
-3652 main /usr/bin/mokctl
-29 MA_main /usr/bin/mokctl
-2521 BI_run /usr/bin/mokctl
-530 err /usr/bin/mokctl
+3652 main /usr/bin/mok
+29 MA_main /usr/bin/mok
+2521 BI_run /usr/bin/mok
+530 err /usr/bin/mok
 
 [root@mokbox /]# errstop $?
 SCREENCAST STOP &

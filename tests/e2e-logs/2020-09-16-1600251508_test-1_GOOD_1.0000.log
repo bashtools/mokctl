@@ -12,10 +12,10 @@ d; }; }
 [root@mokbox /]#
 [root@mokbox /]# # Test 1 - download the prebuilt image and test
 [root@mokbox /]#
-[root@mokbox /]# mokctl -p build image --get-prebuilt-image
+[root@mokbox /]# mok -p build image --get-prebuilt-image
     Downloading base image, 'mok-centos-7-v1.19.1' .. SUCCESS
 [root@mokbox /]# errstop $?
-[root@mokbox /]# time mokctl -p create cluster myk8s --masters 1 --tailf
+[root@mokbox /]# time mok -p create cluster myk8s --masters 1 --tailf
 COMMAND: CU_create_container myk8s-master-1 MokCluster=myk8s 1.19.1
 
 314ec414359e67fad38379dd75e7c986a85910f49bf6f0e5e5d9f1ef1a7d323a

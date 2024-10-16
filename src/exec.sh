@@ -59,7 +59,7 @@ EnD
 }
 
 # Execs 'bash' in the container referenced by _EX[containername]. If just
-# 'mokctl exec' is called without options then the user is offered a selection
+# 'mok exec' is called without options then the user is offered a selection
 # of existing clusters to exec into.
 # Args: None expected.
 # ---------------------------------------------------------------------------

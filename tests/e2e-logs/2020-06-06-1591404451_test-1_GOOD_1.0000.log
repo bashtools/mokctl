@@ -14,10 +14,10 @@ d; }; }
 [root@mokbox /]#
 [root@mokbox /]# # Test 1 - download the prebuilt image and test
 [root@mokbox /]#
-[root@mokbox /]# mokctl -p build image --get-prebuilt-image
+[root@mokbox /]# mok -p build image --get-prebuilt-image
     Downloading base image, 'mok-centos-7-v1.18.3' .. SUCCESS
 [root@mokbox /]# errstop $?
-[root@mokbox /]# time mokctl -p create cluster myk8s --masters 1 --tailf
+[root@mokbox /]# time mok -p create cluster myk8s --masters 1 --tailf
 0516a71b15793a432de3392f9b8091bf0eaa77b6628d2fef76fb60436a61d6bc
 
 STATUS: OK
@@ -224,7 +224,7 @@ OK: 9 MiB in 16 packages
 E0606 00:47:12.099697     515 v2.go:105] EOF
 pod "shell2" deleted
 [root@mokbox /]# errstop $?
-[root@mokbox /]# mokctl -p delete cluster myk8s || errstop $?
+[root@mokbox /]# mok -p delete cluster myk8s || errstop $?
 The following containers will be deleted:
 
 MOK_Cluster  Docker_ID     Container_Name  IP_Address
@@ -234,7 +234,7 @@ Are you sure you want to delete the cluster? (y/N) >y
 
     Deleting id, '0516a71b1579' from cluster 'myk8s'. .. SUCCESS
 
-[root@mokbox /]# mokctl -p get cluster
+[root@mokbox /]# mok -p get cluster
 [root@mokbox /]# errstop $?
 [root@mokbox /]# exit
 exit

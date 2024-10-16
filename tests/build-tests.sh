@@ -38,9 +38,9 @@ testDockerBuildExitStatus(){
 # ---------------------------------------------------------------------------
 setUp() {
 # ---------------------------------------------------------------------------
-# source mokctl.deploy and disable output of usage().
+# source mok.deploy and disable output of usage().
 
-  . ./mokctl.deploy
+  . ./mok.deploy
   usage() { :; }
 }
 

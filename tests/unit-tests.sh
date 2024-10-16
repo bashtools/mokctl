@@ -11,12 +11,12 @@
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
-testMakeCreatesMokctlDeploy() {
+testMakeCreatesMokDeploy() {
 
   make &>/dev/null
   assertTrue \
-    "Check that make creates mokctl.deploy" \
-    "[[ -e 'mokctl.deploy' ]]"
+    "Check that make creates mok.deploy" \
+    "[[ -e 'mok.deploy' ]]"
 }
 
 # ===========================================================================
@@ -58,7 +58,7 @@ testBuildwithNoSubcommand() {
 
   main build &>/dev/null
   assertEquals \
-    "'mokctl build' should fail" \
+    "'mok build' should fail" \
     "1" "$?"
 }
 
@@ -68,7 +68,7 @@ testBuildwithNoSubcommandOutput() {
   grabMainOutput build
 
   assertEquals \
-    "'mokctl build' should fail with correct output" \
+    "'mok build' should fail with correct output" \
     "No SUBCOMMAND supplied" "${LINES[0]}"
 }
 
@@ -79,7 +79,7 @@ testBuildwithOption() {
 
   main build image 1 &>/dev/null
   assertEquals \
-    "'mokctl build' should fail" \
+    "'mok build' should fail" \
     "1" "$?"
 }
 
@@ -91,7 +91,7 @@ testBuildwithOptionOutput() {
   grabMainOutput build image 1
 
   assertEquals \
-    "'mokctl build image 1' should fail with correct output" \
+    "'mok build image 1' should fail with correct output" \
     'ERROR No more options expected, "1" is unexpected for "build image"' \
     "${LINES[0]}"
 }
@@ -107,12 +107,12 @@ testBuildWouldBeStarted() {
 
   main build image &>/dev/null
   assertEquals \
-    '"mokctl build image" should call do_build_image_mutate' \
+    '"mok build image" should call do_build_image_mutate' \
     "59" "$?"
 }
 
 # ===========================================================================
-# mokctl create - no options
+# mok create - no options
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
@@ -144,13 +144,13 @@ testInvalidFlagGlobalFlag() {
 
   grabMainOutput --asdf &>/dev/null
   assertEquals \
-    "'mokctl --asdf' should fail" \
+    "'mok --asdf' should fail" \
     'Invalid option: "--asdf"' \
     "${LINES[0]}"
 }
 
 # ===========================================================================
-# mokctl create tests
+# mok create tests
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
@@ -161,7 +161,7 @@ testCreateClusterInvalidFlag() {
   grabMainOutput create cluster --fdsa &>/dev/null
 
   assertEquals \
-    "'mokctl create cluster --fdsa' should fail" \
+    "'mok create cluster --fdsa' should fail" \
     'Invalid option: "--fdsa"' \
     "${LINES[0]}"
 }
@@ -177,7 +177,7 @@ testCreateClusterValidFlag2() {
   r=$?
 
   assertEquals \
-    "'mokctl create cluster --skipworkersetup bob 1 0' should pass" \
+    "'mok create cluster --skipworkersetup bob 1 0' should pass" \
     "0" "$r"
 }
 
@@ -188,7 +188,7 @@ testCreateClusterInvalidLocalAsGlobalFlag() {
 
   grabMainOutput --skipmastersetup create cluster 1 0 &>/dev/null
   assertEquals \
-    "'mokctl --asdf' should fail" \
+    "'mok --asdf' should fail" \
     'ERROR: "--skipmastersetup" is not a valid global option.' \
     "${LINES[0]}"
 }
@@ -200,7 +200,7 @@ testRunWithOneArgShouldFail() {
 
   main create &>/dev/null
   assertTrue \
-    "'mokctl create' should fail" \
+    "'mok create' should fail" \
     "[[ $? -ge 1 ]]"
 }
 
@@ -212,7 +212,7 @@ testRunWithOneArgShouldFailOutput() {
   grabMainOutput create
 
   assertEquals \
-    "'mokctl create' should fail with correct output" \
+    "'mok create' should fail with correct output" \
     "No SUBCOMMAND supplied" "${LINES[0]}"
 }
 
@@ -223,7 +223,7 @@ testNotEnoughOptionsToCreateCluster() {
 
   main create cluster &>/dev/null
   assertTrue \
-    "'mokctl create cluster' should fail" \
+    "'mok create cluster' should fail" \
     "[[ $? -ge 1 ]]"
 }
 
@@ -235,7 +235,7 @@ testNotEnoughOptionsToCreateClusterOutput() {
   grabMainOutput create cluster
 
   assertEquals \
-    "'mokctl create cluster' should fail with correct output" \
+    "'mok create cluster' should fail with correct output" \
     "Please provide the Cluster NAME to create." "${LINES[0]}"
 }
 
@@ -354,7 +354,7 @@ testValidCreateClusterCommand() {
 
   parse_options create cluster mycluster 1 0
   assertTrue \
-    "Valid command: 'mokctl create cluster name 1 0'" \
+    "Valid command: 'mok create cluster name 1 0'" \
     "[[ $CREATE_CLUSTER_NAME == "mycluster" &&
        $CREATE_CLUSTER_NUM_MASTERS == "1" &&
        $CREATE_CLUSTER_NUM_WORKERS == "0" ]]"
@@ -369,7 +369,7 @@ testValidCreateClusterCommand2() {
 
   parse_options create cluster mycluster 1 1
   assertTrue \
-    "Valid command: 'mokctl create cluster name 1 0'" \
+    "Valid command: 'mok create cluster name 1 0'" \
     "[[ $CREATE_CLUSTER_NAME == "mycluster" &&
        $CREATE_CLUSTER_NUM_MASTERS == "1" &&
        $CREATE_CLUSTER_NUM_WORKERS == "1" ]]"
@@ -384,7 +384,7 @@ testValidCreateClusterCommand3() {
 
   parse_options create cluster mycluster 3 6
   assertTrue \
-    "Valid command: 'mokctl create cluster name 1 0'" \
+    "Valid command: 'mok create cluster name 1 0'" \
     "[[ $CREATE_CLUSTER_NAME == "mycluster" &&
        $CREATE_CLUSTER_NUM_MASTERS == "3" &&
        $CREATE_CLUSTER_NUM_WORKERS == "6" ]]"
@@ -488,7 +488,7 @@ testCreateClusterMasterNodesWithSuccess() {
   r=$?
 
   assertEquals \
-    "'mokctl create cluster myclust 1 0 should succeed" \
+    "'mok create cluster myclust 1 0 should succeed" \
     "0" "$r"
 }
 
@@ -517,7 +517,7 @@ testCreateClusterMasterNodesWithFailure() {
   r=$?
 
   assertEquals \
-    "'mokctl create cluster myclust 1 0 should fail" \
+    "'mok create cluster myclust 1 0 should fail" \
     "1" "$r"
 }
 
@@ -544,12 +544,12 @@ testCreateClusterMasterNodesWithFailure2() {
   r=$?
 
   assertEquals \
-    "'mokctl create cluster myclust 1 0 should fail" \
+    "'mok create cluster myclust 1 0 should fail" \
     "1" "$r"
 }
 
 # ===========================================================================
-# mokctl delete tests
+# mok delete tests
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
@@ -557,7 +557,7 @@ testDeleteRunWithOneArgShouldFail() {
 
   main delete &>/dev/null
   assertTrue \
-    "Run with 'mokctl delete' should fail" \
+    "Run with 'mok delete' should fail" \
     "[[ $? -ge 1 ]]"
 }
 
@@ -567,7 +567,7 @@ testDeleteRunWithOneArgShouldFailOutput() {
   grabMainOutput delete
 
   assertEquals \
-    "Run with 'mokctl delete' should fail with correct output" \
+    "Run with 'mok delete' should fail with correct output" \
     "No SUBCOMMAND supplied" "${LINES[0]}"
 }
 
@@ -576,7 +576,7 @@ testNotEnoughOptionsToDeleteCluster() {
 
   main delete cluster &>/dev/null
   assertTrue \
-    "Run with 'mokctl delete cluster' should fail" \
+    "Run with 'mok delete cluster' should fail" \
     "[[ $? -ge 1 ]]"
 }
 
@@ -586,7 +586,7 @@ testNotEnoughOptionsToDeleteClusterOutput() {
   grabMainOutput delete cluster
 
   assertEquals \
-    "Run with 'mokctl delete cluster' should fail with correct output" \
+    "Run with 'mok delete cluster' should fail with correct output" \
     "Please provide the Cluster NAME to delete." "${LINES[0]}"
 }
 
@@ -619,7 +619,7 @@ testValidDeleteClusterCommand() {
 
   parse_options delete cluster mycluster
   assertEquals \
-    "Valid command: 'mokctl delete cluster mycluster'" \
+    "Valid command: 'mok delete cluster mycluster'" \
     "$DELETE_CLUSTER_NAME" "mycluster"
 }
 
@@ -637,13 +637,13 @@ testValidDeleteClusterCommandWithNonexistentName() {
   grabMainOutput delete cluster mycluster
 
   assertEquals \
-    "Valid command: 'mokctl delete cluster mycluster'" \
+    "Valid command: 'mok delete cluster mycluster'" \
     'ERROR: No cluster exists with name, "mycluster". Aborting.' \
     "${LINES[1]}"
 }
 
 # ===========================================================================
-# mokctl get tests
+# mok get tests
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
@@ -651,7 +651,7 @@ testGetRunWithOneArgShouldFail() {
 
   main get &>/dev/null
   assertTrue \
-    "Run with 'mokctl get' should fail" \
+    "Run with 'mok get' should fail" \
     "[[ $? -ge 1 ]]"
 }
 
@@ -661,7 +661,7 @@ testGetRunWithOneArgShouldFailOutput() {
   grabMainOutput get
 
   assertEquals \
-    "Run with 'mokctl get' should fail with correct output" \
+    "Run with 'mok get' should fail with correct output" \
     "No SUBCOMMAND supplied" "${LINES[0]}"
 }
 
@@ -672,7 +672,7 @@ testGetWith2Options() {
 
   main get clusters mycluster 1 &>/dev/null
   assertEquals \
-    "'mokctl get clusters mycluster 1' should fail" \
+    "'mok get clusters mycluster 1' should fail" \
     "1" "$?"
 }
 
@@ -684,7 +684,7 @@ testGetWith2OptionsOutput() {
   grabMainOutput get cluster mycluster 1
 
   assertEquals \
-    "'mokctl get cluster mycluster 1' should fail with correct output" \
+    "'mok get cluster mycluster 1' should fail with correct output" \
     'ERROR No more options expected, "1" is unexpected for "get cluster"' \
     "${LINES[0]}"
 }
@@ -695,7 +695,7 @@ testGetWith2OptionOutput2() {
   grabMainOutput get clusters mycluster 1
 
   assertEquals \
-    "'mokctl get clusters mycluster 1' should fail with correct output" \
+    "'mok get clusters mycluster 1' should fail with correct output" \
     'ERROR No more options expected, "1" is unexpected for "get cluster"' \
     "${LINES[0]}"
 }
@@ -713,7 +713,7 @@ testGetClustersOutputsClusterNames() {
   grabMainOutput get clusters
 
   assertEquals \
-    "'mokctl get clusters' should return cluster names" \
+    "'mok get clusters' should return cluster names" \
     "mycluster2   5c844b362d2a  mycluster2-master-1  172.17.0.3" \
     "${LINES[1]}"
 }
@@ -732,7 +732,7 @@ testGetClustersReturnsOKForNamedCluster() {
   grabMainOutput get cluster mycluster2
 
   assertEquals \
-    "'mokctl get cluster mycluster2' should return cluster name" \
+    "'mok get cluster mycluster2' should return cluster name" \
     "mycluster2   123456     mycluster2-master-1  172.17.0.3" \
     "${LINES[1]}"
 }
@@ -748,7 +748,7 @@ testGetClustersOutputsNothing() {
   grabMainOutput get clusters
 
   assertEquals \
-    "'mokctl get clusters' should return no cluster names" \
+    "'mok get clusters' should return no cluster names" \
     "" "${LINES[0]}"
 }
 
@@ -765,7 +765,7 @@ testGetClustersReturnsOKForZeroClusters() {
   r=$?
 
   assertEquals \
-    "'mokctl get clusters' should return cluster names" \
+    "'mok get clusters' should return cluster names" \
     "0" "$r"
 }
 
@@ -778,7 +778,7 @@ testVerifyGlobalOptionValid() {
   r=$?
 
   assertEquals \
-    "'mokctl create cluster --help' should return OK" \
+    "'mok create cluster --help' should return OK" \
     "0" "$r"
 }
 
@@ -791,7 +791,7 @@ testVerifyGlobalOptionValid1() {
   r=$?
 
   assertEquals \
-    "'mokctl create cluster -h' should return OK" \
+    "'mok create cluster -h' should return OK" \
     "0" "$r"
 }
 
@@ -804,7 +804,7 @@ testVerifyGlobalOptionValid2() {
   r=$?
 
   assertEquals \
-    "'mokctl -h create clusters' should return OK" \
+    "'mok -h create clusters' should return OK" \
     "0" "$r"
 }
 
@@ -817,7 +817,7 @@ testVerifyGlobalOptionValid3() {
   r=$?
 
   assertEquals \
-    "'mokctl --help create clusters' should return OK" \
+    "'mok --help create clusters' should return OK" \
     "0" "$r"
 }
 
@@ -830,7 +830,7 @@ testVerifyGlobalOptionValid4() {
   r=$?
 
   assertEquals \
-    "'mokctl create clusters myclust 1 0 -h' should return OK" \
+    "'mok create clusters myclust 1 0 -h' should return OK" \
     "0" "$r"
 }
 
@@ -843,7 +843,7 @@ testVerifyCreateClusterOptionValid1() {
   r=$?
 
   assertEquals \
-    "'mokctl create cluster --skipmastersetup myclust 1 0' should return OK" \
+    "'mok create cluster --skipmastersetup myclust 1 0' should return OK" \
     "0" "$r"
 }
 
@@ -856,7 +856,7 @@ testVerifyCreateClusterOptionValid2() {
   r=$?
 
   assertEquals \
-    "'mokctl create cluster myclust --skipmastersetup 1 0' should return OK" \
+    "'mok create cluster myclust --skipmastersetup 1 0' should return OK" \
     "0" "$r"
 }
 
@@ -869,7 +869,7 @@ testVerifyCreateClusterOptionValid3() {
   r=$?
 
   assertEquals \
-    "'mokctl create cluster myclust 1 --skipmastersetup 0' should return OK" \
+    "'mok create cluster myclust 1 --skipmastersetup 0' should return OK" \
     "0" "$r"
 }
 
@@ -882,7 +882,7 @@ testVerifyCreateClusterOptionValid4() {
   r=$?
 
   assertEquals \
-    "'mokctl create cluster myclust 1 0 --skipmastersetup' should return OK" \
+    "'mok create cluster myclust 1 0 --skipmastersetup' should return OK" \
     "0" "$r"
 }
 
@@ -895,7 +895,7 @@ testVerifyCreateClusterOptionValid5() {
   r=$?
 
   assertEquals \
-    "'mokctl create cluster --skipworkersetup myclust 1 0' should return OK" \
+    "'mok create cluster --skipworkersetup myclust 1 0' should return OK" \
     "0" "$r"
 }
 
@@ -908,7 +908,7 @@ testVerifyCreateClusterOptionValid6() {
   r=$?
 
   assertEquals \
-    "'mokctl create cluster myclust --skipworkersetup 1 0' should return OK" \
+    "'mok create cluster myclust --skipworkersetup 1 0' should return OK" \
     "0" "$r"
 }
 
@@ -921,7 +921,7 @@ testVerifyCreateClusterOptionValid7() {
   r=$?
 
   assertEquals \
-    "'mokctl create cluster myclust 1 --skipworkersetup 0' should return OK" \
+    "'mok create cluster myclust 1 --skipworkersetup 0' should return OK" \
     "0" "$r"
 }
 
@@ -934,7 +934,7 @@ testVerifyCreateClusterOptionValid8() {
   r=$?
 
   assertEquals \
-    "'mokctl create cluster myclust 1 0 --skipworkersetup' should return OK" \
+    "'mok create cluster myclust 1 0 --skipworkersetup' should return OK" \
     "0" "$r"
 }
 
@@ -944,7 +944,7 @@ testVerifyExecSetsGlobals() {
   parse_options exec myclust
 
   assertTrue \
-    "'mokctl exec myclust' should set globals" \
+    "'mok exec myclust' should set globals" \
     "[[ $EXEC_CONTAINER_NAME == "myclust" &&
        $COMMAND == "exec" &&
        $SUBCOMMAND == "unused" ]]"
@@ -966,7 +966,7 @@ EnD
   r=$?
 
   assertEquals \
-    "'mokctl exec bob-worker-1' should return OK" \
+    "'mok exec bob-worker-1' should return OK" \
     "0" "$r"
 }
 
@@ -986,7 +986,7 @@ EnD
   r=$?
 
   assertEquals \
-    "'mokctl exec bob-worker-1' should return OK" \
+    "'mok exec bob-worker-1' should return OK" \
     "1" "$r"
 }
 
@@ -1006,7 +1006,7 @@ EnD
   r=$?
 
   assertEquals \
-    "'mokctl exec bob-worker-1' should return OK" \
+    "'mok exec bob-worker-1' should return OK" \
     "1" "$r"
 }
 
@@ -1020,15 +1020,15 @@ oneTimeSetUp() {
   # 'sed' is used to remove 'readonly' variables.
   #   Readonly variables cannot be deleted without using 'gdb'!
 
-  sed 's/^ *readonly \(.*\)/\1/' mokctl.deploy >mokctl.deploy.noconst
+  sed 's/^ *readonly \(.*\)/\1/' mok.deploy >mok.deploy.noconst
 }
 
 # ---------------------------------------------------------------------------
 setUp() {
 
-  # source mokctl.deploy and disable output of usage().
+  # source mok.deploy and disable output of usage().
 
-  . ./mokctl.deploy.noconst
+  . ./mok.deploy.noconst
   set_globals
   usage() { return $OK; }
 }
@@ -1042,7 +1042,7 @@ tearDown() {
 # ---------------------------------------------------------------------------
 oneTimeTearDown() {
 
-  rm -rf /var/tmp/mokctl-unit-tests.*
+  rm -rf /var/tmp/mok-unit-tests.*
 }
 
 # ---------------------------------------------------------------------------
@@ -1050,7 +1050,7 @@ grabMainOutput() {
 
   # Helper function. Sets LINES array to script output.
 
-  local tmpname=$(mktemp --tmpdir=/var/tmp mokctl-unit-tests.XXXXXXXX)
+  local tmpname=$(mktemp --tmpdir=/var/tmp mok-unit-tests.XXXXXXXX)
   main "$@" &>$tmpname
   readarray -t LINES <$tmpname
 }

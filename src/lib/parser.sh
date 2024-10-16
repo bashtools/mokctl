@@ -96,7 +96,7 @@ PA_add_state() {
 # --command-options can be after the COMMAND but before SUBCOMMAND.
 # --subcommand-options can be anywhere after the SUBCOMMAND.
 #
-# Args: arg1-N - The arguments given to mokctl by the user on the command line
+# Args: arg1-N - The arguments given to mok by the user on the command line
 PA_run() {
 
   set -- "$@"

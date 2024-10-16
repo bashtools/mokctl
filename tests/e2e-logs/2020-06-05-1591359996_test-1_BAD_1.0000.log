@@ -11,10 +11,10 @@ tests(master*)$ mokbox
 [root@mokbox /]#
 [root@mokbox /]# # Test 1 - download the prebuilt image
 [root@mokbox /]#
-[root@mokbox /]# mokctl -p build image --get-prebuilt-image
+[root@mokbox /]# mok -p build image --get-prebuilt-image
     Downloading base image, 'mok-centos-7-v1.18.3' .. SUCCESS
 [root@mokbox /]# errstop $?
-[root@mokbox /]# time mokctl -p create cluster myk8s --masters 1 --tailf
+[root@mokbox /]# time mok -p create cluster myk8s --masters 1 --tailf
 
 ERROR: Cluster, "myk8s", exists! Aborting.
 

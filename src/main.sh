@@ -101,7 +101,7 @@ MA_sanity_checks() {
 MA_usage() {
 
   cat <<'EnD'
-Usage: mokctl [-h] <command> [subcommand] [ARGS...]
+Usage: mok [-h] <command> [subcommand] [ARGS...]
  
 Global options:
   --help
@@ -117,7 +117,7 @@ Where command can be one of:
   exec   - 'Log in' to the container.
 
 For help on a specific command, run:
-  mokctl <command> --help
+  mok <command> --help
 EnD
 }
 

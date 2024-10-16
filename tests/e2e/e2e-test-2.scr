@@ -11,9 +11,9 @@ errstop $retval
 
 # Test 2 - create the prebuilt image and test
 
-mokctl -p build image --tailf
+mok -p build image --tailf
 errstop $?
-time mokctl -p create cluster myk8s --masters 1 --workers 1 --tailf
+time mok -p create cluster myk8s --masters 1 --workers 1 --tailf
 errstop $?
 export KUBECONFIG=/var/tmp/admin-myk8s.conf
 for i in `seq 1 20`; do if kubectl get pods &>/dev/null; then break; fi; echo -n "."; sleep 1; done
@@ -25,11 +25,11 @@ ip address
 apk add fortune
 exit 0
 errstop $?
-mokctl -p get cluster
+mok -p get cluster
 errstop $?
-mokctl -p delete cluster myk8s || errstop $?
+mok -p delete cluster myk8s || errstop $?
 y
-mokctl -p get cluster
+mok -p get cluster
 errstop $?
 exit
 

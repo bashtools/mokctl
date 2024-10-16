@@ -11,10 +11,10 @@ tests(master*)$ mokbox
 [root@mokbox /]#
 [root@mokbox /]# # Test 1 - download the prebuilt image
 [root@mokbox /]#
-[root@mokbox /]# mokctl -p build image --get-prebuilt-image
+[root@mokbox /]# mok -p build image --get-prebuilt-image
     Downloading base image, 'mok-centos-7-v1.18.3' .. SUCCESS
 [root@mokbox /]# errstop $?
-[root@mokbox /]# time mokctl -p create cluster myk8s --masters 1 --tailf
+[root@mokbox /]# time mok -p create cluster myk8s --masters 1 --tailf
 2db21b0060eb6674b2aa1cb3d7f7a82c4962a9d24d8119028fa3a8e5bc2dc681
 
 STATUS: OK
@@ -44,24 +44,24 @@ vice.
 W0605 12:24:15.621325     206 loader.go:223] Config not found: /etc/kubernetes/admin.conf
 The connection to the server localhost:8080 was refused - did you specify the right host or port?
 
-3549 main /usr/bin/mokctl
-27 MA_main /usr/bin/mokctl
-1381 CC_run /usr/bin/mokctl
-1500 _CC_setup_master_nodes /usr/bin/mokctl
-661 UT_run_with_progress /usr/bin/mokctl
-1544 _CC_set_up_master_node /usr/bin/mokctl
-1984 _CC_set_up_master_node_v1_18_3 /usr/bin/mokctl
-517 err /usr/bin/mokctl
+3549 main /usr/bin/mok
+27 MA_main /usr/bin/mok
+1381 CC_run /usr/bin/mok
+1500 _CC_setup_master_nodes /usr/bin/mok
+661 UT_run_with_progress /usr/bin/mok
+1544 _CC_set_up_master_node /usr/bin/mok
+1984 _CC_set_up_master_node_v1_18_3 /usr/bin/mok
+517 err /usr/bin/mok
 
 STATUS: OK
 
 Error: No such container:path: myk8s-master-1:/etc/kubernetes/admin.conf
 
-3549 main /usr/bin/mokctl
-27 MA_main /usr/bin/mokctl
-1381 CC_run /usr/bin/mokctl
-1526 _CC_setup_master_nodes /usr/bin/mokctl
-517 err /usr/bin/mokctl
+3549 main /usr/bin/mok
+27 MA_main /usr/bin/mok
+1381 CC_run /usr/bin/mok
+1526 _CC_setup_master_nodes /usr/bin/mok
+517 err /usr/bin/mok
 
 real    0m30.338s
 user    0m0.433s

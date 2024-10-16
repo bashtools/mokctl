@@ -37,7 +37,7 @@ BI_usage() {
   cat <<'EnD'
 BUILD subcommands are:
  
-  image - Creates the docker 'mokctl-image' container image.
+  image - Creates the docker 'mok-image' container image.
  
 build image options:
  
@@ -124,7 +124,7 @@ BI_run() {
 # Args: None expected.
 _BI_new() {
   _BI[tailf]="${FALSE}"
-  _BI[baseimagename]="mokctl-image"
+  _BI[baseimagename]="mok-image"
   _BI[useprebuiltimage]="${FALSE}"
   _BI[dockerbuildtmpdir]=
 
@@ -217,7 +217,7 @@ _BI_build_container_image() {
 # _BI_modify_container_image starts a container suitable for running kubernetes
 # components (since the docker/podman build environment isn't suitable), makes
 # some modifications and then 'commits' the image. The modifications allow
-# `mokctl create ...` to complete more quickly.
+# `mok create ...` to complete more quickly.
 # Args: No args expected.
 _BI_modify_container_image() {
 
@@ -287,8 +287,8 @@ _BI_create_docker_build_dir() {
   # embed-dockerfile.sh adds a base64 encoded tarball and
   # unpacking code between them.
 
-  #mokctl-image-tarball-start
-  #mokctl-image-tarball-end
+  #mok-image-tarball-start
+  #mok-image-tarball-end
 }
 
 # Initialise _BI

@@ -152,11 +152,11 @@ CU_create_container() {
     cat <<EnD
 ERROR: No container base image found. Use either:
 
-  $ mokctl build image
+  $ mok build image
 OR
-  $ mokctl build image --get-prebuilt-image
+  $ mok build image --get-prebuilt-image
 
-Then try running 'mokctl create ...' again.
+Then try running 'mok create ...' again.
 EnD
     return "${ERROR}"
   fi
@@ -212,7 +212,7 @@ _CU_podman_or_docker() {
 Not enough permissions to write to 'docker.sock'.
 Fix the permissions for this user or run as root, such as:
 
-  $ alias mokctl="sudo mokctl"
+  $ alias mok="sudo mok"
 
 Then run the command again.
 EnD
@@ -227,7 +227,7 @@ EnD
       cat <<'EnD' >"${STDERR}"
 Must run 'podman' as root! Try using:
 
-  $ alias mokctl="sudo mokctl"
+  $ alias mok="sudo mok"
 
 Then run the command again.
 EnD

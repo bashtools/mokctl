@@ -6,7 +6,7 @@ When `make test` is run it will:
 
 1. Run end-to-end and usage tests.
 
-2. Run `shellcheck` on mokctl/mokctl.
+2. Run `shellcheck` on mok/mok.
    
    This must pass when run with no options to be approved.
 

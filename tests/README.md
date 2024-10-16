@@ -50,18 +50,18 @@ Sanity checks for usage texts. CSS files were created with:
 for i in build create delete exec get unknown; do crm learn.crm ${i^^}_USAGE <<<$(:); done
 
 # Train css files
-for i in build create delete exec get; do crm learn.crm ${i^^}_USAGE <<<$(mokctl ${i} -h); done
+for i in build create delete exec get; do crm learn.crm ${i^^}_USAGE <<<$(mok ${i} -h); done
 
 ```
 
-The CSS files are matched to actual `mokctl command -h` usage in `usage-checks.sh`.
+The CSS files are matched to actual `mok command -h` usage in `usage-checks.sh`.
 
 Output from `usage-checks.sh`:
 
 ```none
-GOOD - CRM114 thinks output from 'mokctl build -h' is BUILD_USAGE.
-GOOD - CRM114 thinks output from 'mokctl create -h' is CREATE_USAGE.
-GOOD - CRM114 thinks output from 'mokctl delete -h' is DELETE_USAGE.
-GOOD - CRM114 thinks output from 'mokctl exec -h' is EXEC_USAGE.
-GOOD - CRM114 thinks output from 'mokctl get -h' is GET_USAGE.
+GOOD - CRM114 thinks output from 'mok build -h' is BUILD_USAGE.
+GOOD - CRM114 thinks output from 'mok create -h' is CREATE_USAGE.
+GOOD - CRM114 thinks output from 'mok delete -h' is DELETE_USAGE.
+GOOD - CRM114 thinks output from 'mok exec -h' is EXEC_USAGE.
+GOOD - CRM114 thinks output from 'mok get -h' is GET_USAGE.
 ```

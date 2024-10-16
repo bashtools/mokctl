@@ -1,4 +1,4 @@
-# Mokctl - Build and manage kubernetes clusters on your laptop
+# MOK - Build and manage kubernetes clusters on your laptop
 
 *Requirements*
 
@@ -11,8 +11,8 @@
 *Install* to `/usr/local/bin`
 
 ```bash
-git clone https://github.com/bashtools/mokctl.git
-cd mokctl
+git clone https://github.com/bashtools/mok.git
+cd mok
 sudo make install
 ```
 ```
@@ -22,13 +22,13 @@ export PATH=/usr/local/bin:$PATH
 *First use*
 
 ```bash
-sudo mokctl build image
+sudo mok build image
 ```
 
 *Create a multi node kuberenetes cluster* (k8s v1.30.0)
 
 ```bash
-sudo mokctl create cluster myk8s --masters 1 --workers 1
+sudo mok create cluster myk8s --masters 1 --workers 1
 ```
 
 *Run some kubectl commands*
@@ -43,22 +43,22 @@ kubectl run --rm -ti alpine --image alpine /bin/sh
 *Get help*
 
 ```bash
-sudo mokctl -h
-sudo mokctl create -h
+sudo mok -h
+sudo mok create -h
 ```
 
 *Delete the cluster*
 
 ```bash
-sudo mokctl delete cluster myk8s
+sudo mok delete cluster myk8s
 ```
 
-*Uninstall mokctl completely*
+*Uninstall mok completely*
 
 ```bash
-rm -rf mokctl/
-sudo rm /usr/local/bin/mokctl
-sudo podman rmi localhost/local/mokctl-image-v1.30.0
+rm -rf mok/
+sudo rm /usr/local/bin/mok
+sudo podman rmi localhost/local/mok-image-v1.30.0
 ```
 
 ## Some Features
@@ -70,6 +70,6 @@ sudo podman rmi localhost/local/mokctl-image-v1.30.0
 * Can skip setting up kubernetes on the master and/or worker node (good for learning!)
   * In this case the set-up scripts are placed in `/root` in the containers and run by hand
   * Can do kubernetes the hard way (see [kthwic](https://github.com/my-own-kind/kubernetes-the-hard-way-in-containers))
-* `mokctl build` and `mokctl create` can show extensive logs with '--tailf'
+* `mok build` and `mok create` can show extensive logs with '--tailf'
 
-* [Full Documentation](https://github.com/bashtools/mokctl-docs/tree/master/docs)
+* [Full Documentation](https://github.com/bashtools/mok-docs/tree/master/docs)

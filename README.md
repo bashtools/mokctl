@@ -66,6 +66,7 @@ sudo podman rmi localhost/local/mok-image-v1.30.0
 * Creating a single node cluster
   * Containers created with 'kubectl run' cannot reach the Internet
   * Multi-node clusters do not have this problem
+* Creating a cluster with a load balancer, `--with-lb`, currently fails
 
 ## Some Features
 

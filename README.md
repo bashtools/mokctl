@@ -37,7 +37,11 @@ sudo mok create cluster myk8s --masters 1 --workers 1
 export KUBECONFIG=/var/tmp/admin-myk8s.conf
 kubectl get nodes
 kubectl get pods --all-namespaces
-kubectl run --rm -ti alpine --image alpine /bin/sh
+```
+
+```bash
+# --privileged is required if you want to `ping`
+kubectl run --privileged --rm -ti alpine --image alpine /bin/sh
 ```
 
 *Get help*

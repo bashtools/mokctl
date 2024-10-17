@@ -1,8 +1,20 @@
 # shellcheck shell=bash disable=SC2148
 # MA - execution starts here
 
+# MA is an associative array that holds data specific to this file
+declare -A _MA
+
 # Defined in GL (globals.sh)
 declare OK ERROR STOP STDERR TRUE
+
+# Getters/Setters -------------------------------------------------------------
+
+# MA_program_args getter outputs the program arguments sent by the user.
+MA_program_args() {
+  printf '%s' "${_MA[program_args]}"
+}
+
+# Public Functions ------------------------------------------------------------
 
 # main is the start point for this application.
 # Args: arg1-N - the command line arguments entered by the user.
@@ -120,6 +132,14 @@ For help on a specific command, run:
   mok <command> --help
 EnD
 }
+
+# MA_new sets the initial values for the _MA associative array
+_MA_new() {
+  _MA[program_args]="$*"
+}
+
+# Initialise _MA
+_MA_new "$@" || exit 1
 
 # vim helpers -----------------------------------------------------------------
 #include globals.sh

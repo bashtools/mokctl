@@ -204,7 +204,29 @@ _CU_podman_or_docker() {
 
   local id
 
-  if type docker &>/dev/null; then
+  if type podman &>/dev/null; then
+    _CU[imgprefix]="localhost/"
+    _CU[containerrt]="podman"
+    local id
+    id=$(id -u)
+    [[ ${id} -ne 0 ]] && {
+      cat <<EnD >"${STDERR}"
+Please use 'sudo' to run this command.
+
+  $ sudo mok $(MA_program_args)
+
+Try using:
+
+  $ alias mok="sudo mok"
+
+Then run the command again.
+EnD
+      return "${ERROR}"
+    }
+    docker() {
+      podman "$@"
+    }
+  elif type docker &>/dev/null; then
     _CU[imgprefix]=""
     _CU[containerrt]="docker"
     if docker ps >/dev/stdout 2>&1 | grep -qs 'docker.sock.*permission denied'; then
@@ -218,24 +240,6 @@ Then run the command again.
 EnD
       return "${ERROR}"
     fi
-  elif type podman &>/dev/null; then
-    _CU[imgprefix]="localhost/"
-    _CU[containerrt]="podman"
-    local id
-    id=$(id -u)
-    [[ ${id} -ne 0 ]] && {
-      cat <<'EnD' >"${STDERR}"
-Must run 'podman' as root! Try using:
-
-  $ alias mok="sudo mok"
-
-Then run the command again.
-EnD
-      return "${ERROR}"
-    }
-    docker() {
-      podman "$@"
-    }
   else
     printf 'ERROR: Neither "podman" nor "docker" were found.\n' \
       >"${STDERR}"

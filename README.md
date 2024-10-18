@@ -25,7 +25,7 @@ export PATH=/usr/local/bin:$PATH
 sudo mok build image
 ```
 
-*Create a multi node kuberenetes cluster* (k8s v1.30.0)
+*Create a multi node kuberenetes cluster* (k8s v1.31.1)
 
 ```bash
 sudo mok create cluster myk8s --masters 1 --workers 1
@@ -62,7 +62,7 @@ sudo mok delete cluster myk8s
 ```bash
 rm -rf mok/
 sudo rm /usr/local/bin/mok
-sudo podman rmi localhost/local/mok-image-v1.30.0
+sudo podman rmi localhost/local/mok-image-v1.31.1
 ```
 
 ## Known Issues

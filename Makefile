@@ -1,5 +1,5 @@
 VERSION = 0.8.11
-K8SVERSION = 1.30.0
+K8SVERSION = 1.31.1
 
 .PHONY: all
 all: mok.deploy tags
@@ -46,7 +46,7 @@ docker-upload-baseimage:
 	docker push myownkind/mok-image-v${K8SVERSION}
 	docker push myownkind/mok-image-v${K8SVERSION}:${VERSION}
 
-mok.deploy: src/*.sh src/lib/*.sh mok-image
+mok.deploy: src/*.sh src/lib/*.sh mok-image mok-image/* mok-image/files/*
 	bash src/embed-dockerfile.sh
 	cd src && ( echo '#!/usr/bin/env bash'; cat \
 		main.sh lib/parser.sh globals.sh error.sh util.sh getcluster.sh \

@@ -1,0 +1,4127 @@
+#!/usr/bin/env bash
+# shellcheck shell=bash disable=SC2148
+# MA - execution starts here
+
+# MA is an associative array that holds data specific to this file
+declare -A _MA
+
+# Defined in GL (globals.sh)
+declare OK ERROR STOP STDERR TRUE
+
+# Getters/Setters -------------------------------------------------------------
+
+# MA_program_args getter outputs the program arguments sent by the user.
+MA_program_args() {
+  printf '%s' "${_MA[program_args]}"
+}
+
+# Public Functions ------------------------------------------------------------
+
+# main is the start point for this application.
+# Args: arg1-N - the command line arguments entered by the user.
+MA_main() {
+
+  trap MA_cleanup EXIT
+  MA_sanity_checks || return
+  MA_register_parser_global_options || return
+
+  local retval="${OK}"
+  PA_run "$@" || retval=$?
+  if [[ ${retval} -eq ${ERROR} ]]; then
+    return "${ERROR}"
+  elif [[ ${retval} -eq ${STOP} ]]; then
+    return "${OK}"
+  fi
+
+  local cmd subcmd
+  cmd=$(PA_command) || err || return
+  subcmd=$(PA_subcommand) || err || return
+  case "${cmd}${subcmd}" in
+  create | createcluster) CC_run ;;
+  delete | deletecluster) DC_run ;;
+  build | buildimage) BI_run ;;
+  get | getcluster | getclusters) GC_run ;;
+  exec) EX_run ;;
+  *)
+    PA_usage
+    printf '\nERROR: No COMMAND specified.\n'
+    ;;
+  esac
+}
+
+# MA_register_parser_global_options adds the options callback and usage
+# callback to the Parser.
+MA_register_parser_global_options() {
+  PA_add_option_callback "" "MA_process_global_options"
+  PA_add_usage_callback "" "MA_usage"
+}
+
+# MA_process_global_options is called by the parser when a global option is
+# encountered for processing.
+# Args: arg1 - the global option that was found.
+MA_process_global_options() {
+  case "$1" in
+  -h | --help)
+    PA_usage
+    return "${STOP}"
+    ;;
+  -p | --plain)
+    UT_set_plain "${TRUE}"
+    ;;
+  *)
+    printf 'INTERNAL ERROR: Invalid global option, "%s".' "$1"
+    return "${ERROR}"
+    ;;
+  esac
+}
+
+# MA_cleanup is called from an EXIT trap only, when the program exits, and
+# calls every other function matching the pattern '^.._cleanup'.
+# Args: No args expected.
+MA_cleanup() {
+  local retval="${OK}" funcs func
+  funcs=$(declare -F | awk '{print $NF;}' | grep '^.._cleanup')
+  for func in ${funcs}; do
+    [[ ${func} == "${FUNCNAME[0]}" ]] && continue
+    eval "${func}" || retval=$?
+  done
+  return "${retval}"
+}
+
+# MA_sanity_checks is expected to run some quick and simple checks to
+# see if key components are available before MA_main is called.
+# Args: No args expected.
+MA_sanity_checks() {
+
+  local binary
+
+  for binary in tac column tput grep sed; do
+    if ! command -v "${binary}" >&/dev/null; then
+      printf 'ERROR: "%s" binary not found in path. Aborting.' "${binary}" \
+        >"${STDERR}"
+      return "${ERROR}"
+    fi
+  done
+
+  # Disable terminal escapes (colours) if stdout is not a terminal
+  [ -t 1 ] || UT_disable_colours
+}
+
+# MA_usage outputs help text for all components then quits with no error.  This
+# is registered as a callback in the Parser in
+# MA_register_parser_global_options.
+# Args: None expected.
+MA_usage() {
+
+  cat <<'EnD'
+Usage: mok [-h] <command> [subcommand] [ARGS...]
+ 
+Global options:
+  --help
+  -h     - This help text
+  --plain
+  -p     - Plain output. No colours or animations.
+ 
+Where command can be one of:
+  create - Add item(s) to the system.
+  delete - Delete item(s) from the system.
+  build  - Build item(s) used by the system.
+  get    - Get details about items in the system.
+  exec   - 'Log in' to the container.
+
+For help on a specific command, run:
+  mok <command> --help
+EnD
+}
+
+# MA_new sets the initial values for the _MA associative array
+_MA_new() {
+  _MA[program_args]="$*"
+}
+
+# Initialise _MA
+_MA_new "$@" || exit 1
+
+# vim helpers -----------------------------------------------------------------
+#include globals.sh
+# vim:ft=sh:sw=2:et:ts=2:
+# shellcheck shell=bash disable=SC2148
+# PA - PArser
+
+# _PA holds data specific to parsing the command line arguments.
+declare -A _PA
+
+# Declare externally defined variables ----------------------------------------
+
+# Defined in ER (globals.sh)
+declare OK ERROR STDERR
+
+# Getters/Setters -------------------------------------------------------------
+
+# PA_command getter outputs the _PA[command] array member. This contains the
+# command the user requested.
+PA_command() {
+  printf '%s' "${_PA[command]}"
+}
+
+# PA_subcommand getter outputs the _PA[subcommand] array member. This contains
+# the subcommand the user requested.
+PA_subcommand() {
+  printf '%s' "${_PA[subcommand]}"
+}
+
+# PA_shift outputs the _PA[shift] array member, returned by the caller
+# when an extra shift is required whilst consuming option values.
+#
+# Example code:
+# ```
+#XX_process_options_callback() {
+#
+#  case "$1" in
+#  -h | --help)
+#    CC_usage
+#    return "${STOP}"
+#    ;;
+#    ... omitted ...
+#  --k8sver)
+#    _CC[k8sver]="$2"
+#    return "$(PA_shift)"
+#    ;;
+#  --with-lb)
+#    ... omitted ..
+# ```
+PA_shift() {
+  printf '%s' "${_PA[shift]}"
+}
+
+# PA_set_state setter sets the initial state of the parser, which should be one
+# of COMMAND, SUBCOMMAND, or ARG1.
+# Args: arg1 - the initial state to set.
+PA_set_state() {
+  _PA[state]="$1"
+}
+
+# Public Functions ------------------------------------------------------------
+
+# PA_add_option_callback adds a callback to the list of callbacks used for
+# processing options.
+# Args: arg1 - Null string (for global options), COMMAND or COMMANDSUBCOMMAND.
+#       arg2 - The function to call.
+PA_add_option_callback() {
+  _PA[optscallbacks]+="$1,$2 "
+}
+
+# PA_add_usage_callback adds a callback to the list of callbacks used for
+# output of help text.
+# Args: arg1 - Null string (for global help), COMMAND or COMMANDSUBCOMMAND.
+#       arg2 - The function to call.
+PA_add_usage_callback() {
+  _PA[usagecallbacks]+="$1,$2 "
+}
+
+# PA_add_state adds a callback to the list of callbacks used for
+# programming the state machine.
+# Args: arg1 - Current state to match.
+#       arg2 - The value of the state to match.
+#       arg3 - The new state if arg1 and arg2 match.
+#       arg4 - The function to call, optional.
+PA_add_state() {
+  _PA[statecallbacks]+="$1,$2,$3,$4 "
+}
+
+# PA_run implements an interleaved state machine to process the
+# user request. It allows for strict checking of arguments and args. All
+# command line arguments are processed in order from left to right.
+#
+# Each COMMAND can have a different set of requirements which are controlled
+# by setting the next state at each transition.
+#
+# --global-options COMMAND --command-options SUBCOMMAND --subcommand-options \
+#  ARG1 --subcommand-options ARG2 --subcommand-options ...
+#
+# --global-options are those before COMMAND.
+# --command-options can be after the COMMAND but before SUBCOMMAND.
+# --subcommand-options can be anywhere after the SUBCOMMAND.
+#
+# Args: arg1-N - The arguments given to mok by the user on the command line
+PA_run() {
+
+  set -- "$@"
+  local ARGN=$# ARGNUM=0 retval=0
+  while [ "${ARGN}" -ne 0 ]; do
+    case "$1" in
+    --* | -*)
+      _PA_process_option "$1" "$2" || {
+        retval=$?
+        if [[ ${retval} == "${_PA[shift]}" ]]; then
+          ARGN=$((ARGN - 1))
+          shift
+        else
+          return "${retval}"
+        fi
+      }
+      ;;
+    *)
+      case "${_PA[state]}" in
+      COMMAND)
+        _PA_check_token "${1}" "COMMAND" "command"
+        [[ $? -eq ${ERROR} ]] && {
+          PA_usage
+          printf 'Invalid COMMAND, "%s".\n\n' "$1" >"${STDERR}"
+          return "${ERROR}"
+        }
+        ;;
+      SUBCOMMAND)
+        _PA_check_token "$1" "SUBCOMMAND" "subcommand"
+        [[ $? -eq ${ERROR} ]] && {
+          PA_usage
+          printf 'Invalid SUBCOMMAND for %s, "%s".\n\n' "${_PA[command]}" "${1}" \
+            >"${STDERR}"
+          return "${ERROR}"
+        }
+        ;;
+      ARG*)
+        ((ARGNUM++))
+        _PA_check_token "${1}" "ARG${ARGNUM}"
+        [[ $? -eq ${ERROR} ]] && {
+          PA_usage
+          printf 'Invalid ARG1 for %s %s, "%s".\n\n' "${_PA[command]}" \
+            "${_PA[subcommand]}" "${1}" >"${STDERR}"
+          return "${ERROR}"
+        }
+        ;;
+      END)
+        PA_usage
+        printf 'ERROR No more args expected, "%s" is unexpected for "%s %s"\n' \
+          "${1}" "${_PA[command]}" "${_PA[subcommand]}" >"${STDERR}"
+        return "${ERROR}"
+        ;;
+      *)
+        printf 'Internal ERROR. Invalid state "%s"\n' "${_PA[state]}" >"${STDERR}"
+        return "${ERROR}"
+        ;;
+      esac
+      ;;
+    esac
+    shift 1
+    ARGN=$((ARGN - 1))
+  done
+
+  return "${OK}"
+}
+
+# PA_usage outputs help text for a single component if help was asked for when
+# a command was specified, or for all components otherwise.
+# Args: None expected.
+PA_usage() {
+
+  curcmdsubcmd="${_PA[command]}${_PA[subcommand]}"
+
+  for item in ${_PA[usagecallbacks]}; do
+    IFS=, read -r cmdsubcmd func <<<"${item}"
+    [[ ${curcmdsubcmd} == "${cmdsubcmd}" ]] && {
+      eval "${func}"
+      return
+    }
+  done
+
+  eval "${_PA[usage]}"
+}
+
+# Private Functions -----------------------------------------------------------
+
+# PA_new sets the initial values for the PArser's associative array.
+# Args: None expected.
+_PA_new() {
+  _PA[command]=
+  _PA[subcommand]=
+  _PA[state]="COMMAND"
+  _PA[optscallbacks]=
+  _PA[usagecallbacks]=
+  # The return value if the caller asked for an extra shift:
+  _PA[shift]=126
+}
+
+# _PA_check_token checks for a valid token in arg2 state. The logic is
+# most easily understood by reading the full original version at:
+# https://github.com/mclarkson/my-own-kind/blob/master/docs/package.md#scripted-cluster-creation-and-deletion
+# This function is a reduction of all the check_xxx_token functions.
+# Args: arg1 - the token to check.
+#       arg2 - the current state.
+#       arg3 - the state value to set, optional. This should only be sent
+#              for command and subcommand states.
+_PA_check_token() {
+
+  local item
+
+  if [[ -n ${_PA[subcommand]} ]]; then
+    cmdsubcommand="${_PA[command]}${_PA[subcommand]}"
+  elif [[ -n ${_PA[command]} && ${_PA[state]} != "ARG"* ]]; then
+    cmdsubcommand="${_PA[command]}$1"
+  elif [[ -n ${_PA[command]} && ${_PA[state]} == "ARG"* ]]; then
+    cmdsubcommand="${_PA[command]}"
+  elif [[ -z ${_PA[command]} && ${_PA[state]} == "ARG"* ]]; then
+    cmdsubcommand=
+  else
+    cmdsubcommand="$1"
+  fi
+
+  for item in ${_PA[statecallbacks]}; do
+    IFS=, read -r state component newstate func <<<"${item}"
+    [[ ${state} == "$2" ]] && {
+      [[ ${component} == "${cmdsubcommand}" ]] && {
+        [[ -n $3 ]] && _PA["$3"]="$1"
+        _PA[state]="${newstate}"
+        [[ -n ${func} ]] && {
+          eval "${func} $1" || return
+        }
+        return "${OK}"
+      }
+    }
+  done
+}
+
+# _PA_process_option checks that the user-provided option is valid for the
+# command-subcommand or global states.
+# Args: arg1 - The option to check.
+#       arg2 - TODO The value of the option if present, optional.
+_PA_process_option() {
+
+  local item curcmdsubcmd
+
+  curcmdsubcmd="${_PA[command]}${_PA[subcommand]}"
+
+  for item in ${_PA[optscallbacks]}; do
+    IFS=, read -r cmdsubcmd func <<<"${item}"
+    [[ ${curcmdsubcmd} == "${cmdsubcmd}" ]] && {
+      eval "${func} \"$1\" \"$2\""
+      return $?
+    }
+  done
+
+  return "${ERROR}"
+}
+
+# Initialise _PA
+_PA_new
+
+# vim helpers -----------------------------------------------------------------
+#include globals.sh
+# vim:ft=sh:sw=2:et:ts=2:
+# shellcheck shell=bash disable=SC2148
+# GL - Globals
+
+# Private Functions -----------------------------------------------------------
+
+# GL_new sets the only global variables that should be in use anywhere.  The
+# only other globals are the associative arrays. All the globals are constant
+# (readonly) variables. Declare these globals, where needed, in other files
+# so that shellcheck passes.
+# Args: None expected.
+_GL_new() {
+
+  declare -rg MOKVERSION="0.8.11"
+  declare -rg K8SVERSION="1.31.1"
+  declare -rg GO_VERSION="1.23.2"
+
+  # Returns, exit codes
+  declare -rg OK=0
+  declare -rg SUCCESS=0
+  declare -rg ERROR=1
+  declare -rg FAILURE=1
+
+  # For setting flags
+  declare -rg TRUE=1
+  declare -rg FALSE=0
+
+  # To signal main() to exit with SUCCESS in the PArser
+  declare -rg STOP=2
+
+  declare -rg STDOUT="/dev/stdout"
+  declare -rg STDERR="/dev/stderr"
+
+  # The following just keep shellcheck happy
+  local dummy dumb
+  dummy="${OK}"
+  dummy="${ERROR}"
+  dummy="${STOP}"
+  dummy="${STDOUT}"
+  dummy="${STDERR}"
+  dummy="${TRUE}"
+  dummy="${FALSE}"
+  dummy="${SUCCESS}"
+  dummy="${FAILURE}"
+  dummy="${MOKVERSION}"
+  dummy="${GO_VERSION}"
+  dummy="${K8SVERSION}"
+  dumb="${dummy}${dumb}"
+}
+
+# Initialise GL
+_GL_new || exit 1
+
+# vim helpers -----------------------------------------------------------------
+
+# The following lines allow the use of '[C-i' and '[I' (do ':help [I') in vim.
+#include buildimage.sh
+#include containerutils.sh
+#include createcluster.sh
+#include deletecluster.sh
+#include embed-dockerfile.sh
+#include error.sh
+#include exec.sh
+#include getcluster.sh
+#include main.sh
+#include lib/parser.sh
+#include util.sh
+#include versions.sh
+
+# vim:ft=sh:sw=2:et:ts=2:
+# shellcheck shell=bash disable=SC2148
+# ER - Error handling
+
+# ER is an associative array that holds data specific to error handling.
+declare -A ER
+
+# Declare externally defined associative arrays -------------------------------
+
+# Defined in GL (globals.sh)
+declare ERROR TRUE STDERR
+
+# Public Functions ------------------------------------------------------------
+
+# ER_err outputs a stacktrace and returns ERROR status.
+# Args: None expected.
+ER_err() {
+
+  # In case of error print the function call stack
+  # No args expected
+
+  [[ ${ER[errcalled]} == "${TRUE}" ]] && return "${ERROR}"
+  ER[errcalled]="${TRUE}"
+  local frame=0
+  printf '\n' >"${STDERR}"
+  while caller "${frame}"; do
+    ((frame++))
+  done | tac >"${STDERR}"
+  printf '\n' >"${STDERR}"
+  return "${ERROR}"
+}
+
+# err is a synonym for ER_err to aid with code readability.
+err() {
+  ER_err
+  return
+}
+
+# Private Functions -----------------------------------------------------------
+
+# ER_new sets the initial values for the ER associative array.
+# Args: None expected.
+_ER_new() {
+  ER[errcalled]=
+}
+
+# Initialise ER
+_ER_new || exit 1
+
+# vim helpers -----------------------------------------------------------------
+#include globals.sh
+# vim:ft=sh:sw=2:et:ts=2:
+# shellcheck shell=bash disable=SC2148
+# UT - Utilities
+
+# _UT is an associative array that holds data specific to shared utilities.
+declare -A _UT
+
+# Declare externally defined global variables ---------------------------------
+
+declare OK STDERR FALSE TRUE
+
+# Getters/Setters -------------------------------------------------------------
+
+# UT_runlogfile getter outputs the value of _UT[runlogfile], which contains the
+# name of the file written to when running UT_run_with_progress.
+UT_runlogfile() {
+  printf '%s' "${_UT[runlogfile]}"
+}
+
+# UT_tailf getter indicates whether a log will be shown in real-time during the
+# 'run', TRUE, or not, FALSE.
+# Args
+UT_tailf() {
+  printf '%s' "${_UT[tailf]}"
+}
+
+# UT_tailf setter indicates whether a log should be shown during the 'run',
+# TRUE, or not, FALSE.
+# Args: arg1 - Whether to tail, TRUE or FALSE.
+UT_set_tailf() {
+  _UT[tailf]="$1"
+}
+
+# UT_set_plain setter sets plain output, with no colour, animations, or UTF
+# high byte characters.
+# Args: arg1 - Whether to show plain output, TRUE or FALSE.
+UT_set_plain() {
+  _UT[plain]="$1"
+  UT_disable_colours
+}
+
+# Public Functions ------------------------------------------------------------
+
+# UT_disable_colours resets variables used for colourised output so that they
+# contain no colour terminal escapes. Useful if stdin is not a terminal.
+UT_disable_colours() {
+  _UT[yellow]=
+  _UT[green]=
+  _UT[red]=
+  _UT[normal]=
+  _UT[probablysuccess]="PROBABLY SUCCESS (!)"
+  _UT[success]="SUCCESS"
+  _UT[failure]="FAIL"
+}
+
+# UT_run_with_progress displays a progress spinner, item text, and a tick or
+# cross based on the exit code.
+# Args: arg1   - the text to display.
+#       arg2-N - remaining args are the program to run and its arguments.
+UT_run_with_progress() {
+
+  local displaytext=$1 retval int spinner=()
+
+  _UT[runlogfile]=$(mktemp -p /var/tmp) || {
+    printf 'ERROR: mktmp failed.\n' >"${STDERR}"
+    err || return
+  }
+  shift
+
+  if [[ ${_UT[tailf]} == "${FALSE}" && ${_UT[plain]} == "${TRUE}" ]]; then
+
+    # Output with no colours or spinny
+
+    printf '%s' "${displaytext}"
+
+    eval "$*" &>"${_UT[runlogfile]}"
+    retval=$?
+
+    # Mark success/fail
+    if [[ ${retval} -eq 0 ]]; then
+      printf ' .. %s\n' "${_UT[success]}"
+    else
+      printf ' .. %s\n' "${_UT[failure]}"
+    fi
+
+  elif [[ ${_UT[tailf]} == "${FALSE}" ]]; then
+
+    # Output with colours and spinny
+
+    while read -r char; do
+      spinner+=("${char}")
+    done <<<"$(grep -o . <<<"${_UT[spinnerchars]}")"
+
+    (
+      eval "$*" &>"${_UT[runlogfile]}"
+    ) &
+
+    # Turn the cursor off
+    tput civis
+
+    # Start the spin animation
+    printf ' %s' "${displaytext}"
+    (while true; do
+      for int in {0..3}; do
+        printf '\r  %s ' "${spinner[int]}"
+        sleep .1
+      done
+    done) &
+    _UT[spinnerpid]=$!
+    disown
+
+    # Wait for the command to finish
+    wait %1 2>/dev/null
+    retval=$?
+
+    # Kill the spinner
+    kill "${_UT[spinnerpid]}" 2>/dev/null
+    _UT[spinnerpid]=
+
+    sleep .5
+
+    # Mark success/fail
+    if [[ ${retval} -eq 127 ]]; then
+      # The job finished before we started waiting for it
+      printf '\r  %s\n' "${_UT[probablysuccess]}"
+    elif [[ ${retval} -eq 0 ]]; then
+      printf '\r  %s\n' "${_UT[success]}"
+    else
+      printf '\r  %s\n' "${_UT[failure]}"
+    fi
+
+    # Restore the cursor
+    tput cnorm
+    sleep .5
+
+  else
+
+    # Tailf output
+
+    printf 'COMMAND: %s\n\n' "$*"
+
+    (
+      eval "$*" &>/dev/stdout
+    ) &
+    sleep 1
+
+    # Wait for the command to finish
+    wait %1 2>/dev/null
+    retval=$?
+
+    # Mark success/fail
+    if [[ ${retval} -eq 127 ]]; then
+      # The job finished before we started waiting for it
+      printf '\n\nSTATUS: OK - (Probably)\n\n'
+    elif [[ ${retval} -eq 0 ]]; then
+      printf '\n\nSTATUS: OK\n\n'
+    else
+      printf '\n\nSTATUS: FAIL\n\n'
+    fi
+  fi
+
+  return "${retval}"
+}
+
+# UT_cleanup removes any artifacts that were created during execution.
+# This is called by 'MA_cleanup' trap only.
+UT_cleanup() {
+
+  # Called when the script exits.
+
+  local int
+
+  # Kill the spinny, and anything else, if they're running
+  if [[ ${_UT[tailf]} == "${FALSE}" ]]; then
+    [[ -n ${_UT[spinnerpid]} ]] && {
+      printf '%s\r  ✕%s\n' "${_UT[red]}" "${_UT[normal]}"
+      kill "${_UT[spinnerpid]}"
+    }
+    # If progress spinner crashed make sure the cursor is shown
+    [ -t 1 ] && tput cnorm
+  else
+    kill "${_UT[spinnerpid]}" &>/dev/null
+  fi
+
+  return "${OK}"
+}
+
+# Private Functions -----------------------------------------------------------
+
+# _UT_new sets the initial values for the _UT associative array.
+# Args: None expected.
+_UT_new() {
+  _UT[tailf]="${FALSE}"
+  _UT[yellow]=$(tput setaf 3)
+  _UT[green]=$(tput setaf 2)
+  _UT[red]=$(tput setaf 1)
+  _UT[normal]=$(tput sgr0)
+  _UT[probablysuccess]="${_UT[yellow]}✓${_UT[normal]}"
+  _UT[success]="${_UT[green]}✓${_UT[normal]}"
+  _UT[failure]="${_UT[red]}✕${_UT[normal]}"
+  _UT[runlogfile]=
+  _UT[spinnerchars]="|/-\\"
+  _UT[spinnerpid]=
+}
+
+# Initialise _UT
+_UT_new || exit 1
+
+# vim helpers -----------------------------------------------------------------
+#include globals.sh
+# vim:ft=sh:sw=2:et:ts=2:
+# shellcheck shell=bash disable=SC2148
+# GC - Get Cluster
+
+# _GC is an associative array that holds data specific to the get cluster command.
+declare -A _GC
+
+# Declare externally defined variables ----------------------------------------
+
+declare OK ERROR STDERR TRUE STOP
+
+# Getters/Setters -------------------------------------------------------------
+
+# GC_showheader getter outputs the value of the showheader array member.
+GC_showheader() {
+  printf '%s' "${_GC[showheader]}"
+}
+
+# GC_set_showheader setter sets the value of the showheader array member.
+# If $TRUE the header will be shown, or $FALSE, then it won't be shown.
+GC_set_showheader() {
+  _GC[showheader]="$1"
+}
+
+# GC_set_clustername setter sets the cluster name to show information about.
+GC_set_clustername() {
+  _GC[clustername]="$1"
+}
+
+# Public Functions ------------------------------------------------------------
+
+# GC_cleanup removes artifacts that were created during execution. Currently
+# this does nothing and this function could be deleted. It is called by
+# MA_cleanup.
+GC_cleanup() {
+  :
+}
+
+# GC_process_options checks if arg1 is in a list of valid get cluster
+# options. This function is called by the parser.
+# Args: arg1 - the option to check.
+#       arg2 - value of the item to be set, optional
+GC_process_options() {
+
+  case "$1" in
+  -h | --help)
+    GC_usage
+    return "${STOP}"
+    ;;
+  *)
+    GC_usage
+    printf 'ERROR: "%s" is not a valid "build" option.\n' "${1}" \
+      >"${STDERR}"
+    return "${ERROR}"
+    ;;
+  esac
+}
+
+# GC_usage outputs help text for the create cluster component.
+# It is called by PA_usage().
+# Args: None expected.
+GC_usage() {
+
+  cat <<'EnD'
+GET subcommands are:
+ 
+  cluster(s) - list all mok managed clusters.
+ 
+get cluster(s) options:
+ 
+ Format:
+  get cluster(s) [NAME]
+  NAME        - (optional) The name of the cluster to get
+                details about.
+
+EnD
+}
+
+# GC_run gets information about cluster(s).
+# This function is called in main.sh.
+# Args: None expected.
+GC_run() {
+
+  _GC_sanity_checks || return
+
+  local ids id info output labelkey
+  local containerhostname containerip
+
+  declare -a nodes
+
+  ids=$(CU_get_cluster_container_ids "${_GC[clustername]}") || return
+
+  if [[ -z ${ids} ]]; then
+    printf 'No clusters found\n'
+    return "${OK}"
+  fi
+
+  readarray -t nodes <<<"${ids}"
+
+  # Use 'docker inspect' to get the value of the label $LABELKEY
+
+  output=$(mktemp -p /var/tmp) || {
+    printf 'ERROR: mktmp failed.\n' >"${STDERR}"
+    return "${ERROR}"
+  }
+
+  # Output the header
+  [[ ${_GC[showheader]} -eq ${TRUE} ]] && {
+    printf 'MOK_Cluster Docker_ID Container_Name IP_Address\n' >"${output}"
+  }
+
+  labelkey=$(CU_labelkey) || err || return
+
+  for id in "${nodes[@]}"; do
+
+    info=$(CU_get_container_info "${id}") || return
+
+    clustname=$(JSONPath ".[0].Config.Labels.${labelkey}" -b <<<"${info}") ||
+      err || return
+
+    containerhostname=$(JSONPath '.[0].Config.Hostname' -b <<<"${info}") ||
+      err || return
+
+    containerip=$(JSONPath '.[0].NetworkSettings.Networks.mok_network.IPAddress' -b <<<"${info}") ||
+      err || return
+
+    printf '%s %s %s %s\n' "${clustname}" "${id}" "${containerhostname}" "${containerip}"
+
+  done | sort -k 3 >>"${output}"
+
+  column -t "${output}" || err
+}
+
+# Private Functions -----------------------------------------------------------
+
+# _GC_new sets the initial values for the _GC associative array.
+# Args: None expected.
+_GC_new() {
+  _GC[showheader]="${TRUE}"
+
+  # Program the parser's state machine
+  PA_add_state "COMMAND" "get" "SUBCOMMAND" ""
+  PA_add_state "SUBCOMMAND" "getcluster" "ARG1" ""
+  PA_add_state "SUBCOMMAND" "getclusters" "ARG1" ""
+  PA_add_state "ARG1" "getcluster" "END" "GC_set_clustername"
+  PA_add_state "ARG1" "getclusters" "END" "GC_set_clustername"
+
+  # Set up the parser's option callbacks
+  PA_add_option_callback "get" "GC_process_options" || return
+  PA_add_option_callback "getcluster" "GC_process_options" || return
+  PA_add_option_callback "getclusters" "GC_process_options" || return
+
+  # Set up the parser's usage callbacks
+  PA_add_usage_callback "get" "GC_usage" || return
+  PA_add_usage_callback "getcluster" "GC_usage" || return
+  PA_add_usage_callback "getclusters" "GC_usage" || return
+}
+
+# GC_sanity_checks is expected to run some quick and simple checks to
+# see if it has all it's key components. For build image this does nothing.
+# This function should not be deleted as it is called in main.sh.
+# Args: None expected.
+_GC_sanity_checks() {
+
+  # Only show the usage if we are in 'get' mode and have not specified a
+  # subcommand. This allows internal code to call GC_run()
+  if [[ $(PA_command) == "get" && -z $(PA_subcommand) ]]; then
+    GC_usage
+    exit "${OK}"
+  fi
+}
+
+# Initialise _GC
+_GC_new || exit 1
+
+# vim helpers -----------------------------------------------------------------
+#include globals.sh
+# vim:ft=sh:sw=2:et:ts=2:
+# shellcheck shell=bash disable=SC2148
+# EX - EXec
+
+# EX is an associative array that holds data specific to the get cluster command.
+declare -A _EX
+
+# Declare externally defined variables ----------------------------------------
+
+declare OK ERROR STDERR TRUE STOP
+
+# Getters/Setters -------------------------------------------------------------
+
+# EX_set_containername setter sets the containername to be used to 'log in' to.
+EX_set_containername() {
+  _EX[containername]="$1"
+}
+
+# Public Functions ------------------------------------------------------------
+
+# EX_process_options checks if arg1 is in a list of valid exec options. This
+# function is called by the parser, via a callback in _EX_new.
+# Args: arg1 - the option to check.
+#       arg2 - value of the item to be set, optional
+EX_process_options() {
+
+  case "$1" in
+  -h | --help)
+    EX_usage
+    return "${STOP}"
+    ;;
+  *)
+    EX_usage
+    printf 'ERROR: "%s" is not a valid "exec" option.\n' "${1}" \
+      >"${STDERR}"
+    return "${ERROR}"
+    ;;
+  esac
+}
+
+# EX_usage outputs help text for the create exec component.  It is called in
+# this file and by PA_usage(), via a callback in _EX_new.
+# Args: None expected.
+EX_usage() {
+
+  cat <<'EnD'
+'Log in' to a container. EXEC has no subcommands.
+ 
+exec options:
+ 
+ Format:
+  exec [NAME]
+  NAME        - (optional) The name of the container to 'log in' to.
+                If NAME is not given then the user will be offered
+                a choice of containers to log in to. If there is only
+                one cluster and one node then it will 'log in' to the
+                only available container.
+
+EnD
+}
+
+# Execs 'bash' in the container referenced by _EX[containername]. If just
+# 'mok exec' is called without options then the user is offered a selection
+# of existing clusters to exec into.
+# Args: None expected.
+# ---------------------------------------------------------------------------
+EX_run() {
+
+  _EX_sanity_checks || return
+
+  local names int ans lines containernames gcoutput
+
+  GC_set_showheader "${TRUE}" || err || return
+  gcoutput=$(GC_run) || return
+  names=$(printf '%s' "${gcoutput}" | awk '{ print $3; }')
+  readarray -t containernames <<<"${names}"
+
+  if [[ -n ${_EX[containername]} ]]; then
+
+    # The caller gave a specific name for exec.
+    # Check if the container name exists
+
+    if grep -qs "^${_EX[containername]}$" <<<"${names}"; then
+      _EX_exec "${_EX[containername]}" || return
+      return "${OK}"
+    else
+      printf 'ERROR: Cannot exec into non-existent container: "%s".\n' \
+        "${_EX[containername]}"
+      return "${ERROR}"
+    fi
+
+  elif [[ ${#containernames[*]} == 2 ]]; then
+
+    # If there's only one container just log into it without asking
+    _EX_exec "${containernames[1]}"
+
+  elif [[ ${#containernames[*]} == 1 ]]; then
+
+    printf 'No containers found.\n'
+    return "${OK}"
+
+  else
+
+    # The caller supplied no container name.
+    # Present some choices
+
+    printf 'Choose the container to log in to:\n\n'
+
+    readarray -t lines <<<"${gcoutput}" || return
+
+    # Print the header then print the items in the loop
+    printf '   %s\n' "${lines[0]}"
+    for int in $(seq 1 $((${#lines[*]} - 1))); do
+      printf '%00d) %s\n' "${int}" "${lines[int]}"
+    done | sort -k 4
+
+    printf "\nChoose a number (Enter to cancel)> "
+    read -r ans
+
+    [[ -z ${ans} || ${ans} -lt 0 || ${ans} -gt $((${#lines[*]} - 1)) ]] && {
+      printf '\nInvalid choice. Aborting.\n'
+      return "${OK}"
+    }
+
+    _EX_exec "${containernames[ans]}"
+  fi
+}
+
+# Private Functions -----------------------------------------------------------
+
+# _EX_new sets the initial values for the _EX associative array and sets up the
+# parser ready for processing the command line arguments, options and usage.
+_EX_new() {
+  _EX[containername]=
+
+  # Program the parser's state machine
+  PA_add_state "COMMAND" "exec" "ARG1" ""
+  PA_add_state "ARG1" "exec" "END" "EX_set_containername"
+
+  # Set up the parser's option callbacks
+  PA_add_option_callback "exec" "EX_process_options" || return
+  PA_add_usage_callback "exec" "EX_usage" || return
+}
+
+# EX_sanity_checks is expected to run some quick and simple checks to
+# see if it has all it's key components. For exec this does nothing.
+# Args: None expected.
+_EX_sanity_checks() { :; }
+
+# _EX_exec runs a command in a docker container using bash as the command by
+# default.
+# Args: arg1 - docker container name
+#       arg2 - command to run
+_EX_exec() {
+
+  local cmd=${2:-bash}
+
+  containerrt=$(CU_containerrt) || err || return
+
+  read -rt 0.1
+  if [[ ${containerrt} == "podman" ]]; then
+    exec podman exec -ti "$1" "${cmd}"
+  elif [[ ${containerrt} == "docker" ]]; then
+    exec docker exec -ti "$1" "${cmd}"
+  fi
+}
+
+# Initialise EX
+_EX_new || exit 1
+
+# vim helpers -----------------------------------------------------------------
+#include globals.sh
+# vim:ft=sh:sw=2:et:ts=2:
+# shellcheck shell=bash disable=SC2148
+# DC - Delete Cluster
+
+# _DC is an associative array that holds data specific to the get cluster command.
+declare -A _DC
+
+# Declare externally defined variables ----------------------------------------
+
+declare OK ERROR STDERR STOP TRUE
+
+# Getters/Setters -------------------------------------------------------------
+
+# DC_set_clustername setter sets the cluster name to be deleted. This is
+# called by the parser, via a callback in _DC_new.
+DC_set_clustername() {
+  _DC[clustername]="$1"
+}
+
+# Public Functions ------------------------------------------------------------
+
+# DC_process_options checks if arg1 is in a list of valid delete cluster
+# options. This function is called by the parser, via a callback in _DC_new.
+# Args: arg1 - the option to check.
+#       arg2 - value of the item to be set, optional
+DC_process_options() {
+
+  case "$1" in
+  -h | --help)
+    DC_usage
+    return "${STOP}"
+    ;;
+  *)
+    DC_usage
+    printf 'ERROR: "%s" is not a valid "build" option.\n' "${1}" \
+      >"${STDERR}"
+    return "${ERROR}"
+    ;;
+  esac
+}
+
+# DC_usage outputs help text for the create cluster component.
+# It is called by PA_usage(), via a callback in _DC_new.
+# Args: None expected.
+DC_usage() {
+
+  cat <<'EnD'
+DELETE subcommands are:
+ 
+  cluster - Delete a local kubernetes cluster.
+ 
+delete cluster options:
+ 
+ Format:
+  delete cluster NAME
+  NAME        - The name of the cluster to delete
+
+EnD
+}
+
+# DC_run starts the delete cluster process.
+# Args: None expected.
+DC_run() {
+
+  _DC_sanity_checks || return
+
+  # Mutate functions make system changes.
+
+  declare -i numnodes=0
+  local id ids r
+
+  numnodes=$(CU_get_cluster_size "${_DC[clustername]}") || return
+
+  [[ ${numnodes} -eq 0 ]] && {
+    printf '\nERROR: No cluster exists with name, "%s". Aborting.\n\n' \
+      "${_DC[clustername]}" >"${STDERR}"
+    return "${ERROR}"
+  }
+
+  ids=$(CU_get_cluster_container_ids "${_DC[clustername]}") || return
+
+  printf 'The following containers will be deleted:\n\n'
+
+  GC_set_showheader "${TRUE}"
+  GC_set_clustername "${_DC[clustername]}"
+  GC_run "${_DC[clustername]}" || return
+
+  printf "\nAre you sure you want to delete the cluster? (y/N) >"
+
+  read -r ans
+
+  [[ ${ans} != "y" ]] && {
+    printf '\nCancelling by user request.\n'
+    return "${OK}"
+  }
+
+  printf '\n'
+
+  for id in ${ids}; do
+    UT_run_with_progress \
+      "    Deleting id, '${id}' from cluster '${_DC[clustername]}'." \
+      _DC_delete "${id}"
+    r=$?
+    [[ ${r} -ne 0 ]] && {
+      runlogfile=$(UT_runlogfile) || err || return
+      cat "${runlogfile}" >"${STDERR}"
+      printf '\nERROR: Docker failed.\n\n' >"${STDERR}"
+      err
+      return "${r}"
+    }
+  done
+
+  printf '\n'
+}
+
+# Private Functions -----------------------------------------------------------
+
+# _DC_new sets the initial values for the _DC associative array and sets up the
+# parser ready for processing the command line arguments, options and usage.
+# Args: None expected.
+_DC_new() {
+  _DC[clustername]=
+
+  # Program the parser's state machine
+  PA_add_state "COMMAND" "delete" "SUBCOMMAND" ""
+  PA_add_state "SUBCOMMAND" "deletecluster" "ARG1" ""
+  PA_add_state "ARG1" "deletecluster" "END" "DC_set_clustername"
+
+  # Set up the parser's option callbacks
+  PA_add_option_callback "delete" "DC_process_options" || return
+  PA_add_option_callback "deletecluster" "DC_process_options" || return
+
+  # Set up the parser's usage callbacks
+  PA_add_usage_callback "delete" "DC_usage" || return
+  PA_add_usage_callback "deletecluster" "DC_usage" || return
+}
+
+# DC_sanity_checks is expected to run some quick and simple checks to see if it
+# has it's main requirements before DC_run is called.
+# Args: None expected.
+_DC_sanity_checks() {
+
+  if [[ -z $(PA_subcommand) ]]; then
+    DC_usage
+    exit "${OK}"
+  fi
+
+  if [[ -z ${_DC[clustername]} ]]; then
+    DC_usage
+    printf 'Please provide the Cluster NAME to delete.\n' >"${STDERR}"
+    return "${ERROR}"
+  fi
+}
+
+# _DC_delete stops and removes a docker container.
+# Args: arg1 - docker id to delete.
+_DC_delete() {
+
+  docker stop -t 5 "${id}"
+  docker rm "${id}" || err
+}
+
+# Initialise _DC
+_DC_new || exit 1
+
+# vim helpers -----------------------------------------------------------------
+#include globals.sh
+# vim:ft=sh:sw=2:et:ts=2:
+# shellcheck shell=bash disable=SC2148
+# CC - Create Cluster
+
+# CC is an associative array that holds data specific to creating a cluster.
+declare -A _CC
+
+# Declare externally defined variables ----------------------------------------
+
+# Defined in GL (globals.sh)
+declare OK ERROR STDERR STOP TRUE FALSE K8SVERSION
+
+# Getters/Setters -------------------------------------------------------------
+
+# CC_set_clustername setter sets the clustername array item.
+CC_set_clustername() {
+  _CC[clustername]="$1"
+}
+
+# CC_set_nummasters setter sets the nummasters array item.
+# This function is called by the parser, via a callback in _CC_new.
+CC_set_nummasters() {
+  _CC[nummasters]="$1"
+}
+
+# CC_set_numworkers setter sets the numworkers array item.
+# This function is called by the parser, via a callback in _CC_new.
+CC_set_numworkers() {
+  _CC[numworkers]="$1"
+}
+
+# Public Functions ------------------------------------------------------------
+
+# CC_process_options checks if arg1 is in a list of valid create cluster
+# options. This function is called by the parser.
+# Args: arg1 - the option to check.
+#       arg2 - value of the option to be set, optional. This depends on the
+#              type of option. For example, '--masters' should be sent
+#              with a value but boolean options, like 'skiplbsetup' should not.
+CC_process_options() {
+
+  case "$1" in
+  -h | --help)
+    CC_usage
+    return "${STOP}"
+    ;;
+  --skiplbsetup)
+    _CC[skiplbsetup]="${TRUE}"
+    return
+    ;;
+  --k8sver)
+    _CC[k8sver]="$2"
+    return "$(PA_shift)"
+    ;;
+  --with-lb)
+    _CC[withlb]="${TRUE}"
+    return
+    ;;
+  --skipmastersetup)
+    _CC[skipmastersetup]="${TRUE}"
+    return
+    ;;
+  --skipworkersetup)
+    _CC[skipworkersetup]="${TRUE}"
+    return
+    ;;
+  --masters)
+    _CC[nummasters]="$2"
+    return "$(PA_shift)"
+    ;;
+  --workers)
+    _CC[numworkers]="$2"
+    return "$(PA_shift)"
+    ;;
+  --tailf)
+    _CC[tailf]="${TRUE}"
+    return "${OK}"
+    ;;
+  *)
+    CC_usage
+    printf 'ERROR: "%s" is not a valid "create" option.\n' "${1}" \
+      >"${STDERR}"
+    return "${ERROR}"
+    ;;
+  esac
+}
+
+# CC_usage outputs help text for the create cluster component.  It is called in
+# this file and by PA_usage(), via a callback set in _CC_new.
+# Args: None expected.
+CC_usage() {
+
+  cat <<'EnD'
+CREATE subcommands are:
+ 
+  cluster - Create a local kubernetes cluster.
+ 
+create cluster [flags] options:
+ 
+ Format:
+  create cluster NAME [ [NUM_MASTERS] [NUM_WORKERS] ]
+  NAME        - The name of the cluster. This will be used as
+                the prefix in the name for newly created
+                docker containers.
+  NUM_MASTERS - The number of master containers.
+  NUM_WORKERS - The number of worker containers. If NUM_WORKERS is
+                zero then the 'node-role.kubernetes.io/master' taint
+                will be removed from master nodes so that pods are
+                schedulable.
+ 
+ Flags:
+  --skipmastersetup - Create the master container but don't set it
+         up. Useful for manually installing kubernetes. Kubeadm, 
+         kubelet and kubectl will be installed at the requested 
+         version. With this option the worker will also be skipped.
+         See also '--k8sver' flag.
+  --skipworkersetup - The same as '--skipmastersetup', but skips
+         setting up the worker only.
+  --with-lb - Add a haproxy load balancer. The software will be installed
+         and set up to reverse proxy to the master node(s), unless
+         --skiplbsetup is used.
+  --k8sver VERSION - Unimplemented.
+  --masters NUM - The number of master containers to create.
+  --workers NUM - The number of worker containers to create. When workers
+                  is zero then the master node taint will be removed from
+                  master nodes so that pods are schedulable on those nodes.
+  --tailf - Show the log output whilst creating the cluster.
+
+EnD
+}
+
+# CC_run creates the kubernetes cluster.
+# Args: None expected.
+CC_run() {
+
+  _CC_sanity_checks || return
+
+  [[ ${_CC[tailf]} == "${TRUE}" ]] && {
+    UT_set_tailf "${TRUE}" || err || return
+  }
+
+  declare -i numnodes=0
+
+  numnodes=$(CU_get_cluster_size "${_CC[clustername]}") || return
+
+  [[ ${numnodes} -gt 0 ]] && {
+    printf '\nERROR: Cluster, "%s", exists! Aborting.\n\n' "${_CC[clustername]}" \
+      >"${STDERR}"
+    return "${ERROR}"
+  }
+
+  [[ ${_CC[withlb]} -eq ${TRUE} ]] && {
+    _CC_create_lb_node "${_CC[nummasters]}" || return
+  }
+
+  [[ ${_CC[nummasters]} -gt 0 ]] && {
+    _CC_create_master_nodes "${_CC[nummasters]}" || return
+  }
+
+  [[ ${_CC[withlb]} -eq ${TRUE} ]] && {
+    _CC_setup_lb_node "${_CC[nummasters]}" || return
+  }
+
+  [[ ${_CC[nummasters]} -gt 0 ]] && {
+    _CC_setup_master_nodes "${_CC[nummasters]}" || return
+  }
+
+  [[ ${_CC[numworkers]} -gt 0 ]] && {
+    _CC_create_worker_nodes "${_CC[numworkers]}" || return
+  }
+
+  printf '\n'
+
+  [[ -z ${_CC[skipmastersetup]} ]] && {
+    printf 'Cluster, "%s", can be accessed using:\n\n' "${_CC[clustername]}"
+    printf 'export KUBECONFIG=/var/tmp/admin-%s.conf\n\n' "${_CC[clustername]}"
+  }
+
+  return "${OK}"
+}
+
+# Private Functions -----------------------------------------------------------
+
+# _CC_new sets the initial values for the _CC associative array and sets up the
+# parser ready for processing the command line arguments, options and usage.
+# Args: None expected.
+_CC_new() {
+  _CC[tailf]="${FALSE}"
+  _CC[skipmastersetup]=
+  _CC[skipworkersetup]=
+  _CC[skiplbsetup]=
+  _CC[withlb]=
+  _CC[clustername]=
+  _CC[nummasters]=0
+  _CC[numworkers]=0
+  _CC[k8sver]="${K8SVERSION}"
+
+  # Program the parser's state machine
+  PA_add_state "COMMAND" "create" "SUBCOMMAND" ""
+  PA_add_state "SUBCOMMAND" "createcluster" "ARG2" ""
+
+  # Support for the legacy style of create (less to type):
+  PA_add_state "ARG1" "createcluster" "ARG2" "CC_set_clustername"
+  PA_add_state "ARG2" "createcluster" "ARG3" "CC_set_nummasters"
+  PA_add_state "ARG3" "createcluster" "END" "CC_set_numworkers"
+
+  # Set up the parser's option callbacks
+  PA_add_option_callback "create" "CC_process_options" || return
+  PA_add_option_callback "createcluster" "CC_process_options" || return
+
+  # Set up the parser's usage callbacks
+  PA_add_usage_callback "create" "CC_usage" || return
+  PA_add_usage_callback "createcluster" "CC_usage" || return
+}
+
+# CC_sanity_checks is expected to run some quick and simple checks to see if it
+# has it's main requirements before CC_run is called.
+# Args: None expected.
+_CC_sanity_checks() {
+
+  declare -i host_max=0 cpus=0 should_be=0
+
+  if [[ -z $(PA_subcommand) ]]; then
+    CC_usage
+    exit "${OK}"
+  fi
+
+  if [[ -z ${_CC[clustername]} ]]; then
+    CC_usage
+    printf 'Please provide the Cluster NAME to create.\n' >"${STDERR}"
+    return "${ERROR}"
+  fi
+
+  if [[ -z ${_CC[nummasters]} || ${_CC[nummasters]} -le 0 ]]; then
+    CC_usage
+    printf 'Please provide the number of Masters to create. Must be 1 or more.\n' \
+      >"${STDERR}"
+    return "${ERROR}"
+  fi
+
+  if [[ -z ${_CC[numworkers]} ]]; then
+    CC_usage
+    printf 'Please provide the number of Workers to create.\n' >"${STDERR}"
+    return "${ERROR}"
+  fi
+
+  if [[ -e /proc/sys/net/nf_conntrack_max ]]; then
+    host_max=$(cat /proc/sys/net/nf_conntrack_max)
+  else
+    printf '\nWARNING: /proc/sys/net/nf_conntrack_max not found.\n' >"${STDERR}"
+    printf '         kube-proxy may not work.\n\n' >"${STDERR}"
+  fi
+
+  if [[ -e /proc/cpuinfo ]]; then
+    cpus=$(grep -cw ^processor /proc/cpuinfo)
+  else
+    printf '\nWARNING: /proc/cpuinfo not found.\n' >"${STDERR}"
+    printf '         I have no idea how many CPUs I have\n' >"${STDERR}"
+    printf '         and kube-proxy may not work.\n\n' >"${STDERR}"
+  fi
+
+  # These are the default values for kube-proxy:
+  # conntrack:
+  #   max: null
+  #   maxPerCore: 32768
+  #   min: 131072
+  if [[ $((32768*cpus)) -ne $host_max ]]; then
+    if [[ $((32768*cpus)) -lt 131072 ]]; then
+      should_be=131072
+    else
+      should_be=$((32768*cpus))
+    fi
+    printf '\nWARNING: /proc/sys/net/nf_conntrack_max should be set to %d.\n' \
+      "${should_be}" >"${STDERR}"
+    printf '         If kube-proxy does not start then try:\n' >"${STDERR}"
+    printf '           sudo sysctl -w net.netfilter.nf_conntrack_max=%d\n\n' \
+      "${should_be}" >"${STDERR}"
+  fi
+}
+
+# _CC_create_master_nodes creates the master node containers.
+# Args: arg1 - number of master nodes to create
+_CC_create_master_nodes() {
+
+  declare -i int=0 r
+
+  local labelkey runlogfile
+  labelkey=$(CU_labelkey) || err || return
+
+  for int in $(seq 1 "$1"); do
+    UT_run_with_progress \
+      "    Creating master container, '${_CC[clustername]}-master-${int}'" \
+      CU_create_container \
+      "${_CC[clustername]}-master-${int}" \
+      "${labelkey}=${_CC[clustername]}" \
+      "${_CC[k8sver]}"
+    r=$?
+
+    [[ ${r} -ne 0 ]] && {
+      runlogfile=$(UT_runlogfile) || err || return
+      printf '\n'
+      cat "${runlogfile}" >"${STDERR}"
+      printf '\nERROR: Docker failed.\n' >"${STDERR}"
+      return "${ERROR}"
+    }
+  done
+
+  return "${OK}"
+}
+
+# _CC_setup_master_nodes sets up the master node containers.
+# Args: arg1 - number of master nodes to create
+_CC_setup_master_nodes() {
+
+  declare -i int=0 r
+
+  local labelkey runlogfile
+  labelkey=$(CU_labelkey) || err || return
+
+  for int in $(seq 1 "$1"); do
+    UT_run_with_progress \
+      "    Setting up '${_CC[clustername]}-master-${int}'" \
+      _CC_set_up_master_node "${_CC[clustername]}-master-${int}"
+    r=$?
+
+    [[ ${r} -ne 0 ]] && {
+      runlogfile=$(UT_runlogfile) || err || return
+      printf '\n' >"${STDERR}"
+      cat "${runlogfile}" >"${STDERR}"
+      printf '\nERROR: Set up failed. See above, and also in the file:' >"${STDERR}"
+      printf '%s\n' "${runlogfile}" >"${STDERR}"
+      return "${ERROR}"
+    }
+  done
+
+  # For now, copy admin.conf from master to /var/tmp/admin-CLUSTERNAME.conf
+
+  if [[ -z ${_CC[skipmastersetup]} ]]; then
+    if [[ ${_CC[withlb]} -eq ${TRUE} ]]; then
+      lbaddr=$(CU_get_container_ip "${_CC[clustername]}-lb") || err || return
+      docker cp "${_CC[clustername]}-master-1:/etc/kubernetes/admin.conf" \
+        "/var/tmp/admin-${_CC[clustername]}.conf" || err || return
+      sed -i 's#\(server: https://\)[0-9.]*\(:.*\)#\1'"${lbaddr}"'\2#' \
+        "/var/tmp/admin-${_CC[clustername]}.conf"
+    else
+      [[ -n ${_CC[skipmastersetup]} ]] || {
+        docker cp "${_CC[clustername]}-master-1:/etc/kubernetes/admin.conf" \
+          "/var/tmp/admin-${_CC[clustername]}.conf" || err || return
+      }
+    fi
+
+    chmod 666 "/var/tmp/admin-${_CC[clustername]}.conf" || {
+      printf 'ERROR: Could not "chown 666 /var/tmp/admin-%s.conf"' "${_CC[clustername]}"
+      err || return
+    }
+  fi
+
+  return "${OK}"
+}
+
+# _CC_set_up_master_node calls the correct set up function based on the version
+# Args: arg1 - the container ID to set up
+_CC_set_up_master_node() {
+
+  case "${_CC[k8sver]}" in
+  "1.30.0" | "1.30.1" | "1.31.1")
+    _CC_set_up_master_node_v1_30_0 "$@"
+    ;;
+  *)
+    printf 'ERROR: Version not found, "%s".\n' "${_CC[k8sver]}" >"${STDERR}"
+    err || return
+    ;;
+  esac
+}
+
+# _CC_get_master_join_details uses 'docker exec' or 'podman exec' to run a
+# script on the master to get CA hash, a token, and the master IP.  The caller
+# can eval the output of this function to set the variables: cahash, token, and
+# masterip. See also:
+# https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-join/#token-based-discovery-with-ca-pinning
+# Args: arg1 - id/name of master container
+_CC_get_master_join_details() {
+
+  local joinvarsfile master1ip
+
+  joinvarsfile=$(mktemp -p /var/tmp) || {
+    printf 'ERROR: mktmp failed.\n' >"${STDERR}"
+    return "${ERROR}"
+  }
+
+  master1ip=$(CU_get_container_ip "${_CC[clustername]}-master-1") || err || return
+
+  cat <<EnD >"${joinvarsfile}"
+#!/bin/bash
+set -e
+
+sed 's#\(server: https://\)[0-9.]*\(:.*\)#\1'"${master1ip}"'\2#' \
+  /etc/kubernetes/super-admin.conf >/etc/kubernetes/admin2.conf
+
+cahash=\$(openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | \
+        openssl rsa -pubin -outform der 2>/dev/null | \
+        openssl dgst -sha256 -hex | sed 's/^.* //')
+token=\$(kubeadm token create --kubeconfig=/etc/kubernetes/admin2.conf 2>/dev/null)
+ip=\$(ip ro get 8.8.8.8 | cut -d" " -f 7)
+
+printf 'cahash=%s\ntoken=%s\nmasterip=%s' "\$cahash" "\$token" "\$ip"
+
+exit 0
+EnD
+
+  docker cp "${joinvarsfile}" "$1":/root/joinvars.sh 2>"${STDERR}" ||
+    err || return
+  rm -f "${joinvarsfile}" 2>"${STDERR}" || err || return
+
+  [[ -z ${_CC[skipworkersetup]} ]] && {
+    docker exec "$1" bash /root/joinvars.sh 2>"${STDERR}" || err || return
+  }
+
+  return "${OK}"
+}
+
+# _CC_create_lb_node creates the load balancer node container.
+# Args: None expected.
+_CC_create_lb_node() {
+
+  local labelkey runlogfile
+  labelkey=$(CU_labelkey) || err || return
+
+  # Create container
+  UT_run_with_progress \
+    "    Creating load balancer container, '${_CC[clustername]}-lb'" \
+    CU_create_container \
+    "${_CC[clustername]}-lb" \
+    "${labelkey}=${_CC[clustername]}" \
+    "${_CC[k8sver]}"
+
+  [[ ${r} -ne 0 ]] && {
+    runlogfile=$(UT_runlogfile) || err || return
+    printf '\n' >"${STDERR}"
+    cat "${runlogfile}" >"${STDERR}"
+    printf '\nERROR: Set up failed. See above, and also in the file:' >"${STDERR}"
+    printf '%s\n' "${runlogfile}" >"${STDERR}"
+    return "${ERROR}"
+  }
+
+  return "${OK}"
+}
+
+# _CC_setup_lb_node sets up the load balancer node container.
+# Args: None expected.
+_CC_setup_lb_node() {
+
+  local runlogfile
+
+  # Set up
+  [[ -z ${_CC[skiplbsetup]} ]] && {
+    UT_run_with_progress \
+      "    Setting up '${_CC[clustername]}-lb'" \
+      _CC_set_up_lb_node_real "${_CC[clustername]}-lb"
+    r=$?
+
+    [[ ${r} -ne 0 ]] && {
+      runlogfile=$(UT_runlogfile) || err || return
+      printf '\n' >"${STDERR}"
+      cat "${runlogfile}" >"${STDERR}"
+      printf '\nERROR: Set up failed. See above, and also in the file:' >"${STDERR}"
+      printf '%s\n' "${runlogfile}" >"${STDERR}"
+      return "${ERROR}"
+    }
+  }
+
+  return "${OK}"
+}
+
+# _CC_set_up_lb_node_real sets up the lb node.
+# Args: arg1 - the container ID to set up
+_CC_set_up_lb_node_real() {
+
+  local setupfile nl idx masteriplist
+
+  setupfile=$(mktemp -p /var/tmp) || {
+    printf 'ERROR: mktmp failed.\n' >"${STDERR}"
+    return "${ERROR}"
+  }
+
+  masteriplist=
+  nl=
+  gotamaster="${FALSE}"
+  for idx in $(seq 1 "${_CC[nummasters]}"); do
+    ip=$(CU_get_container_ip "${_CC[clustername]}-master-${idx}") || continue
+    gotamaster="${TRUE}"
+    masteriplist="${masteriplist}${nl}    server master-${idx} ${ip}:6443 check fall 3 rise 2"
+    nl='\n'
+  done
+
+  [[ ${gotamaster} == "${FALSE}" ]] && {
+    printf 'ERROR: Did not manage to get an IP address for any master nodes\n'
+    err || return
+  }
+
+  cat <<EnD >"${setupfile}"
+# Disable ipv6
+sysctl -w net.ipv6.conf.all.disable_ipv6=1
+sysctl -w net.ipv6.conf.default.disable_ipv6=1
+
+systemctl stop kubelet crio
+systemctl disable kubelet crio
+
+yum -y install haproxy
+
+INTERNAL_IP=\$(ip ro get default 8.8.8.8 | head -n 1 | cut -f 7 -d " ")
+
+cat <<EOF | tee /etc/haproxy/haproxy.cfg 
+frontend kubernetes
+    bind \$INTERNAL_IP:6443
+    option tcplog
+    mode tcp
+    default_backend kubernetes-master-nodes
+backend kubernetes-master-nodes
+    mode tcp
+    balance roundrobin
+    option tcp-check
+\$(echo -e "${masteriplist}")
+EOF
+
+systemctl restart haproxy
+systemctl enable haproxy
+
+EnD
+
+  docker cp "${setupfile}" "$1":/root/setup.sh || err || {
+    rm -f "${setupfile}"
+    return "${ERROR}"
+  }
+
+  docker exec "$1" bash /root/setup.sh || err
+}
+
+# _CC_create_worker_nodes creates the worker nodes.
+# Args: arg1 - number of worker nodes to create
+_CC_create_worker_nodes() {
+
+  local cahash token t masterip
+  declare -i int=0
+
+  [[ -n ${_CC[skipmastersetup]} ]] || {
+    # Runs a script on master node to get details
+    t=$(_CC_get_master_join_details "${_CC[clustername]}-master-1") || {
+      printf '\nERROR: Problem with "_CC_get_master_join_details".\n\n' >"${STDERR}"
+      return "${ERROR}"
+    }
+
+    # Sets cahash, token, and masterip:
+    eval "${t}"
+  }
+
+  local labelkey
+  labelkey=$(CU_labelkey) || err || return
+
+  for int in $(seq 1 "$1"); do
+    UT_run_with_progress \
+      "    Creating worker container, '${_CC[clustername]}-worker-${int}'" \
+      CU_create_container \
+      "${_CC[clustername]}-worker-${int}" \
+      "${labelkey}=${_CC[clustername]}" \
+      "${_CC[k8sver]}"
+    r=$?
+    [[ ${r} -ne 0 ]] && {
+      runlogfile=$(UT_runlogfile) || err || return
+      printf '\n'
+      cat "${runlogfile}" >"${STDERR}"
+      printf '\nERROR: Docker failed.\n' >"${STDERR}"
+      return "${ERROR}"
+    }
+
+    [[ -n ${_CC[skipworkersetup]} || -n ${_CC[skipmastersetup]} ]] || {
+      UT_run_with_progress \
+        "    Setting up '${_CC[clustername]}-worker-${int}'" \
+        _CC_set_up_worker_node "${_CC[clustername]}-worker-${int}" \
+        "${cahash}" "${token}" "${masterip}"
+      r=$?
+      [[ ${r} -ne 0 ]] && {
+        runlogfile=$(UT_runlogfile) || err || return
+        printf '\n' >"${STDERR}"
+        cat "${runlogfile}" >"${STDERR}"
+        printf '\nERROR: Set up failed. See above, and also in the file:' >"${STDERR}"
+        printf '%s\n' "${runlogfile}" >"${STDERR}"
+        return "${ERROR}"
+      }
+
+      UT_run_with_progress \
+        "    Waiting for system to become ready" \
+        _CC_wait_for_cluster \
+        "${_CC[clustername]}-master-1" \
+        "${_CC[clustername]}-worker-${int}"
+      r=$?
+      [[ ${r} -ne 0 ]] && {
+        runlogfile=$(UT_runlogfile) || err || return
+        printf '\n'
+        cat "${runlogfile}" >"${STDERR}"
+        printf '\nERROR: Wait timed out.\n' >"${STDERR}"
+        return "${ERROR}"
+      }
+    }
+  done
+
+  return "${OK}"
+}
+
+# _CC_wait_for_cluster runs a `kubectl` command in the master-1 container,
+# which doesn't exit until the all pods are fully up and running before it
+# returns.
+# Args: arg1 - the master container name to log into
+#       arg2 - the worker container name to wait for
+_CC_wait_for_cluster() {
+
+  local setupfile nl idx masteriplist
+
+  setupfile=$(mktemp -p /var/tmp) || {
+    printf 'ERROR: mktmp failed.\n' >"${STDERR}"
+    return "${ERROR}"
+  }
+
+  cat <<'EnD' >"${setupfile}"
+export KUBECONFIG=/etc/kubernetes/super-admin.conf
+found=0
+for i in $(seq 1 20); do
+  if kubectl get pods &>/dev/null; then
+    found=1
+    break
+  fi
+  sleep 1
+done
+[[ $found == 0 ]] && {
+  printf '# kubectl get pods\n'
+  kubectl get pods
+  printf '\nWaited for 20 seconds for kubectl to work.\n'
+  printf 'Kubectl cannot contact master. Aborting.\n'
+  exit 1
+}
+counter=0
+while ! kubectl get nodes | grep -qs "$1"; do
+  ((counter++))
+  [[ ${counter} -gt 60 ]] && {
+    printf '# kubectl get nodes\n'
+    kubectl get nodes
+    printf '\nWaited for 2 minutes for node to appear in master. Aborting.\n'
+    exit 1
+  }
+  sleep 2
+done
+counter=0
+while kubectl get pods -A | tail -n +2 | awk '{ print $3; }' | grep -qs 0; do
+  ((counter++))
+  [[ ${counter} -gt 120 ]] && {
+    printf '# kubectl get pods -A\n'
+    kubectl get pods -A
+    printf '\nWaited for 3 minutes for pods to be ready. Aborting.\n'
+    exit 1
+  }
+  sleep 2
+done
+exit 0
+EnD
+
+  docker cp "${setupfile}" "$1":/root/wait.sh || err || {
+    rm -f "${setupfile}"
+    return "${ERROR}"
+  }
+
+  docker exec "$1" bash /root/wait.sh "$2" || err
+}
+
+# _CC_set_up_worker_node calls the correct set up function based on the version.
+# Args: arg1 - the container ID to set up
+#       arg2 - the CA hash
+#       arg3 - the token
+#       arg4 - the master IP
+_CC_set_up_worker_node() {
+
+  case "${_CC[k8sver]}" in
+  "1.30.0" | "1.30.1" | "1.31.1")
+    _CC_set_up_worker_node_v1_30_0 "$@"
+    ;;
+  *)
+    printf 'ERROR: Version not found, "%s".\n' "${_CC[k8sver]}" >"${STDERR}"
+    err || return
+    ;;
+  esac
+}
+
+# Initialise _CC
+_CC_new || exit 1
+
+# vim helpers -----------------------------------------------------------------
+#include globals.sh
+# vim:ft=sh:sw=2:et:ts=2:
+# shellcheck shell=bash disable=SC2148
+# CC - Create Cluster - versions file
+
+# CC is an associative array that holds data specific to creating a cluster.
+declare -A _CC
+
+# Declare externally defined variables ----------------------------------------
+
+# Defined in GL (globals.sh)
+declare OK ERROR STDERR TRUE K8SVERSION
+
+# _CC_set_up_master_node_v1_30_0 uses kubeadm to set up the master node.
+# Args: arg1 - the container to set up.
+_CC_set_up_master_node_v1_30_0() {
+
+  local setupfile lbaddr certSANs certkey masternum t
+  # Set by _CC_get_master_join_details:
+  local cahash token masterip
+
+  setupfile=$(mktemp -p /var/tmp) || {
+    printf 'ERROR: mktmp failed.\n' >"${STDERR}"
+    return "${ERROR}"
+  }
+
+  masternum="${1##*-}" # <- eg. for xxx-master-1, masternum=1
+
+  if [[ ${_CC[skipmastersetup]} != "${TRUE}" ]]; then
+
+    if [[ ${_CC[withlb]} == "${TRUE}" && ${masternum} -eq 1 ]]; then
+
+      # This is the first master node
+
+      # Sets cahash, token, and masterip:
+      lbaddr=$(CU_get_container_ip "${_CC[clustername]}-lb")
+      certSANs="certSANs: [ '${lbaddr}' ]"
+      uploadcerts="--upload-certs"
+      certkey="CertificateKey: f8802e114ef118304e561c3acd4d0b543adc226b7a27f675f56564185ffe0c07"
+
+    elif [[ ${_CC[withlb]} == "${TRUE}" && ${masternum} -ne 1 ]]; then
+
+      # This is not the first master node, so join with the master
+      # https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/
+
+      # Keep trying to get join details until apiserver is ready or we run out of tries
+      for try in $(seq 1 9); do
+        # Runs a script on master node to get join details
+        t=$(_CC_get_master_join_details "${_CC[clustername]}-master-1")
+        retval=$?
+        [[ ${retval} -eq 0 ]] && break
+        [[ ${try} -eq 9 ]] && {
+          printf '\nERROR: Problem with "_CC_get_master_join_details". Tried %d times\n\n' "${try}" \
+            >"${STDERR}"
+          return "${ERROR}"
+        }
+        sleep 5
+      done
+      eval "${t}"
+    fi
+  fi
+
+  # Write the file regardless, so the user can use it if required
+
+  cat <<EnD >"${setupfile}"
+# Disable ipv6
+sysctl -w net.ipv6.conf.all.disable_ipv6=1
+sysctl -w net.ipv6.conf.default.disable_ipv6=1
+
+# Use a custom configuration. Default config created from kubeadm with:
+#   kubeadm config print init-defaults
+# then edited.
+
+ipaddr=\$(ip ro get default 8.8.8.8 | head -n 1 | cut -f 7 -d " ")
+podsubnet="10.244.0.0/16"
+servicesubnet="10.96.0.0/16"
+
+cat <<EOF >kubeadm-init-defaults.yaml
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: InitConfiguration
+${certkey}
+bootstrapTokens:
+- groups:
+  - system:bootstrappers:kubeadm:default-node-token
+  token: abcdef.0123456789abcdef
+  ttl: 24h0m0s
+  usages:
+  - signing
+  - authentication
+localAPIEndpoint:
+  advertiseAddress: \$ipaddr
+  bindPort: 6443
+nodeRegistration:
+  criSocket: unix:///var/run/crio/crio.sock
+  imagePullPolicy: IfNotPresent
+  name: $1
+  kubeletExtraArgs: {}
+  taints:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+failSwapOn: false
+featureGates:
+  AllAlpha: false
+  RunAsGroup: true
+runtimeRequestTimeout: "5m"
+---
+kind: ClusterConfiguration
+controlPlaneEndpoint: "${lbaddr:-\$ipaddr}:6443"
+apiServer:
+  timeoutForControlPlane: 4m0s
+  ${certSANs}
+apiVersion: kubeadm.k8s.io/v1beta3
+certificatesDir: /etc/kubernetes/pki
+clusterName: kubernetes
+controllerManager: {}
+dns:
+  type: CoreDNS
+etcd:
+  local:
+    dataDir: /var/lib/etcd
+imageRepository: registry.k8s.io
+kubernetesVersion: ${K8SVERSION}
+networking:
+  dnsDomain: cluster.local
+  podSubnet: \$podsubnet
+  serviceSubnet: \$servicesubnet
+scheduler: {}
+EOF
+
+if [[ -z "${masterip}" ]]; then
+  # Run the preflight phase
+  kubeadm init \\
+    --ignore-preflight-errors Swap \\
+    --config=kubeadm-init-defaults.yaml ${uploadcerts} \\
+    phase preflight
+
+  # Set up the kubelet
+  kubeadm init phase kubelet-start
+
+  # Edit the kubelet configuration file
+  echo "failSwapOn: false" >>/var/lib/kubelet/config.yaml
+  sed -i 's/cgroupDriver: systemd/cgroupDriver: cgroupfs/' /var/lib/kubelet/config.yaml
+
+  # Tell kubeadm to carry on from here
+  kubeadm init \\
+    --pod-network-cidr=10.244.0.0/16 \\
+    --ignore-preflight-errors Swap \\
+    --skip-phases=preflight,kubelet-start
+
+  export KUBECONFIG=/etc/kubernetes/super-admin.conf
+
+  # Flannel - 10.244.0.0./16
+  kubectl apply -f /root/kube-flannel.yml
+else
+  kubeadm join ${masterip}:6443 \\
+    --ignore-preflight-errors Swap \\
+    --control-plane \\
+    --token ${token} \\
+    --discovery-token-ca-cert-hash sha256:${cahash} \\
+    --certificate-key f8802e114ef118304e561c3acd4d0b543adc226b7a27f675f56564185ffe0c07
+fi
+
+systemctl enable kubelet
+EnD
+
+  docker cp "${setupfile}" "$1":/root/setup.sh || err || {
+    rm -f "${setupfile}"
+    return "${ERROR}"
+  }
+
+  # Run the file
+  [[ -z ${_CC[skipmastersetup]} ]] && {
+    docker exec "$1" bash /root/setup.sh || err || return
+
+    # Remove the taint if we're setting up a single node cluster
+
+    [[ ${_CC[numworkers]} -eq 0 ]] && {
+
+      removetaint=$(mktemp -p /var/tmp) || {
+        printf 'ERROR: mktmp failed.\n' >"${STDERR}"
+        return "${ERROR}"
+      }
+
+      # Write the file
+      cat <<'EnD' >"${removetaint}"
+export KUBECONFIG=/etc/kubernetes/super-admin.conf
+kubectl taint nodes --all node-role.kubernetes.io/control-plane:NoSchedule-
+EnD
+
+      docker cp "${removetaint}" "$1":/root/removetaint.sh || err || {
+        rm -f "${removetaint}"
+        return "${ERROR}"
+      }
+
+      # Run the file
+      docker exec "$1" bash /root/removetaint.sh || err
+    }
+  }
+
+  return "${OK}"
+}
+
+# _CC_set_up_worker_node_v1_30_0 uses kubeadm to set up the worker node.
+# Args: arg1 - the container to set up.
+_CC_set_up_worker_node_v1_30_0() {
+
+  local setupfile cahash="$2" token="$3" masterip="$4"
+
+  setupfile=$(mktemp -p /var/tmp) || {
+    printf 'ERROR: mktmp failed.\n' >"${STDERR}"
+    return "${ERROR}"
+  }
+
+  if [[ ${_CC[withlb]} == "${TRUE}" ]]; then
+    masterip=$(CU_get_container_ip "${_CC[clustername]}-lb") || return
+  fi
+
+  cat <<EnD >"${setupfile}"
+# Wait for the master API to become ready
+while true; do
+  curl -k https://${masterip}:6443/
+  [[ \$? -eq 0 ]] && break
+  sleep 1
+done
+
+# Do the preflight tests (ignoring swap error)
+kubeadm join \\
+  phase preflight \\
+    --token ${token} \\
+    --discovery-token-ca-cert-hash sha256:${cahash} \\
+    --ignore-preflight-errors Swap \\
+    ${masterip}:6443
+
+# Set up the kubelet
+kubeadm join \\
+  phase kubelet-start \\
+    --token ${token} \\
+    --discovery-token-ca-cert-hash sha256:${cahash} \\
+    ${masterip}:6443 &
+
+while true; do
+  [[ -e /var/lib/kubelet/config.yaml ]] && break
+    sleep 1
+  done
+
+# Edit the kubelet configuration file
+echo "failSwapOn: false" >>/var/lib/kubelet/config.yaml
+sed -i 's/cgroupDriver: systemd/cgroupDriver: cgroupfs/' /var/lib/kubelet/config.yaml
+
+systemctl enable --now kubelet
+EnD
+
+  docker cp "${setupfile}" "$1":/root/setup.sh 2>"${STDERR}" || err || {
+    rm -f "${setupfile}"
+    return "${ERROR}"
+  }
+
+  docker exec "$1" bash /root/setup.sh || err
+}
+
+# vim helpers -----------------------------------------------------------------
+#include globals.sh
+# vim:ft=sh:sw=2:et:ts=2:
+# shellcheck shell=bash disable=SC2148
+# CU - Container Utilities
+
+# _CU is an associative array that holds data specific to containers.
+declare -A _CU
+
+# Declare externally defined variables ----------------------------------------
+
+declare OK ERROR STDERR
+
+# Getters/Setters -------------------------------------------------------------
+
+# CU_containerrt getter outputs the container runtime (podman or docker)
+# that has been chosen.
+CU_containerrt() {
+  printf '%s' "${_CU[containerrt]}"
+}
+
+# CU_imgprefix getter outputs the prefix to be used with docker build. For
+# podman it is 'localhost/'. For docker it is empty.
+CU_imgprefix() {
+  printf '%s' "${_CU[imgprefix]}"
+}
+
+# CU_labelkey getter outputs the key value of the label that is applied to all
+# cluster member's container labels for podman or docker.
+CU_labelkey() {
+  printf '%s' "${_CU[labelkey]}"
+}
+
+# Public Functions ------------------------------------------------------------
+
+# CU_cleanup removes artifacts that were created during execution. Currently
+# this does nothing and this function could be deleted.
+CU_cleanup() { :; }
+
+# CU_get_cluster_container_ids outputs just the container IDs, one per line
+# for any MOK cluster, unless arg1 is set, in which case just the IDs
+# for the requested cluster name are output.
+# Args: arg1 - The cluster name, optional.
+CU_get_cluster_container_ids() {
+
+  local value output
+
+  [[ -n $1 ]] && value="=$1"
+
+  output=$(docker ps -a -f label="${_CU[labelkey]}${value}" -q) || {
+    printf 'ERROR: %s command failed\n' "${_CU[containerrt]}" >"${STDERR}"
+    err || return
+  }
+
+  output=$(printf '%s' "${output}" | sed 's/$//')
+
+  printf '%s' "${output}"
+
+  return "${OK}"
+}
+
+# CU_get_cluster_size searches for an existing cluster using labels and outputs
+# the number of containers in that cluster. All cluster nodes are labelled with
+# "${_CU[labelkey]}=${CC[clustername]}"
+# Args: arg1 - The cluster name to search for.
+CU_get_cluster_size() {
+
+  local output
+  declare -a nodes
+
+  [[ -z ${1} ]] && {
+    printf 'INTERNAL ERROR: Cluster name cannot be empty.\n' >"${STDERR}"
+    err || return
+  }
+
+  output=$(CU_get_cluster_container_ids "$1") || err || return
+
+  # readarray will read null as an array item so don't run
+  # through readarray if it's null
+  [[ -z ${output} ]] && {
+    printf '0'
+    return "${OK}"
+  }
+
+  # read the nodes array and delete blank lines
+  readarray -t nodes <<<"${output}"
+
+  printf '%d' "${#nodes[*]}"
+}
+
+# CU_get_container_ip outputs the IP address of the container.
+# Args: arg1 - docker container id or container name to query.
+CU_get_container_ip() {
+
+  [[ -z ${1} ]] && {
+    printf 'INTERNAL ERROR: Container ID (arg1) cannot be empty.\n' >"${STDERR}"
+    err || return
+  }
+
+  docker inspect \
+    --format='{{.NetworkSettings.Networks.mok_network.IPAddress}}' \
+    "$1" || {
+    printf 'ERROR: %s inspect failed\n' "${_CU[containerrt]}" >"${STDERR}"
+    err || return
+  }
+}
+
+# CU_get_container_info uses 'docker/podman inspect $id' to output
+# container details.
+# Args: arg1 - docker container id
+CU_get_container_info() {
+
+  [[ -z ${1} ]] && {
+    printf 'INTERNAL ERROR: Container ID (arg1) cannot be empty.\n' >"${STDERR}"
+    err || return
+  }
+
+  docker inspect "$1" || {
+    printf 'ERROR: %s inspect failed\n' "${_CU[containerrt]}" >"${STDERR}"
+    err || return
+  }
+}
+
+# CU_create_container creates and runs a container with settings suitable for
+# running privileged containers that can manipulate cgroups.
+# Args: arg1 - The string used to set the name and hostname.
+#       arg2 - The label to assign to the container.
+#       arg3 - The k8s base image version to use.
+CU_create_container() {
+
+  local imagename img allimgs
+
+  [[ -z $1 || -z $2 || -z $3 ]] && {
+    printf 'INTERNAL ERROR: Neither arg1, arg2 nor arg3 can be empty.\n' \
+      >"${STDERR}"
+    err || return
+  }
+
+  img=$(BI_baseimagename) || err || return
+
+  local imglocal="${_CU[imgprefix]}local/${img}-v${3}"
+  local imgremote="myownkind/${img}-v${3}"
+
+  # Prefer a locally built container over one downloaded from a registry
+  allimgs=$(docker images | tail -n +2) || {
+    printf 'ERROR: %s returned an error\n' "${_CU[containerrt]}" >"${STDERR}"
+    err || return
+  }
+
+  if echo "${allimgs}" | grep -qs "${imglocal}"; then
+    imagename="${imglocal}"
+  elif echo "${allimgs}" | grep -qs "${imgremote}"; then
+    imagename="${imgremote}"
+  else
+    cat <<EnD
+ERROR: No container base image found. Use either:
+
+  $ mok build image
+OR
+  $ mok build image --get-prebuilt-image
+
+Then try running 'mok create ...' again.
+EnD
+    return "${ERROR}"
+  fi
+
+  if [[ ${_CU[containerrt]} == "podman" ]];
+  then 
+    create_network=$(docker network exists mok_network)
+  else
+    create_network=$(docker network inspect mok_network >/dev/null 2>&1)
+  fi
+
+  [[ ${create_network} -eq 1 ]] && {
+    docker network create mok_network || {
+      printf 'ERROR: docker network create failed\n' >"${STDERR}"
+      err || return
+    }
+  }
+
+  docker run --privileged \
+    --network mok_network \
+    -v /lib/modules:/lib/modules:ro \
+    --systemd=always \
+    --detach \
+    --name "$1" \
+    --hostname "$1" \
+    --label "$2" \
+    "${imagename}" \
+    /usr/local/bin/entrypoint /lib/systemd/systemd log-level=info unit=sysinit.target || {
+    printf 'ERROR: %s run failed\n' "${_CU[containerrt]}" >"${STDERR}"
+    err || return
+  }
+}
+
+# Private Functions -----------------------------------------------------------
+
+# _CU_new sets the initial values for the Container Utils associative array.
+# Args: None expected.
+_CU_new() {
+  _CU[imgprefix]=
+  _CU[labelkey]="MokCluster"
+  _CU[containerrt]=
+
+  _CU_podman_or_docker
+}
+
+# CU_podman_or_docker checks to see if docker and/or podman are installed and
+# sets the imgprefix and containerrt array members accordingly. It also defines
+# the docker function to run the detected container runtime. Docker is
+# preferred if both are installed.
+# Args: No args expected.
+_CU_podman_or_docker() {
+
+  local id
+
+  if type podman &>/dev/null; then
+    _CU[imgprefix]="localhost/"
+    _CU[containerrt]="podman"
+    local id
+    id=$(id -u)
+    [[ ${id} -ne 0 ]] && {
+      cat <<EnD >"${STDERR}"
+Please use 'sudo' to run this command.
+
+  $ sudo mok $(MA_program_args)
+
+Try using:
+
+  $ alias mok="sudo mok"
+
+Then run the command again.
+EnD
+      return "${ERROR}"
+    }
+    docker() {
+      podman "$@"
+    }
+  elif type docker &>/dev/null; then
+    _CU[imgprefix]=""
+    _CU[containerrt]="docker"
+    if docker ps >/dev/stdout 2>&1 | grep -qs 'docker.sock.*permission denied'; then
+      cat <<'EnD' >"${STDERR}"
+Not enough permissions to write to 'docker.sock'.
+Fix the permissions for this user or run as root, such as:
+
+  $ alias mok="sudo mok"
+
+Then run the command again.
+EnD
+      return "${ERROR}"
+    fi
+  else
+    printf 'ERROR: Neither "podman" nor "docker" were found.\n' \
+      >"${STDERR}"
+    printf 'Please install one of "podman" or "docker".\nAborting.\n' \
+      >"${STDERR}"
+    return "${ERROR}"
+  fi
+
+  return "${OK}"
+}
+
+# Initialise _CU
+_CU_new || exit 1
+
+# vim helpers -----------------------------------------------------------------
+#include globals.sh
+# vim:ft=sh:sw=2:et:ts=2:
+# shellcheck shell=bash disable=SC2148
+# BI - Build Image
+
+# _BI is an associative array that holds data specific to building an image.
+declare -A _BI
+
+# Declare externally defined variables ----------------------------------------
+
+# Defined in GL (globals.sh)
+declare OK ERROR STDERR STOP TRUE FALSE
+
+# Getters/Setters -------------------------------------------------------------
+
+# BI_setflag_useprebuiltimage setter sets the useprebuiltimage array item.
+# This is called by the parser, via a callback in _BI_new.
+BI_setflag_useprebuiltimage() {
+  _BI[useprebuiltimage]="$1"
+}
+
+# BI_baseimagename getter outputs the value of the _BI[baseimagename].
+# Args: None expected.
+BI_baseimagename() {
+  printf '%s' "${_BI[baseimagename]}"
+}
+
+# Public Functions ------------------------------------------------------------
+
+# BI_usage outputs help text for the build image component.
+# It is called by PA_usage(), via a callback in _BI_new.
+# Args: None expected.
+BI_usage() {
+
+  # NOTE: This flag to be added back in the future
+  # --get-prebuilt-image - Instead of building a 'node' image
+  #        locally, download it from a container registry instead.
+
+  cat <<'EnD'
+BUILD subcommands are:
+ 
+  image - Creates the docker 'mok-image' container image.
+ 
+build image options:
+ 
+ Format:
+  build image
+
+ Flags:
+  --tailf - Show the build output whilst building.
+
+EnD
+}
+
+# BI_cleanup removes temporary files created during the build.
+# This function is called by the 'MA_cleanup' trap only.
+# Args: None expected.
+BI_cleanup() {
+  [[ -e ${_BI[dockerbuildtmpdir]} ]] &&
+    [[ ${_BI[dockerbuildtmpdir]} == "/var/tmp/"* ]] && {
+    rm -rf "${_BI[dockerbuildtmpdir]}" || {
+      printf 'ERROR: "rm -rf %s" failed.\n' "${_BI[dockerbuildtmpdir]}" \
+        >"${STDERR}"
+      err || return
+    }
+  }
+}
+
+# BI_check_valid_options checks if arg1 is in a list of valid build image
+# options. This function is called by the parser, via a callback in _BI_new.
+# Args: arg1 - the option to check.
+#       arg2 - value of the item to be set, optional
+BI_process_options() {
+
+  case "$1" in
+  -h | --help)
+    BI_usage
+    return "${STOP}"
+    ;;
+  --tailf)
+    _BI[tailf]="${TRUE}"
+    return "${OK}"
+    ;;
+  # NOTE: This flag to be added back in the future
+  # --get-prebuilt-image)
+  #   _BI[useprebuiltimage]="${TRUE}"
+  #   return "${OK}"
+  #   ;;
+  *)
+    BI_usage
+    printf 'ERROR: "%s" is not a valid "build" option.\n' "${1}" \
+      >"${STDERR}"
+    return "${ERROR}"
+    ;;
+  esac
+}
+
+# BI_run builds the base image used for masters and workers.
+# This function is called in main.sh.
+# Args: None expected.
+BI_run() {
+
+  _BI_sanity_checks || return
+
+  [[ ${_BI[tailf]} == "${TRUE}" ]] && {
+    UT_set_tailf "${TRUE}" || err || return
+  }
+
+  local retval=0
+  _BI_build_container_image
+  retval=$?
+
+  if [[ ${retval} -eq ${OK} ]]; then
+    : # We only need the tick - no text
+  else
+    printf 'Image build failed\n' >"${STDERR}"
+    err
+  fi
+
+  return "${retval}"
+}
+
+# Private Functions -----------------------------------------------------------
+
+# _BI_new resets the initial values for the _BI associative array.
+# Args: None expected.
+_BI_new() {
+  _BI[tailf]="${FALSE}"
+  _BI[baseimagename]="mok-image"
+  _BI[useprebuiltimage]="${FALSE}"
+  _BI[dockerbuildtmpdir]=
+
+  # Program the parser's state machine
+  PA_add_state "COMMAND" "build" "SUBCOMMAND" ""
+  PA_add_state "SUBCOMMAND" "buildimage" "END" ""
+
+  # Set up the parser's option callbacks
+  PA_add_option_callback "build" "BI_process_options" || return
+  PA_add_option_callback "buildimage" "BI_process_options" || return
+
+  # Set up the parser's usage callbacks
+  PA_add_usage_callback "build" "BI_usage" || return
+  PA_add_usage_callback "buildimage" "BI_usage" || return
+}
+
+# BI_sanity_checks is expected to run some quick and simple checks to
+# see if it has all it's key components. For build image this does nothing.
+# This function should not be deleted as it is called in main.sh.
+# Args: None expected.
+_BI_sanity_checks() {
+
+  if [[ -z $(PA_subcommand) ]]; then
+    BI_usage
+    exit "${OK}"
+  fi
+}
+
+# _BI_build_container_image creates the docker build directory in
+# dockerbuildtmpdir then calls docker build to build the image.
+# Args: No args expected.
+_BI_build_container_image() {
+
+  local cmd retval tagname buildargs text buildtype
+
+  _BI_create_docker_build_dir || return
+
+  buildargs=$(_BI_get_build_args_for_latest) || return
+  tagname="${_BI[baseimagename]}-v${K8SVERSION}"
+
+  local imgprefix
+  imgprefix=$(CU_imgprefix) || err || return
+  if [[ ${_BI[useprebuiltimage]} == "${FALSE}" ]]; then
+    buildtype="create"
+    cmd="docker build \
+      -t "${imgprefix}local/${tagname}" \
+      --force-rm \
+      ${buildargs} \
+      ${_BI[dockerbuildtmpdir]}/${_BI[baseimagename]}"
+    text="Creating"
+  else
+    buildtype="download"
+    cmd="docker pull myownkind/${tagname}"
+    text="Downloading"
+  fi
+
+  UT_run_with_progress \
+    "    ${text} base image, '${tagname}'" "${cmd}"
+
+  retval=$?
+  [[ ${retval} -ne ${OK} ]] && {
+    local runlogfile
+    runlogfile=$(UT_runlogfile) || err || return
+    printf 'ERROR: Docker returned an error, shown below\n\n' >"${STDERR}"
+    cat "${runlogfile}" >"${STDERR}"
+    printf '\n' >"${STDERR}"
+    return "${ERROR}"
+  }
+
+  [[ ${buildtype} == "create" ]] && {
+    cmd="_BI_modify_container_image"
+
+    UT_run_with_progress \
+      "    Modifying base image (pulling kubernetes images)" "${cmd}"
+
+    retval=$?
+    [[ ${retval} -ne ${OK} ]] && {
+      local runlogfile
+      runlogfile=$(UT_runlogfile) || err || return
+      printf 'ERROR: Docker returned an error, shown below\n\n' >"${STDERR}"
+      cat "${runlogfile}" >"${STDERR}"
+      printf '\n' >"${STDERR}"
+      return "${ERROR}"
+    }
+  }
+
+  return "${OK}"
+}
+
+# _BI_modify_container_image starts a container suitable for running kubernetes
+# components (since the docker/podman build environment isn't suitable), makes
+# some modifications and then 'commits' the image. The modifications allow
+# `mok create ...` to complete more quickly.
+# Args: No args expected.
+_BI_modify_container_image() {
+
+  # Delete container, just in case it was left behind
+  docker stop -t 5 mok-build-modify &>/dev/null
+  docker rm mok-build-modify &>/dev/null
+
+  # Start container
+  CU_create_container "mok-build-modify" "mok-build-modify" "${K8SVERSION}" ||
+    return
+
+  # Wait for crio to become ready
+  printf '\n\n ** WAITING FOR CRIO TO BECOME READY **\n\n'
+  while ! docker exec mok-build-modify systemctl status crio; do
+    sleep 1
+    [[ ${counter} -gt 10 ]] && {
+      printf '\nERROR: CRI-O did not start after %d tries.\n' "${counter}"
+      err || return
+    }
+    ((counter++))
+  done
+
+  # Modify container
+  docker exec mok-build-modify kubeadm config images pull \
+    --kubernetes-version "${K8SVERSION}" || err || return
+
+  # Stop container
+  docker stop -t 5 "mok-build-modify"
+
+  # Write image
+  local imgprefix tagname
+  imgprefix=$(CU_imgprefix) || err || return
+  tagname="${_BI[baseimagename]}-v${K8SVERSION}"
+  docker commit mok-build-modify "${imgprefix}local/${tagname}" || err || return
+
+  # Delete container, just in case it was left behind
+  docker stop -t 5 mok-build-modify
+  docker rm mok-build-modify || err || return
+
+  return "${OK}"
+}
+
+# _BI_get_build_args_for_latest sets the buildargs variable that is added
+# to the 'podman build ...' command line.  Only the latest version is built
+# from scratch.  Earlier versions are downloaded using '--get-prebuilt-image'.
+# Args: None expected
+_BI_get_build_args_for_latest() {
+
+  local buildargs
+
+  buildargs="--build-arg GO_VERSION=${GO_VERSION}"
+
+  printf '%s' "${buildargs}"
+}
+
+# _BI_create_docker_build_dir creates a docker build directory in
+# /var/tmp/tmp.XXXXXXXX
+# Args: None expected
+_BI_create_docker_build_dir() {
+
+  _BI[dockerbuildtmpdir]="$(mktemp -d -p /var/tmp)" || {
+    printf 'ERROR: mktmp failed.\n' >"${STDERR}"
+    err || return
+  }
+
+  # The following comments should not be removed or changed.
+  # embed-dockerfile.sh adds a base64 encoded tarball and
+  # unpacking code between them.
+
+  #mok-image-tarball-start 
+  cat <<EnD | base64 -d | tar xz -C "${_BI[dockerbuildtmpdir]}" 
+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
+EnD
+  #mok-image-tarball-end
+}
+
+# Initialise _BI
+_BI_new || exit 1
+
+# vim helpers -----------------------------------------------------------------
+#include globals.sh
+# vim:ft=sh:sw=2:et:ts=2:
+#!/usr/bin/env bash
+
+declare -A JSONPath
+
+JSONPath_new() {
+  JSONPath[DEBUG]=0
+  JSONPath[INCLEMPTY]=0
+  JSONPath[NOCASE]=0
+  JSONPath[WHOLEWORD]=0
+  JSONPath[FILE]=
+  JSONPath[NO_HEAD]=0
+  JSONPath[NORMALIZE_SOLIDUS]=0
+  JSONPath[BRIEF]=0
+  JSONPath[PASSTHROUGH]=0
+  JSONPath[JSON]=0
+  JSONPath[MULTIPASS]=0
+  JSONPath[FLATTEN]=0
+  JSONPath[STDINFILE]=/var/tmp/JSONPath.$$.stdin
+  JSONPath[STDINFILE2]=/var/tmp/JSONPath.$$.stdin2
+  JSONPath[PASSFILE]=/var/tmp/JSONPath.$$.pass1
+  declare -a INDEXMATCH_QUERY
+}
+
+# JSONPath reads JSON from stdin and applies a JSON Path query.
+# Args: arg1-N - command line arguments to be parsed.
+JSONPath() {
+
+  JSONPath_sanity_checks
+  JSONPath_parse_options "$@"
+
+  trap JSONPath_cleanup EXIT
+
+  if [[ ${QUERY} == *'?(@'* ]]; then
+    # This will be a multipass query
+
+    [[ -n ${JSONPath[FILE]} ]] && JSONPath[STDINFILE]=${JSONPath[FILE]}
+    [[ -z ${JSONPath[FILE]} ]] && cat >"${JSONPath[STDINFILE]}"
+
+    while true; do
+      JSONPath_tokenize_path
+      JSONPath_create_filter
+
+      JSONPath_tokenize | JSONPath_parse | JSONPath_filter |
+        JSONPath_indexmatcher >"${JSONPath[PASSFILE]}" <"${JSONPath[STDINFILE]}"
+
+      [[ ${JSONPath[MULTIPASS]} -eq 1 ]] && {
+        # replace filter expression with index sequence
+        SET=$(sed -rn 's/.*[[,"]+([0-9]+)[],].*/\1/p' "${JSONPath[PASSFILE]}" | tr '\n' ,)
+        SET=${SET%,}
+        #QUERY=$(sed "s/?(@[^)]\+)/${SET}/" <<<"${QUERY}")
+        # Testing:
+        QUERY="${QUERY//\?\(@*)/${SET}}"
+        [[ ${JSONPath[DEBUG]} -eq 1 ]] && echo "QUERY=${QUERY}" >/dev/stderr
+        JSONPath_reset
+        continue
+      }
+
+      JSONPath_flatten | JSONPath_json | JSONPath_brief <<<"${JSONPath[PASSFILE]}"
+
+      break
+    done
+
+  else
+
+    JSONPath_tokenize_path
+    JSONPath_create_filter
+
+    if [[ ${JSONPath[PASSTHROUGH]} -eq 1 ]]; then
+      JSONPath[JSON]=1
+      JSONPath_flatten | JSONPath_json
+    elif [[ -z ${JSONPath[FILE]} ]]; then
+      JSONPath_tokenize | JSONPath_parse | JSONPath_filter | JSONPath_indexmatcher | JSONPath_flatten | JSONPath_json | JSONPath_brief
+    else
+      JSONPath_tokenize | JSONPath_parse | JSONPath_filter | JSONPath_indexmatcher | JSONPath_flatten <"${JSONPath[FILE]}"
+      JSONPath_json | JSONPath_brief
+    fi
+
+  fi
+}
+
+JSONPath_sanity_checks() {
+
+  local binary
+
+  # Reset some vars
+  for binary in gawk grep sed; do
+    if ! command -v "${binary}" >&/dev/null; then
+      echo "ERROR: ${binary} binary not found in path. Aborting."
+      exit 1
+    fi
+  done
+}
+
+JSONPath_reset() {
+
+  # Reset some vars
+  declare -a INDEXMATCH_QUERY
+  PATHTOKENS=
+  FILTER=
+  OPERATOR=
+  RHS=
+  JSONPath[MULTIPASS]=0
+}
+
+JSONPath_cleanup() {
+
+  [[ -e ${JSONPath[PASSFILE]} ]] && rm -f "${PASSFILE}"
+  [[ -e ${JSONPath[STDINFILE2]} ]] && rm -f "${JSONPath[STDINFILE2]}"
+  [[ -z ${JSONPath[FILE]} && -e ${JSONPath[STDINFILE]} ]] &&
+    rm -f "${JSONPath[STDINFILE]}"
+}
+
+JSONPath_usage() {
+
+  echo
+  echo "Usage: JSONPath.sh [-b] [j] [-h] [-f FILE] [pattern]"
+  echo
+  echo "pattern - the JSONPath query. Defaults to '$.*' if not supplied."
+  echo "-b      - Brief. Only show values."
+  echo "-j      - JSON output."
+  echo "-u      - Strip unnecessary leading path elements."
+  echo "-i      - Case insensitive."
+  echo "-p      - Pass-through to the JSON parser."
+  echo "-w      - Match whole words only (for filter script expression)."
+  echo "-f FILE - Read a FILE instead of stdin."
+  echo "-h      - This help text."
+  echo
+}
+
+JSONPath_parse_options() {
+
+  set -- "$@"
+  local ARGN=$#
+  while [[ ${ARGN} -ne 0 ]]; do
+    case $1 in
+    -h)
+      JSONPath_usage
+      exit 0
+      ;;
+    -f)
+      shift
+      JSONPath[FILE]=$1
+      ;;
+    -i)
+      JSONPath[NOCASE]=1
+      ;;
+    -j)
+      JSONPath[JSON]=1
+      ;;
+    -n)
+      JSONPath[NO_HEAD]=1
+      ;;
+    -b)
+      JSONPath[BRIEF]=1
+      ;;
+    -u)
+      JSONPath[FLATTEN]=1
+      ;;
+    -p)
+      JSONPath[PASSTHROUGH]=1
+      ;;
+    -w)
+      JSONPath[WHOLEWORD]=1
+      ;;
+    -s)
+      JSONPath[NORMALIZE_SOLIDUS]=1
+      ;;
+    *)
+      QUERY=$1
+      ;;
+    esac
+    shift 1
+    ARGN=$((ARGN - 1))
+  done
+  [[ -z ${QUERY} ]] && QUERY='$.*'
+}
+
+JSONPath_awk_egrep() {
+  local pattern_string=$1
+
+  gawk '{
+    while ($0) {
+      start=match($0, pattern);
+      token=substr($0, start, RLENGTH);
+      print token;
+      $0=substr($0, start+RLENGTH);
+    }
+  }' pattern="${pattern_string}"
+}
+
+JSONPath_tokenize() {
+
+  local GREP
+  local ESCAPE
+  local CHAR
+
+  if echo "test string" | grep -Eao --color=never "test" >/dev/null 2>&1; then
+    GREP='grep -Eao --color=never'
+  else
+    GREP='grep -Eao'
+  fi
+
+  if echo "test string" | grep -Eo "test" >/dev/null 2>&1; then
+    ESCAPE='(\\[^u[:cntrl:]]|\\u[0-9a-fA-F]{4})'
+    CHAR='[^[:cntrl:]"\\]'
+  else
+    GREP=JSONPath_awk_egrep
+    ESCAPE='(\\\\[^u[:cntrl:]]|\\u[0-9a-fA-F]{4})'
+    CHAR='[^[:cntrl:]"\\\\]'
+  fi
+
+  local STRING="\"${CHAR}*(${ESCAPE}${CHAR}*)*\""
+  local NUMBER='-?(0|[1-9][0-9]*)([.][0-9]*)?([eE][+-]?[0-9]*)?'
+  local KEYWORD='null|false|true'
+  local SPACE='[[:space:]]+'
+
+  # Force zsh to expand $A into multiple words
+  local is_wordsplit_disabled
+  is_wordsplit_disabled=$(unsetopt 2>/dev/null | grep -c '^shwordsplit$')
+  if [[ ${is_wordsplit_disabled} != 0 ]]; then setopt shwordsplit; fi
+  ${GREP} "${STRING}|${NUMBER}|${KEYWORD}|${SPACE}|." | grep -Ev "^${SPACE}$"
+  if [[ ${is_wordsplit_disabled} != 0 ]]; then unsetopt shwordsplit; fi
+}
+
+JSONPath_tokenize_path() {
+
+  local GREP
+  local ESCAPE
+  local CHAR
+
+  if echo "test string" | grep -Eao --color=never "test" >/dev/null 2>&1; then
+    GREP='grep -Eao --color=never'
+  else
+    GREP='grep -Eao'
+  fi
+
+  if echo "test string" | grep -Eo "test" >/dev/null 2>&1; then
+    CHAR='[^[:cntrl:]"\\]'
+  else
+    GREP=JSONPath_awk_egrep
+  fi
+
+  local WILDCARD='\*'
+  local WORD='[ A-Za-z0-9_-]*'
+  local INDEX="\\[${WORD}(:${WORD}){0,2}\\]"
+  local INDEXALL='\[\*\]'
+  local STRING="[\\\"'][^[:cntrl:]\\\"']*[\\\"']"
+  local SET="\\[(${WORD}|${STRING})(,(${WORD}|${STRING}))*\\]"
+  local FILTER='\?\(@[^)]+'
+  local DEEPSCAN='\.\.'
+  local SPACE='[[:space:]]+'
+
+  # Force zsh to expand $A into multiple words
+  local is_wordsplit_disabled
+  is_wordsplit_disabled=$(unsetopt 2>/dev/null | grep -c '^shwordsplit$')
+  if [[ ${is_wordsplit_disabled} != 0 ]]; then setopt shwordsplit; fi
+  readarray -t PATHTOKENS < <(echo "${QUERY}" |
+    ${GREP} "${INDEX}|${STRING}|${WORD}|${WILDCARD}|${FILTER}|${DEEPSCAN}|${SET}|${INDEXALL}|." |
+    grep -Ev "^${SPACE}$|^\\.$|^\[$|^\]$|^'$|^\\\$$|^\)$")
+  [[ ${JSONPath[DEBUG]} -eq 1 ]] && {
+    echo "grep -Eo '${INDEX}|${STRING}|${WORD}|${WILDCARD}|${FILTER}|${DEEPSCAN}|${SET}|${INDEXALL}|.'" >/dev/stderr
+    echo -n "TOKENISED QUERY="
+    echo "${QUERY}" |
+      ${GREP} "${INDEX}|${STRING}|${WORD}|${WILDCARD}|${FILTER}|${DEEPSCAN}|${SET}|${INDEXALL}|." |
+      grep -Ev "^${SPACE}$|^\\.$|^\[$|^\]$|^'$|^\\\$$|^\)$" >/dev/stderr
+  }
+  if [[ ${is_wordsplit_disabled} != 0 ]]; then unsetopt shwordsplit; fi
+}
+
+# JSONPath_create_filter creates the filter from the user's query.
+# Filter works in a single pass through the data, unless a filter (script)
+#  expression is used, in which case two passes are required (MULTIPASS=1).
+JSONPath_create_filter() {
+
+  local len=${#PATHTOKENS[*]}
+
+  local -i i=0
+  local a query="^\[" comma=
+  while [[ i -lt len ]]; do
+    case "${PATHTOKENS[i]}" in
+    '"')
+      :
+      ;;
+    '..')
+      query+="${comma}[^]]*"
+      comma=
+      ;;
+    '[*]')
+      query+="${comma}[^,]*"
+      comma=","
+      ;;
+    '*')
+      query+="${comma}(\"[^\"]*\"|[0-9]+[^],]*)"
+      comma=","
+      ;;
+    '?(@'*)
+      a=${PATHTOKENS[i]#?(@.}
+      elem="${a%%[<>=!]*}"
+      rhs="${a##*[<>=!]}"
+      a="${a#${elem}}"
+      elem="${elem//./[\",.]+}" # Allows child node matching
+      operator="${a%${rhs}}"
+      [[ -z ${operator} ]] && {
+        operator="=="
+        rhs=
+      }
+      if [[ ${rhs} == *'"'* || ${rhs} == *"'"* ]]; then
+        case ${operator} in
+        '==' | '=')
+          OPERATOR=
+          if [[ ${elem} == '?(@' ]]; then
+            # To allow search on @.property such as:
+            #   $..book[?(@.title==".*Book 1.*")]
+            query+="${comma}[0-9]+[],][[:space:]\"]*${rhs//\"/}"
+          else
+            # To allow search on @ (this node) such as:
+            #   $..reviews[?(@==".*Fant.*")]
+            query+="${comma}[0-9]+,\"${elem}\"[],][[:space:]\"]*${rhs//\"/}"
+          fi
+          FILTER="${query}"
+          ;;
+        '>=' | '>')
+          OPERATOR=">"
+          RHS="${rhs}"
+          query+="${comma}[0-9]+,\"${elem}\"[],][[:space:]\"]*"
+          FILTER="${query}"
+          ;;
+        '<=' | '<')
+          OPERATOR="<"
+          RHS="${rhs}"
+          query+="${comma}[0-9]+,\"${elem}\"[],][[:space:]\"]*"
+          FILTER="${query}"
+          ;;
+        *) return 1 ;;
+        esac
+      else
+        case ${operator} in
+        '==' | '=')
+          OPERATOR=
+          query+="${comma}[0-9]+,\"${elem}\"[],][[:space:]\"]*${rhs}"
+          FILTER="${query}"
+          ;;
+        '>=')
+          OPERATOR="-ge"
+          RHS="${rhs}"
+          query+="${comma}[0-9]+,\"${elem}\"[],][[:space:]\"]*"
+          FILTER="${query}"
+          ;;
+        '>')
+          OPERATOR="-gt"
+          RHS="${rhs}"
+          query+="${comma}[0-9]+,\"${elem}\"[],][[:space:]\"]*"
+          FILTER="${query}"
+          ;;
+        '<=')
+          OPERATOR="-le"
+          RHS="${rhs}"
+          query+="${comma}[0-9]+,\"${elem}\"[],][[:space:]\"]*"
+          FILTER="${query}"
+          ;;
+        '<')
+          OPERATOR="-lt"
+          RHS="${rhs}"
+          query+="${comma}[0-9]+,\"${elem}\"[],][[:space:]\"]*"
+          FILTER="${query}"
+          ;;
+        *) return 1 ;;
+        esac
+      fi
+      JSONPath[MULTIPASS]=1
+      ;;
+    "["*)
+      if [[ ${PATHTOKENS[i]} =~ , ]]; then
+        a=${PATHTOKENS[i]#[}
+        a=${a%]}
+        if [[ ${a} =~ [[:alpha:]] ]]; then
+          # converts only one comma: s/("[^"]+),([^"]+")/\1`\2/g;s/"//g
+          #a=$(echo $a | sed 's/\([[:alpha:]]*\)/"\1"/g')
+          a=$(echo "${a}" | sed -r "s/[\"']//g;s/([^,]*)/\"\1\"/g")
+        fi
+        query+="${comma}(${a//,/|})"
+      elif [[ ${PATHTOKENS[i]} =~ : ]]; then
+        if ! [[ ${PATHTOKENS[i]} =~ [0-9][0-9] || ${PATHTOKENS[i]} =~ :] ]]; then
+          if [[ ${PATHTOKENS[i]#*:} =~ : ]]; then
+            INDEXMATCH_QUERY+=("${PATHTOKENS[i]}")
+            query+="${comma}[^,]*"
+          else
+            # Index in the range of 0-9 can be handled by regex
+            query+="${comma}$(echo "${PATHTOKENS[i]}" |
+              gawk '/:/ { a=substr($0,0,index($0,":")-1);
+                         b=substr($0,index($0,":")+1,index($0,"]")-index($0,":")-1);
+                         if(b>0) { print a ":" b-1 "]" };
+                         if(b<=0) { print a ":]" } }' |
+              sed 's/\([0-9]\):\([0-9]\)/\1-\2/;
+                       s/\[:\([0-9]\)/[0-\1/;
+                       s/\([0-9]\):\]/\1-9999999]/')"
+          fi
+        else
+          INDEXMATCH_QUERY+=("${PATHTOKENS[i]}")
+          query+="${comma}[^,]*"
+        fi
+      else
+        a=${PATHTOKENS[i]#[}
+        a=${a%]}
+        if [[ ${a} =~ [[:alpha:]] ]]; then
+          a=$(echo "${a}" | sed -r "s/[\"']//g;s/([^,]*)/\"\1\"/g")
+        else
+          [[ ${i} -gt 0 ]] && comma=","
+        fi
+        query+="${comma}${a}"
+      fi
+      comma=","
+      ;;
+    *)
+      PATHTOKENS[i]=${PATHTOKENS[i]//\'/\"}
+      query+="${comma}\"${PATHTOKENS[i]//\"/}\""
+      comma=","
+      ;;
+    esac
+    i=$((i + 1))
+  done
+
+  [[ -z ${FILTER} ]] && FILTER="${query}[],]"
+  [[ ${JSONPath[DEBUG]} -eq 1 ]] && echo "FILTER=${FILTER}" >/dev/stderr
+}
+
+JSONPath_parse_array() {
+
+  local index=0
+  local ary=''
+  read -r token
+  case "${token}" in
+  ']') ;;
+
+  *)
+    while :; do
+      JSONPath_parse_value "$1" "${index}"
+      index=$((index + 1))
+      ary="${ary}""${value}"
+      read -r token
+      case "${token}" in
+      ']') break ;;
+      ',') ary="${ary}," ;;
+      *) JSONPath_throw "EXPECTED , or ] GOT ${token:-EOF}" ;;
+      esac
+      read -r token
+    done
+    ;;
+  esac
+  value=
+  :
+}
+
+JSONPath_parse_object() {
+
+  local key
+  local obj=''
+  read -r token
+  case "${token}" in
+  '}') ;;
+
+  *)
+    while :; do
+      case "${token}" in
+      '"'*'"') key=${token} ;;
+      *) JSONPath_throw "EXPECTED string GOT ${token:-EOF}" ;;
+      esac
+      read -r token
+      case "${token}" in
+      ':') ;;
+      *) JSONPath_throw "EXPECTED : GOT ${token:-EOF}" ;;
+      esac
+      read -r token
+      JSONPath_parse_value "$1" "${key}"
+      obj="${obj}${key}:${value}"
+      read -r token
+      case "${token}" in
+      '}') break ;;
+      ',') obj="${obj}," ;;
+      *) JSONPath_throw "EXPECTED , or } GOT ${token:-EOF}" ;;
+      esac
+      read -r token
+    done
+    ;;
+  esac
+  value=
+  :
+}
+
+JSONPath_parse_value() {
+
+  local jpath="${1:+$1,}$2" isleaf=0 isempty=0 print=0
+  case "${token}" in
+  '{') JSONPath_parse_object "${jpath}" ;;
+  '[') JSONPath_parse_array "${jpath}" ;;
+    # At this point, the only valid single-character tokens are digits.
+  '' | [!0-9]) JSONPath_throw "EXPECTED value GOT ${token:-EOF}" ;;
+  *)
+    value=${token}
+    # if asked, replace solidus ("\/") in json strings with normalized value: "/"
+    # Testing:
+    #[ "${JSONPath[NORMALIZE_SOLIDUS]}" -eq 1 ] && value=$(echo "${value}" | sed 's#\\/#/#g')
+    [[ ${JSONPath[NORMALIZE_SOLIDUS]} -eq 1 ]] && value=$(${value//\\\///})
+    isleaf=1
+    [[ ${value} == '""' ]] && isempty=1
+    ;;
+  esac
+  [[ -z ${JSONPath[INCLEMPTY]} ]] && [[ ${value} == '' ]] && return
+  [[ ${JSONPath[NO_HEAD]} -eq 1 ]] && [[ -z ${jpath} ]] && return
+
+  [[ ${isleaf} -eq 1 ]] && [[ ${isempty} -eq 0 ]] && print=1
+  [[ ${print} -eq 1 ]] && printf "[%s]\t%s\n" "${jpath}" "${value}"
+  :
+}
+
+JSONPath_flatten() {
+
+  local path a prevpath pathlen
+
+  if [[ ${JSONPath[FLATTEN]} -eq 1 ]]; then
+    cat >"${JSONPath[STDINFILE2]}"
+
+    highest=9999
+
+    while read -r line; do
+      a=${line#[}
+      a=${a%%]*}
+      readarray -t path < <(grep -o "[^,]*" <<<"${a}")
+      [[ -z ${prevpath} ]] && {
+        prevpath=("${path[@]}")
+        highest=$((${#path[*]} - 1))
+        continue
+      }
+
+      pathlen=$((${#path[*]} - 1))
+
+      for i in $(seq 0 "${pathlen}"); do
+        [[ ${path[i]} != "${prevpath[i]}" ]] && {
+          high=${i}
+          break
+        }
+      done
+
+      [[ ${high} -lt ${highest} ]] && highest=${high}
+
+      prevpath=("${path[@]}")
+    done <"${JSONPath[STDINFILE2]}"
+
+    if [[ ${highest} -gt 0 ]]; then
+      sed -r 's/\[(([0-9]+|"[^"]+")[],]){'$((highest))'}(.*)/[\3/' \
+        "${JSONPath[STDINFILE2]}"
+    else
+      cat "${JSONPath[STDINFILE2]}"
+    fi
+  else
+    cat
+  fi
+}
+
+# JSONPath_indexmatcher is for double digit or greater indexes match each line
+# individually Single digit indexes are handled more efficiently by regex
+JSONPath_indexmatcher() {
+
+  local a b
+
+  [[ ${JSONPath[DEBUG]} -eq 1 ]] && {
+    for i in $(seq 0 $((${#INDEXMATCH_QUERY[*]} - 1))); do
+      echo "INDEXMATCH_QUERY[${i}]=${INDEXMATCH_QUERY[i]}" >/dev/stderr
+    done
+  }
+
+  matched=1
+
+  step=
+  if [[ ${#INDEXMATCH_QUERY[*]} -gt 0 ]]; then
+    while read -r line; do
+      for i in $(seq 0 $((${#INDEXMATCH_QUERY[*]} - 1))); do
+        [[ ${INDEXMATCH_QUERY[i]#*:} =~ : ]] && {
+          step=${INDEXMATCH_QUERY[i]##*:}
+          step=${step%]}
+          INDEXMATCH_QUERY[i]="${INDEXMATCH_QUERY[i]%:*}]"
+        }
+        q=${INDEXMATCH_QUERY[i]:1:-1} # <- strip '[' and ']'
+        a=${q%:*}                     # <- number before ':'
+        b=${q#*:}                     # <- number after ':'
+        [[ -z ${b} ]] && b=99999999999
+        readarray -t num < <((grep -Eo '[0-9]+[],]' | tr -d ,]) <<<"${line}")
+        if [[ ${num[i]} -ge ${a} && ${num[i]} -lt ${b} && matched -eq 1 ]]; then
+          matched=1
+          [[ ${i} -eq $((${#INDEXMATCH_QUERY[*]} - 1)) ]] && {
+            if [[ ${step} -gt 1 ]]; then
+              [[ $(((num[i] - a) % step)) -eq 0 ]] && {
+                [[ ${JSONPath[DEBUG]} -eq 1 ]] && echo -n "(${a},${b},${num[i]}) " >/dev/stderr
+                echo "${line}"
+              }
+            else
+              [[ ${JSONPath[DEBUG]} -eq 1 ]] && echo -n "(${a},${b},${num[i]}) " >/dev/stderr
+              echo "${line}"
+            fi
+          }
+        else
+          matched=0
+          continue
+        fi
+      done
+      matched=1
+    done
+  else
+    cat -
+  fi
+}
+
+JSONPath_brief() {
+  # Only show the value
+
+  if [[ ${JSONPath[BRIEF]} -eq 1 ]]; then
+    sed 's/^[^\t]*\t//;s/^"//;s/"$//;'
+  else
+    cat
+  fi
+}
+
+JSONPath_json() {
+  # Turn output into JSON
+
+  local a tab="$'\t'"
+  local UP=1 DOWN=2 SAME=3
+  local prevpathlen=-1 prevpath=() path a
+  declare -a closers
+
+  if [[ ${JSONPath[JSON]} -eq 0 ]]; then
+    cat -
+  else
+    while read -r line; do
+      a=${line#[}
+      a=${a%%]*}
+      readarray -t path < <(grep -o "[^,]*" <<<"${a}")
+      value=${line#*${tab}}
+
+      # Not including the object itself (last item)
+      pathlen=$((${#path[*]} - 1))
+
+      # General direction
+
+      direction=${SAME}
+      [[ ${pathlen} -gt ${prevpathlen} ]] && direction=${DOWN}
+      [[ ${pathlen} -lt ${prevpathlen} ]] && direction=${UP}
+
+      # Handle jumps UP the tree (close previous paths)
+
+      [[ ${prevpathlen} != -1 ]] && {
+        for i in $(seq 0 $((pathlen - 1))); do
+          [[ ${prevpath[i]} == "${path[i]}" ]] && continue
+          [[ ${path[i]} != '"'* ]] && {
+            # Testing double quotes:
+            a="(${!arrays[*]})"
+            [[ -n ${a} ]] && {
+              for k in $(seq $((i + 1)) "${a[-1]}"); do
+                arrays[k]=
+              done
+            }
+            a="(${!comma[*]})"
+            [[ -n ${a} ]] && {
+              for k in $(seq $((i + 1)) "${a[-1]}"); do
+                comma[k]=
+              done
+            }
+            for j in $(seq $((prevpathlen)) -1 $((i + 2))); do
+              arrays[j]=
+              [[ -n ${closers[j]} ]] && {
+                indent=$((j * 4))
+                printf "\n%${indent}s${closers[j]}" ""
+                unset "closers[j]"
+                comma[j]=
+              }
+            done
+            direction=${DOWN}
+            break
+          }
+          direction=${DOWN}
+          for j in $(seq $((prevpathlen)) -1 $((i + 1))); do
+            arrays[j]=
+            [[ -n ${closers[j]} ]] && {
+              indent=$((j * 4))
+              printf "\n%${indent}s${closers[j]}" ""
+              unset "closers[j]"
+              comma[j]=
+            }
+          done
+          a="(${!arrays[*]})"
+          [[ -n ${a} ]] && {
+            for k in $(seq "${i}" "${a[-1]}"); do
+              arrays[k]=
+            done
+          }
+          break
+        done
+      }
+
+      [[ ${direction} -eq ${UP} ]] && {
+        [[ ${prevpathlen} != -1 ]] && comma[prevpathlen]=
+        for i in $(seq $((prevpathlen + 1)) -1 $((pathlen + 1))); do
+          arrays[i]=
+          [[ -n ${closers[i]} ]] && {
+            indent=$((i * 4))
+            printf "\n%${indent}s${closers[i]}" ""
+            unset "closers[i]"
+            comma[i]=
+          }
+        done
+        a="(${!arrays[*]})"
+        [[ -n ${a} ]] && {
+          for k in $(seq "${i}" "${a[-1]}"); do
+            arrays[k]=
+          done
+        }
+      }
+
+      # Opening braces (the path leading up to the key)
+
+      broken=
+      for i in $(seq 0 $((pathlen - 1))); do
+        [[ -z ${broken} && ${prevpath[i]} == "${path[i]}" ]] && continue
+        [[ -z ${broken} ]] && {
+          broken=${i}
+          [[ ${prevpathlen} -ne -1 ]] && broken=$((i + 1))
+        }
+        if [[ ${path[i]} == '"'* ]]; then
+          # Object
+          [[ ${i} -ge ${broken} ]] && {
+            indent=$((i * 4))
+            printf "${comma[i]}%${indent}s{\n" ""
+            closers[i]='}'
+            comma[i]=
+          }
+          indent=$(((i + 1) * 4))
+          printf "${comma[i]}%${indent}s${path[i]}:\n" ""
+          comma[i]=",\n"
+        else
+          # Array
+          if [[ ${arrays[i]} != 1 ]]; then
+            indent=$((i * 4))
+            printf "%${indent}s" ""
+            echo "["
+            closers[i]=']'
+            arrays[i]=1
+            comma[i]=
+          else
+            indent=$(((i + 1) * 4))
+            printf "\n%${indent}s${closers[i - 1]}" ""
+            direction=${DOWN}
+            comma[i + 1]=",\n"
+          fi
+        fi
+      done
+
+      # keys & values
+
+      if [[ ${path[-1]} == '"'* ]]; then
+        # Object
+        [[ ${direction} -eq ${DOWN} ]] && {
+          indent=$((pathlen * 4))
+          printf "${comma[pathlen]}%${indent}s{\n" ""
+          closers[pathlen]='}'
+          comma[pathlen]=
+        }
+        indent=$(((pathlen + 1) * 4))
+        printf "${comma[pathlen]}%${indent}s" ""
+        echo -n "${path[-1]}:${value}"
+        comma[pathlen]=",\n"
+      else
+        # Array
+        [[ ${arrays[i]} != 1 ]] && {
+          indent=$(((pathlen - 0) * 4))
+          printf "%${indent}s[\n" ""
+          closers[pathlen]=']'
+          comma[pathlen]=
+          arrays[i]=1
+        }
+        indent=$(((pathlen + 1) * 4))
+        printf "${comma[pathlen]}%${indent}s" ""
+        echo -n "${value}"
+        comma[pathlen]=",\n"
+      fi
+
+      prevpath=("${path[@]}")
+      prevpathlen=${pathlen}
+    done
+
+    # closing braces
+
+    for i in $(seq $((pathlen)) -1 0); do
+      indent=$((i * 4))
+      printf "\n%${indent}s${closers[i]}" ""
+    done
+    echo
+  fi
+}
+
+JSONPath_filter() {
+  # Apply the query filter
+
+  local a tab=$'\t' v
+
+  [[ ${JSONPath[NOCASE]} -eq 1 ]] && opts+="i"
+  [[ ${JSONPath[WHOLEWORD]} -eq 1 ]] && opts+="w"
+  if [[ -z ${OPERATOR} ]]; then
+    [[ ${JSONPath[MULTIPASS]} -eq 1 ]] && FILTER="${FILTER}[\"]?$"
+    grep "-E${opts}" "${FILTER}"
+    [[ ${JSONPath[DEBUG]} -eq 1 ]] && echo "FILTER=${FILTER}" >/dev/stderr
+  else
+    grep "-E${opts}" "${FILTER}" |
+      while read -r line; do
+        v=${line#*${tab}}
+        case ${OPERATOR} in
+        '-ge')
+          if gawk '{exit !($1>=$2)}' <<<"${v} ${RHS}"; then echo "${line}"; fi
+          ;;
+        '-gt')
+          if gawk '{exit !($1>$2) }' <<<"${v} ${RHS}"; then echo "${line}"; fi
+          ;;
+        '-le')
+          if gawk '{exit !($1<=$2) }' <<<"${v} ${RHS}"; then echo "${line}"; fi
+          ;;
+        '-lt')
+          if gawk '{exit !($1<$2) }' <<<"${v} ${RHS}"; then echo "${line}"; fi
+          ;;
+        '>')
+          v=${v#\"}
+          v=${v%\"}
+          RHS=${RHS#\"}
+          RHS=${RHS%\"}
+          [[ ${v,,} > ${RHS,,} ]] && echo "${line}"
+          ;;
+        '<')
+          v=${v#\"}
+          v=${v%\"}
+          RHS=${RHS#\"}
+          RHS=${RHS%\"}
+          [[ ${v,,} < ${RHS,,} ]] && echo "${line}"
+          ;;
+        *) return 1 ;;
+        esac
+      done
+  fi
+}
+
+JSONPath_parse() {
+  # Parses json
+
+  read -r token
+  JSONPath_parse_value
+  read -r token
+  case "${token}" in
+  '') ;;
+  *)
+    JSONPath_throw "EXPECTED EOF GOT ${token}"
+    exit 1
+    ;;
+  esac
+}
+
+JSONPath_throw() {
+  echo "$*" >&2
+  exit 1
+}
+
+JSONPath_new || exit 1
+
+# vi: expandtab sw=2 ts=2
+if [ "$0" = "${BASH_SOURCE[0]}" ] || [ -z "${BASH_SOURCE[0]}" ]; then
+  MA_main "$@"
+fi

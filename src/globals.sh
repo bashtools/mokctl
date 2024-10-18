@@ -11,7 +11,7 @@
 _GL_new() {
 
   declare -rg MOKVERSION="0.8.11"
-  declare -rg K8SVERSION="1.30.0"
+  declare -rg K8SVERSION="1.31.1"
   declare -rg GO_VERSION="1.23.2"
 
   # Returns, exit codes

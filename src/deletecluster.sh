@@ -81,6 +81,7 @@ DC_run() {
   printf 'The following containers will be deleted:\n\n'
 
   GC_set_showheader "${TRUE}"
+  GC_set_clustername "${_DC[clustername]}"
   GC_run "${_DC[clustername]}" || return
 
   printf "\nAre you sure you want to delete the cluster? (y/N) >"

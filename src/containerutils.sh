@@ -161,7 +161,14 @@ EnD
     return "${ERROR}"
   fi
 
-  docker network exists mok_network || {
+  if [[ ${_CU[containerrt]} == "podman" ]];
+  then 
+    create_network=$(docker network exists mok_network)
+  else
+    create_network=$(docker network inspect mok_network >/dev/null 2>&1)
+  fi
+
+  [[ ${create_network} -eq 1 ]] && {
     docker network create mok_network || {
       printf 'ERROR: docker network create failed\n' >"${STDERR}"
       err || return

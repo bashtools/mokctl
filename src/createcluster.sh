@@ -362,7 +362,7 @@ _CC_setup_master_nodes() {
 _CC_set_up_master_node() {
 
   case "${_CC[k8sver]}" in
-  "1.30.0" | "1.30.1")
+  "1.30.0" | "1.30.1" | "1.31.1")
     _CC_set_up_master_node_v1_30_0 "$@"
     ;;
   *)
@@ -678,7 +678,7 @@ EnD
 _CC_set_up_worker_node() {
 
   case "${_CC[k8sver]}" in
-  "1.30.0" | "1.30.1")
+  "1.30.0" | "1.30.1" | "1.31.1")
     _CC_set_up_worker_node_v1_30_0 "$@"
     ;;
   *)

@@ -58,6 +58,13 @@ _CC_set_up_master_node_v1_30_0() {
     fi
   fi
 
+  # Apply the dns hack if there are no workers (single node cluster)
+  if [[ ${_CC[numworkers]} -eq 0 ]]; then
+    # I don't know why DNS resolution on single node clusters doesn't work but
+    # I hope someone will finally figure it out. I've spent too long trying!
+    dns_hack='sed -i "s/^ *- 10.96.0.10.*/- 10.244.0.2\n- 10.244.0.3/" /var/lib/kubelet/config.yaml'
+  fi
+
   # Write the file regardless, so the user can use it if required
 
   cat <<EnD >"${setupfile}"
@@ -141,6 +148,7 @@ if [[ -z "${masterip}" ]]; then
   # Edit the kubelet configuration file
   echo "failSwapOn: false" >>/var/lib/kubelet/config.yaml
   sed -i 's/cgroupDriver: systemd/cgroupDriver: cgroupfs/' /var/lib/kubelet/config.yaml
+  ${dns_hack}
 
   # Tell kubeadm to carry on from here
   kubeadm init \\

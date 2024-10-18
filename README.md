@@ -1,11 +1,11 @@
 # MOK - Kubernetes on your laptop
 
+Current kubernetes version: 1.31
+
 *Requirements*
 
-* An old laptop with 8 GB of memory
-* Fedora 40 Desktop
-* Cgroups v2 enabled - the default for Fedora 40
-* Podman
+* Fedora 40
+* Podman or Docker
 * 5 GB of free disk space
 
 *Install* to `/usr/local/bin`
@@ -25,7 +25,7 @@ export PATH=/usr/local/bin:$PATH
 sudo mok build image
 ```
 
-*Create a multi node kuberenetes cluster* (k8s v1.31.1)
+*Create a multi node kuberenetes cluster*
 
 ```bash
 sudo mok create cluster myk8s --masters 1 --workers 1
@@ -62,14 +62,12 @@ sudo mok delete cluster myk8s
 ```bash
 rm -rf mok/
 sudo rm /usr/local/bin/mok
-sudo podman rmi localhost/local/mok-image-v1.31.1
 ```
+
+Then delete the podman/docker images that were built by `mok build`.
 
 ## Known Issues
 
-* Creating a single node cluster:
-  * Containers created with `kubectl run ...` cannot reach the Internet
-  * Multi-node clusters do not have this problem
 * Creating a cluster with a load balancer, `--with-lb`, currently fails
 
 ## Some Features

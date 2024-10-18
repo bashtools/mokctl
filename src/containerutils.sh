@@ -237,9 +237,14 @@ EnD
     _CU[imgprefix]=""
     _CU[containerrt]="docker"
     if docker ps >/dev/stdout 2>&1 | grep -qs 'docker.sock.*permission denied'; then
-      cat <<'EnD' >"${STDERR}"
+      cat <<EnD >"${STDERR}"
 Not enough permissions to write to 'docker.sock'.
-Fix the permissions for this user or run as root, such as:
+
+Please use 'sudo' to run this command.
+
+  $ sudo mok $(MA_program_args)
+
+Try using:
 
   $ alias mok="sudo mok"
 

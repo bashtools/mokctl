@@ -1,5 +1,5 @@
-mokctl.deploy
-mokctl.deploy.noconst
+mok.deploy
+mok.deploy.noconst
 buildimage.deploy
 latest.hardcopy
 tags

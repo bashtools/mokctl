@@ -338,7 +338,7 @@ _CC_setup_master_nodes() {
     if [[ ${_CC[withlb]} -eq ${TRUE} ]]; then
       lbaddr=$(CU_get_container_ip "${_CC[clustername]}-lb") || err || return
       docker cp "${_CC[clustername]}-master-1:/etc/kubernetes/admin.conf" \
-        "/var/tmp/admin-${_CC[clustername]}.conf" >/dev/null || err || return
+        "/var/tmp/admin-${_CC[clustername]}.conf" >/dev/null 2>&1 || err || return
       sed -i 's#\(server: https://\)[0-9.]*\(:.*\)#\1'"${lbaddr}"'\2#' \
         "/var/tmp/admin-${_CC[clustername]}.conf"
     else

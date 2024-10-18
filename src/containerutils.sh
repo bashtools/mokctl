@@ -125,7 +125,7 @@ CU_get_container_info() {
 #       arg3 - The k8s base image version to use.
 CU_create_container() {
 
-  local imagename img allimgs
+  local imagename img allimgs systemd_always
 
   [[ -z $1 || -z $2 || -z $3 ]] && {
     printf 'INTERNAL ERROR: Neither arg1, arg2 nor arg3 can be empty.\n' \
@@ -175,10 +175,11 @@ EnD
     }
   }
 
-  docker run --privileged \
+  [[ ${_CU[containerrt]} == "podman" ]] && systemd_always="--systemd=always"
+
+  docker run --privileged ${systemd_always} \
     --network mok_network \
     -v /lib/modules:/lib/modules:ro \
-    --systemd=always \
     --detach \
     --name "$1" \
     --hostname "$1" \

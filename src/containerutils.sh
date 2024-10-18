@@ -222,7 +222,7 @@ Please use 'sudo' to run this command.
 
   $ sudo mok $(MA_program_args)
 
-Try using:
+Or set up an alias, for example:
 
   $ alias mok="sudo mok"
 
@@ -244,7 +244,7 @@ Please use 'sudo' to run this command.
 
   $ sudo mok $(MA_program_args)
 
-Try using:
+Or set up an alias, for example:
 
   $ alias mok="sudo mok"
 

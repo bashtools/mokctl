@@ -1,4 +1,4 @@
-# MOK - Kubernetes on your laptop
+# MOK - Run Kubernetes on your laptop
 
 Current kubernetes version: 1.31
 
